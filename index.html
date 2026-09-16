@@ -140,10 +140,10 @@ body.tutorial .stage-hud{display:none}
     <i style="width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-bottom:22px solid #EAA83A"></i>
   </div>
   <button id="startBtn">はじめる</button>
-  <button id="tutBtn"><span>チュートリアル</span><i id="tutDots"></i></button>
+  <button id="tutBtn"><span>あそびかた</span><i id="tutDots"></i></button>
 </div>
 <div id="tlist" class="overlay result">
-  <small class="kicker">チュートリアル</small>
+  <small class="kicker">あそびかた</small>
   <div class="tlist" id="tlistRows"></div>
   <button id="tlistBack" class="sub">もどる</button>
 </div>
@@ -952,7 +952,7 @@ function stepState() {
 }
 function stepHud(bumpIt) {
   const [now, goal] = stepState(), done = now >= goal;
-  $('mKicker').textContent = `チュートリアル ${stepIdx + 1} / ${STEPS.length}`;
+  $('mKicker').textContent = `あそびかた ${stepIdx + 1} / ${STEPS.length}`;
   $('mTitle').innerHTML = curStep().title;
   $('mProg').textContent = goal === 1 ? (done ? '●' : '') : `${Math.min(now, goal)} / ${goal}`;
   $('mProg').classList.toggle('done', done);
