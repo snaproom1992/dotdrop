@@ -94,16 +94,17 @@ body.tutorial .stage-hud{display:none}
 .result > *{width:100%;max-width:320px}
 .res-top{display:flex;gap:8px;justify-content:center;align-items:center;min-height:26px}
 .pill{font-size:12px;font-weight:700;border:1.5px solid rgba(242,241,238,.35);border-radius:999px;padding:3px 10px}
-.rankbadge{display:none;font-size:12px;font-weight:700;color:var(--ink);background:var(--mustard);border-radius:999px;padding:4px 10px}
+.rankbadge{display:none;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--ink);background:var(--mustard);border-radius:3px;padding:3px 8px}
 .rankbadge.show{display:inline-block}
 .rankbadge.top{background:var(--red);color:var(--paper)}
+.result .res-top{min-height:22px}
 .result .kicker{margin-top:26px;display:block}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);margin-top:22px;border-top:1.5px solid rgba(242,241,238,.2)}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);margin-top:22px;border-top:1.5px solid rgba(242,241,238,.2)}
 .stats div{padding:12px 4px 0;text-align:center}
 .stats div + div{border-left:1.5px solid rgba(242,241,238,.2)}
 .stats b{display:block;font-size:30px;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
 .stats small{display:block;font-size:11px;opacity:.6;margin-top:6px}
-.result #retry{margin:30px auto 0;width:auto;display:block}
+.result #retry{margin:30px auto 0;display:block}
 .res-sec{margin-top:36px;text-align:left}
 .res-sec h2{margin:0 0 6px;max-width:none}
 .recgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -158,12 +159,11 @@ body.tutorial .stage-hud{display:none}
   <button id="mQuit" class="sub">一覧</button>
 </div>
 <div id="over" class="overlay result">
-  <div class="res-top"><span class="pill">玉切れ</span><span id="newRank" class="rankbadge"></span></div>
+  <div class="res-top"><span id="newRank" class="rankbadge"></span></div>
   <small class="kicker">総合スコア</small>
   <div id="overScore" class="bigscore">0</div>
   <div class="stats">
     <div><b id="stStage">1</b><small>ステージ</small></div>
-    <div><b id="stShots">0</b><small>打った回数</small></div>
     <div><b id="stBest">0</b><small>1回の最高</small></div>
   </div>
   <button id="retry">もう一度</button>
@@ -1247,10 +1247,9 @@ function gameOver() {
   const entry = {score, stage: E.stage + 1, shots, date: Date.now()};
   const rank = addRanking(entry);
   $('stStage').textContent = E.stage + 1;
-  $('stShots').textContent = shots;
   $('stBest').textContent = gameBestShot;
   const nr = $('newRank');
-  nr.textContent = rank === 0 && ranking.length > 1 ? 'ハイスコア更新' : rank >= 0 ? `${rank + 1}位` : '';
+  nr.textContent = rank === 0 && ranking.length > 1 ? 'NEW RECORD' : rank >= 0 ? `${rank + 1}位` : '';
   nr.classList.toggle('show', rank >= 0);
   nr.classList.toggle('top', rank === 0);
   renderRanking('overRanking', entry, 5);
