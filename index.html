@@ -54,23 +54,19 @@ body.fever #gauge{background:rgba(28,23,22,.18)}
 #stageDots i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.2}
 #stageDots i.on{opacity:1;background:#D7141F}
 /* ミッション中の見出し。STAGE の代わりに、いまの条件と達成度を出す */
-.mission-hud{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 18px);transform:translateX(-50%);text-align:center;display:none;width:200px}
-body.mission .mission-hud{display:block}
-body.mission .stage-hud{display:none}
-.mission-hud small{display:block;font-size:10px;font-weight:700;letter-spacing:.12em;opacity:.6}
-.mission-hud b{display:block;font-size:17px;line-height:1.2;letter-spacing:.01em;margin-top:4px}
-.mission-hud b i{font-style:normal}
-.mission-hud u{display:block;font-size:26px;font-weight:700;text-decoration:none;letter-spacing:-.03em;margin-top:2px;font-variant-numeric:tabular-nums;transition:transform .2s}
-.mission-hud u.bump{transform:scale(1.4)}
-.mission-hud u.done{color:#D7141F;font-size:14px;line-height:26px}
-/* ミッション一覧。ランキングと同じ、線だけの行 */
-.mlist{width:100%;max-width:300px;margin-top:10px}
-.mlist button{display:grid;grid-template-columns:28px 1fr;align-items:center;gap:8px;width:100%;margin:0;padding:14px 0;background:none;border:none;border-radius:0;border-top:1px solid rgba(242,241,238,.14);color:var(--paper);font:inherit;font-size:15px;font-weight:700;text-align:left;cursor:pointer}
-.mlist button b{font-size:20px;letter-spacing:-.03em;opacity:.5;font-variant-numeric:tabular-nums}
-.mlist button span{font-size:17px;letter-spacing:.01em}
-.mlist button i{font-style:normal}
-.mlist button.done b{color:var(--red);opacity:1}
-.mlist button.done span{opacity:.5}
+.tut-hud{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 18px);transform:translateX(-50%);text-align:center;display:none;width:200px}
+body.tutorial .tut-hud{display:block}
+body.tutorial .stage-hud{display:none}
+.tut-hud small{display:block;font-size:10px;font-weight:700;letter-spacing:.12em;opacity:.6}
+.tut-hud b{display:block;font-size:17px;line-height:1.2;letter-spacing:.01em;margin-top:4px}
+.tut-hud b i{font-style:normal}
+.tut-hud u{display:block;font-size:26px;font-weight:700;text-decoration:none;letter-spacing:-.03em;margin-top:2px;font-variant-numeric:tabular-nums;transition:transform .2s}
+.tut-hud u.bump{transform:scale(1.4)}
+.tut-hud u.done{color:#D7141F;font-size:14px;line-height:26px}
+/* どこまで来たかを8つの丸で。ステージの丸と同じ見た目 */
+#mDots{display:flex;gap:6px;justify-content:center;margin-top:18px}
+#mDots i{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.2}
+#mDots i.on{opacity:1;background:var(--red)}
 #mResMark{width:26px;height:26px;border-radius:50%;margin:26px auto 4px}
 #mResMark.ok{background:var(--red)}
 #mResMark.ng{border:2px dashed rgba(242,241,238,.4)}
@@ -115,7 +111,7 @@ body.mission .stage-hud{display:none}
 <header>
   <div class="stat"><b id="money" class="roll"></b><small>持ち玉</small></div>
   <div class="stage-hud"><small>STAGE</small><b id="stageNo">1</b><div id="stageDots"></div></div>
-  <div class="mission-hud" id="missionHud"><small id="mKicker">ミッション</small><b id="mTitle"></b><u id="mProg"></u></div>
+  <div class="tut-hud" id="tutHud"><small>TUTORIAL</small><b id="mTitle"></b><u id="mProg"></u></div>
   <div class="stat right"><b id="points" class="roll"></b><small id="pointsLabel">スコア</small><div id="gauge"><i></i></div><div id="best"></div></div>
 </header>
 <div id="start" class="overlay show">
@@ -127,20 +123,17 @@ body.mission .stage-hud{display:none}
   </div>
   <div class="ranking" id="startRanking"></div>
   <button id="startBtn">はじめる</button>
-  <button id="missionBtn" class="sub">MISSION</button>
+  <button id="tutBtn" class="sub">TUTORIAL</button>
   <button id="listenBtn" class="sub">節目の音</button>
 </div>
-<div id="mlistOverlay" class="overlay result">
-  <small class="kicker">MISSION</small>
-  <div class="mlist" id="mlist"></div>
-  <button id="mlistBack" class="sub">BACK</button>
-</div>
 <div id="mover" class="overlay result">
-  <small class="kicker" id="mResNo">MISSION 1</small>
+  <small class="kicker">TUTORIAL</small>
   <div id="mResMark"></div>
+  <div id="mDots"></div>
   <button id="mNext">NEXT</button>
   <button id="mRetry">RETRY</button>
-  <button id="mQuit" class="sub">LIST</button>
+  <button id="mPlay">PLAY</button>
+  <button id="mQuit" class="sub">QUIT</button>
 </div>
 <div id="over" class="overlay result">
   <div class="res-top"><span class="pill">玉切れ</span><span id="newRank" class="rankbadge"></span></div>
@@ -542,7 +535,7 @@ function reset(next) {
   E.fever = false; E.stage = 0; E.balls = []; E.pot = 0; slotFlash = null; flyers = []; catches = []; fallen = []; sessionNew = new Set();
   money = START; peak = START;
   gameBestShot = 0; milestoneFx = null; bestAtStart = personalBest(); beatBest = false;
-  document.body.classList.toggle('mission', mode === MISSION);
+  document.body.classList.toggle('tutorial', mode === TUTORIAL);
   mode.start();
   bestHud();
   moneyRoll.set(money); pointsRoll.set(0);
@@ -860,18 +853,19 @@ function sendScore(value, x, y, color) {
   flyers.push({kind: 'score', value, x0: x, y0: y, t: -.35, color, arc: (Math.random() - .5) * 40});
 }
 
-// ---------- ミッション ----------
-// 台・受け皿・玉数・クリア条件をデータとして持つ。増やすときはここに足すだけ。
+// ---------- チュートリアル ----------
+// 台・受け皿・玉数・クリア条件をデータとして持つ。順番に1つずつやっていく。
 //   seed    … 台の種。同じ数字なら毎回まったく同じ台が出る
 //   conf    … その台だけの数字（受け皿・■青▲の数・持ち玉など）
-//   clear   … クリア条件。種類は missionState() にある9つ
+//   clear   … クリア条件。種類は stepState() にある9つ
+// あとで作る挑戦系のミッションも、同じ形のデータと同じ仕組みで動かせる
 const M_SLOT_EASY = [1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3];
 const M_B_NONE = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]];
 const M_B_PLUS = [[0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2]];
 // 文章では言わず、形と色で言う。<i> は色つきの印
 const R = t => `<i style="color:#D7141F">${t}</i>`, Y = t => `<i style="color:#EAA83A">${t}</i>`,
       BL = t => `<i style="color:#2456B8">${t}</i>`;
-const MISSIONS = [
+const STEPS = [
   {id: 'shot', title: 'SHOOT', seed: 11, layout: 0,
    conf: {START: 3, STAGE_B: M_B_NONE}, clear: {type: 'shots', n: 1}},
   {id: 'mult3', title: 'DROP IN ' + Y('×3'), seed: 23, layout: 2,
@@ -890,14 +884,22 @@ const MISSIONS = [
    conf: {START: 8, SQUARES: 4, TRIS: 6, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'fever'}},
 ];
 const MAX_SHOTS = 25;        // 玉が戻り続けても、これで終わり
-let missionIdx = 0, cleared = [], mProg = null;
-const curMission = () => MISSIONS[missionIdx];
-try { const r = store.get('dotdrop-missions'); if (r) cleared = JSON.parse(r.value); } catch (e) {}
+let stepIdx = 0, cleared = [], mProg = null;
+const curStep = () => STEPS[stepIdx];
+try { const r = store.get('dotdrop-tutorial'); if (r) cleared = JSON.parse(r.value); } catch (e) {}
 const isCleared = id => cleared.indexOf(id) >= 0;
+// まだできていない最初のところから始める。全部できていたら最初から
+function startTutorial() {
+  const i = STEPS.findIndex(m => !isCleared(m.id));
+  stepIdx = i < 0 ? 0 : i;
+  $('start').classList.remove('show');
+  running = true;
+  reset(TUTORIAL);
+}
 
 // いまの達成度を［いくつ / いくつ］で返す
-function missionState() {
-  const c = curMission().clear;
+function stepState() {
+  const c = curStep().clear;
   if (c.type === 'shots')     return [mProg.shots, c.n];
   if (c.type === 'hit')       return [mProg.hits[c.kind] || 0, c.n];
   if (c.type === 'mult')      return [mProg.maxMult >= c.m ? 1 : 0, 1];
@@ -909,28 +911,16 @@ function missionState() {
   if (c.type === 'survive')   return [mProg.shots, c.n];
   return [0, 1];
 }
-function missionHud(bumpIt) {
-  const [now, goal] = missionState(), done = now >= goal;
-  $('mKicker').textContent = `MISSION ${missionIdx + 1}`;
-  $('mTitle').innerHTML = curMission().title;
+function stepHud(bumpIt) {
+  const [now, goal] = stepState(), done = now >= goal;
+  $('mTitle').innerHTML = curStep().title;
   $('mProg').textContent = goal === 1 ? (done ? '●' : '') : `${Math.min(now, goal)} / ${goal}`;
   $('mProg').classList.toggle('done', done);
   if (bumpIt) bump('mProg');
 }
-function renderMissionList() {
-  $('mlist').innerHTML = MISSIONS.map((m, i) => {
-    const done = isCleared(m.id), next = !done && MISSIONS.slice(0, i).every(q => isCleared(q.id));
-    return `<button data-i="${i}" class="${done ? 'done' : ''}${next ? ' next' : ''}"><b>${i + 1}</b><span>${m.title}</span></button>`;
-  }).join('');
-  [...$('mlist').children].forEach(b => b.addEventListener('click', () => {
-    unlockAudio(); missionIdx = +b.dataset.i;
-    $('mlistOverlay').classList.remove('show'); $('start').classList.remove('show');
-    running = true; reset(MISSION);
-  }));
-}
 
 // ---------- モード ----------
-// フリープレイとミッションで違うのは「使う数字」「1回打ち終わったあと」「何で終わるか」の3つだけ。
+// フリープレイとチュートリアルで違うのは「使う数字」「1回打ち終わったあと」「何で終わるか」の3つだけ。
 // 画面・音・振動は両方とも同じものを使う
 const FREE = {
   conf: () => null,
@@ -962,14 +952,14 @@ const FREE = {
   isOver: () => money < COST,
   over: () => gameOver(),
 };
-const MISSION = {
-  conf: () => curMission().conf,
+const TUTORIAL = {
+  conf: () => curStep().conf,
   start() {
-    const m = curMission();
+    const m = curStep();
     mProg = {shots: 0, hits: {}, maxMult: 0, gained: 0, maxBalls: 1, bestShot: 0, fever: false, cleared: false};
     E.boardSeed = m.seed;
     setLayout(m.layout || 0, false);
-    missionHud(false);
+    stepHud(false);
   },
   hit(kind) { mProg.hits[kind] = (mProg.hits[kind] || 0) + 1; },
   land(b, v) {
@@ -982,33 +972,34 @@ const MISSION = {
     mProg.maxBalls = Math.max(mProg.maxBalls, shotBallsMax);
     if (E.fever) mProg.fever = true;
     pickGold();
-    const [now, goal] = missionState();
+    const [now, goal] = stepState();
     if (!mProg.cleared && now >= goal) {
       mProg.cleared = true;
       banner('CLEAR', '', '#D7141F');
       [0, 4, 7, 12].forEach((sp, k) => voice(note(6) * Math.pow(2, sp / 12), .35, .07, 'square', k * .07));
       buzzPattern(3, 80);
     }
-    missionHud(true);
+    stepHud(true);
   },
   isOver: () => mProg.cleared || money < COST || shots >= MAX_SHOTS,
-  over: () => missionOver(),
+  over: () => stepOver(),
 };
 let mode = FREE;
 
-function missionOver() {
+function stepOver() {
   if ($('mover').classList.contains('show')) return;
   const ok = mProg.cleared;
-  if (ok && !isCleared(curMission().id)) {
-    cleared.push(curMission().id);
-    store.set('dotdrop-missions', JSON.stringify(cleared));
+  if (ok && !isCleared(curStep().id)) {
+    cleared.push(curStep().id);
+    store.set('dotdrop-tutorial', JSON.stringify(cleared));
   }
-  const last = missionIdx >= MISSIONS.length - 1;
-  $('mResNo').textContent = `MISSION ${missionIdx + 1}`;
+  const last = stepIdx >= STEPS.length - 1;
   $('mResMark').className = ok ? 'ok' : 'ng';
+  // どこまで来たかを8つの丸で
+  $('mDots').innerHTML = STEPS.map(m => `<i class="${isCleared(m.id) ? 'on' : ''}"></i>`).join('');
   $('mNext').style.display = ok && !last ? '' : 'none';
   $('mRetry').style.display = ok ? 'none' : '';
-  $('mQuit').className = ok && last ? '' : 'sub';
+  $('mPlay').style.display = ok && last ? '' : 'none';
   $('mover').classList.add('show');
 }
 
@@ -1166,15 +1157,16 @@ function gameOver() {
   })(t0);
 }
 $('retry').addEventListener('click', () => { unlockAudio(); reset(FREE); });
-$('missionBtn').addEventListener('click', () => { unlockAudio(); renderMissionList(); $('mlistOverlay').classList.add('show'); });
-$('mlistBack').addEventListener('click', () => { $('mlistOverlay').classList.remove('show'); });
-$('mNext').addEventListener('click', () => { unlockAudio(); missionIdx = Math.min(MISSIONS.length - 1, missionIdx + 1); reset(MISSION); });
-$('mRetry').addEventListener('click', () => { unlockAudio(); reset(MISSION); });
+$('tutBtn').addEventListener('click', () => { unlockAudio(); startTutorial(); });
+$('mNext').addEventListener('click', () => { unlockAudio(); stepIdx = Math.min(STEPS.length - 1, stepIdx + 1); reset(TUTORIAL); });
+$('mRetry').addEventListener('click', () => { unlockAudio(); reset(TUTORIAL); });
+// 最後まで終わったら、そのままフリープレイへ
+$('mPlay').addEventListener('click', () => { unlockAudio(); $('mover').classList.remove('show'); running = true; reset(FREE); });
 $('mQuit').addEventListener('click', () => {
   $('mover').classList.remove('show');
-  document.body.classList.remove('mission');
+  document.body.classList.remove('tutorial');
   running = false;
-  renderMissionList(); $('mlistOverlay').classList.add('show'); $('start').classList.add('show');
+  $('start').classList.add('show');
 });
 $('listenBtn').addEventListener('click', () => {
   unlockAudio();
@@ -1446,7 +1438,7 @@ function draw(dt) {
     }
     ctx.fillStyle = P.ball;
     ctx.beginPath(); ctx.arc(L.x, L.y, BR + pw * 1.2, 0, 7); ctx.fill();
-    if (firstShot && mode !== MISSION) {
+    if (firstShot && mode !== TUTORIAL) {
       ctx.fillStyle = P.text; ctx.globalAlpha = .7 + Math.sin(E.time * 3) * .2;
       ctx.font = `500 13px ${FONT}`;
       ctx.fillText('引っ張ってはなす', LW / 2, 188);

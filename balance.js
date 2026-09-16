@@ -6,6 +6,7 @@
 //   1. ステージ別の玉の増減 … 1回打つと持ち玉がいくつ増える／減るか
 //   2. 一番得な打ち方     … 角度と強さを総当たりして、一番増える打ち方を探す
 //   3. 1ゲームの長さ       … 「適当に打つ人」と「うまい人」が何回で終わるか
+//   4. チュートリアル      … 8つとも本当にクリアできるか
 //
 // 受け皿・玉数・ステージ・フィーバーなど、玉の増減に関わる数字を変えたら必ず実行する。
 // 目標（CLAUDE.md のバランスの方針）
@@ -186,15 +187,15 @@ for (const [label, strat] of [['適当に打つ人', 'random'], ['うまい人',
 }
 console.log(`   （${elapsed()}）`);
 
-// ================= 4. ミッションがクリアできるか =================
-// index.html のミッションのデータをそのまま読んで、適当に打つ人で何%クリアできるか測る
+// ================= 4. チュートリアルがクリアできるか =================
+// index.html のチュートリアルのデータをそのまま読んで、適当に打つ人で何%クリアできるか測る
 const mSrc = html.slice(html.indexOf('const M_SLOT_EASY'), html.indexOf('const MAX_SHOTS'));
-const MISSIONS = mSrc ? new Function(mSrc + '\nreturn MISSIONS;')() : [];
-if (MISSIONS.length) {
-  console.log(`\n4. ミッションがクリアできるか（適当に打つ人で100回ずつ）`);
-  console.log(`   ${pad('', 4)}${pad('ミッション', 30)}${pad('クリア率', 10)}${pad('かかった回数(中央)', 20)}`);
-  for (let i = 0; i < MISSIONS.length; i++) {
-    const m = MISSIONS[i];
+const STEPS = mSrc ? new Function(mSrc + '\nreturn STEPS;')() : [];
+if (STEPS.length) {
+  console.log(`\n4. チュートリアルがクリアできるか（適当に打つ人で100回ずつ）`);
+  console.log(`   ${pad('', 4)}${pad('やること', 26)}${pad('クリア率', 10)}${pad('かかった回数(中央)', 20)}`);
+  for (let i = 0; i < STEPS.length; i++) {
+    const m = STEPS[i];
     let ok = 0; const used = [];
     for (let t = 0; t < 100; t++) {
       applyConf(m.conf);
