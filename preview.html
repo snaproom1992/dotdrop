@@ -423,7 +423,7 @@ let scale = 1, ox = 0;
 let money, score, scoreShown, gauge, feverLeft, shots, peak, boardShots, firstShot = true;
 let pullX = 0, pullY = 0, pulling = false, startX = 0, startY = 0, keyCharge = false, keyStart = 0, keyAim = 0;
 const MAX_PULL = 130;
-let shotShow = 0, timeScale = 1, slowPulse = 0, hitStop = 0, shake = 0, potShow = 0, potAlpha = 0, potPulse = 0, countPop = 0;
+let shotShow = 0, timeScale = 1, slowPulse = 0, hitStop = 0, shake = 0, potShow = 0, potAlpha = 0, potPulse = 0;
 let waves = [], floaters = [], flyers = [], catches = [], fallen = [], shotBallsMax = 1, triBonus = false, edge = null;
 let gameBestShot = 0, milestoneFx = null, bestAtStart = 0, beatBest = false;
 let running = false, rec = {}, sessionNew = new Set(), ranking = [], slotFlash = null;
@@ -1076,7 +1076,7 @@ E.hooks.hit = (p, b, n, force, kind, pts) => {
     [0, 4, 7, 12].forEach((s, k) => voice(note(Math.min(count, 15)) * Math.pow(2, s / 12), .35, .08, 'triangle', k * .04));
     noise(.08, .12, 4000);
     hitStop = Math.max(hitStop, count >= 9 ? .1 : .06); shake = Math.max(shake, Math.min(.6, .2 + count * .02));
-    countPop = 1; buzzPattern(2, 50);
+    buzzPattern(2, 50);
     if (count >= 9) slowPulse = .35;
     if (count >= MAX_BALLS && !E.maxShown) { E.maxShown = true; banner('×' + MAX_BALLS, '玉が最大まで増えました', '#EAA83A'); buzzPattern(5, 60); }
     const tris = E.pegs.filter(q => q.kind === 'tri');
@@ -1493,14 +1493,6 @@ function draw(dt) {
     ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(b.x, b.y, BR, 0, 7); ctx.fill();
   }
 
-  // ---- 盤面にある玉の数 ----
-  const alive = E.balls.filter(b => b.state !== 'land').length;
-  if (shotBallsMax > 1 && alive > 1) {
-    ctx.fillStyle = SHAPE.tri();
-    ctx.font = `700 ${34 + countPop * 18}px ${FONT}`;
-    ctx.fillText('×' + alive, LW / 2, 140);
-  }
-
   // ---- 吹き出し ----
   for (const fl of floaters) {
     const life = fl.life || .9;
@@ -1609,7 +1601,6 @@ function frame(now) {
     }
   }
   potPulse = Math.max(0, potPulse - real * 6);
-  countPop = Math.max(0, countPop - real * 4);
   waves.forEach(w => w.t += real); waves = waves.filter(w => w.t < .7);
   if (waves.length > 40) waves.splice(0, waves.length - 40);
   floaters.forEach(fl => fl.t += real); floaters = floaters.filter(fl => fl.t < (fl.life || .9));
