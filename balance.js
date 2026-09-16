@@ -232,7 +232,8 @@ if (MISSIONS.length) {
     }
     const rate = ok + '%';
     const warn = ok < 60 ? '  ⚠ むずかしすぎるかも' : ok === 100 && median(used) <= 1 ? '  （すぐ終わる）' : '';
-    console.log(`   ${pad(i + 1, 4)}${pad(m.title, 30)}${pad(rate, 10)}${pad(used.length ? median(used) : '—', 20)}${warn}`);
+    const name = m.title.replace(/<[^>]*>/g, '');   // 見出しの色つけは外して表示する
+    console.log(`   ${pad(i + 1, 4)}${pad(name, 26)}${pad(rate, 10)}${pad(used.length ? median(used) : '—', 20)}${warn}`);
   }
   applyConf();
   E.boardSeed = null;
