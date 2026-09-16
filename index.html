@@ -77,9 +77,12 @@ body.tutorial .stage-hud{display:none}
 #mResMark{min-height:76px;display:flex;align-items:center;justify-content:center}
 #mover{justify-content:safe center}
 #mover .kicker{margin-top:10px}
-#mover .kicker.lead{margin-top:30px;opacity:.55}
-#mNext{margin-top:8px;font-size:18px;padding:17px 24px;line-height:1.3;background:none;border:2px solid var(--paper);border-radius:4px}
-#mNext i{font-style:normal}
+#mover .kicker.lead{margin-top:30px;opacity:.55;max-width:310px;text-align:left;padding-left:2px}
+#mNext{margin-top:20px;letter-spacing:.04em}
+/* つぎのやること。一覧の行と同じ形なので、続きだと分かる */
+.nextrow{display:grid;grid-template-columns:26px 1fr;align-items:center;gap:10px;width:100%;max-width:310px;margin-top:6px;padding:14px 2px;border-top:1px solid rgba(242,241,238,.14);border-bottom:1px solid rgba(242,241,238,.14);font-size:16px;font-weight:700;text-align:left}
+.nextrow b{font-size:19px;letter-spacing:-.03em;opacity:.45;font-variant-numeric:tabular-nums}
+.nextrow i{font-style:normal}
 /* あそび方の一覧。やることの左に番号、できたら右にチェック */
 .tlist{width:100%;max-width:310px;margin-top:10px}
 .tlist button{display:grid;grid-template-columns:26px 1fr 24px;align-items:center;gap:10px;width:100%;margin:0;padding:15px 0;background:none;border:none;border-radius:0;border-top:1px solid rgba(242,241,238,.14);color:var(--paper);font:inherit;font-size:16px;font-weight:700;text-align:left;cursor:pointer}
@@ -137,10 +140,10 @@ body.tutorial .stage-hud{display:none}
     <i style="width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-bottom:22px solid #EAA83A"></i>
   </div>
   <button id="startBtn">はじめる</button>
-  <button id="tutBtn"><span>あそび方をおぼえる</span><i id="tutDots"></i></button>
+  <button id="tutBtn"><span>チュートリアル</span><i id="tutDots"></i></button>
 </div>
 <div id="tlist" class="overlay result">
-  <small class="kicker">あそび方をおぼえる</small>
+  <small class="kicker">チュートリアル</small>
   <div class="tlist" id="tlistRows"></div>
   <button id="tlistBack" class="sub">もどる</button>
 </div>
@@ -148,8 +151,9 @@ body.tutorial .stage-hud{display:none}
   <div id="mResMark"></div>
   <small class="kicker" id="mResText">できました</small>
   <div id="mDots"></div>
-  <small class="kicker lead" id="mNextLabel">つぎは</small>
-  <button id="mNext"></button>
+  <small class="kicker lead" id="mNextLabel">つぎ</small>
+  <div id="mNextRow" class="nextrow"></div>
+  <button id="mNext">NEXT</button>
   <button id="mRetry">もう一度</button>
   <button id="mPlay">ゲームをはじめる</button>
   <button id="mQuit" class="sub">一覧</button>
@@ -888,9 +892,9 @@ const R = t => `<i style="color:#D7141F">${t}</i>`, Y = t => `<i style="color:#E
 const STEPS = [
   {id: 'shot', title: '玉を打つ', hint: '画面を引っ張って、はなす', seed: 11, layout: 0,
    conf: {START: 3, STAGE_B: M_B_NONE}, clear: {type: 'shots', n: 1}},
-  {id: 'mult3', title: Y('×3') + ' に入れる', hint: '倍率のぶんスコアが増える', seed: 23, layout: 2,
+  {id: 'mult3', title: Y('×3') + ' の受け皿に入れる', hint: '倍率のぶんスコアが増える', seed: 23, layout: 2,
    conf: {START: 5, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'mult', m: 3}},
-  {id: 'gain', title: '● で玉を増やす', hint: '●のぶんだけ玉が戻ってくる', seed: 31, layout: 0,
+  {id: 'gain', title: '玉が戻る受け皿に入れる', hint: '受け皿の●の数だけ玉が戻る', seed: 31, layout: 0,
    conf: {START: 4, STAGE_B: M_B_PLUS}, clear: {type: 'gain', n: 3}},
   {id: 'square', title: R('■') + ' に当てる', hint: '赤い四角は強くはね返す', seed: 5, layout: 0,
    conf: {START: 4, SQUARES: 8, BLUES: 0, TRIS: 0, STAGE_B: M_B_NONE}, clear: {type: 'hit', kind: 'square', n: 1}},
@@ -948,7 +952,7 @@ function stepState() {
 }
 function stepHud(bumpIt) {
   const [now, goal] = stepState(), done = now >= goal;
-  $('mKicker').textContent = `あそび方 ${stepIdx + 1} / ${STEPS.length}`;
+  $('mKicker').textContent = `チュートリアル ${stepIdx + 1} / ${STEPS.length}`;
   $('mTitle').innerHTML = curStep().title;
   $('mProg').textContent = goal === 1 ? (done ? '●' : '') : `${Math.min(now, goal)} / ${goal}`;
   $('mProg').classList.toggle('done', done);
@@ -1034,13 +1038,15 @@ function stepOver() {
   tutDots();
   const last = stepIdx >= STEPS.length - 1, toNext = ok && !last;
   $('mResMark').innerHTML = CHECK(76, !ok);
-  $('mResText').textContent = ok ? 'できました' : '玉がなくなりました';
+  $('mResText').textContent = ok ? 'CLEAR' : '玉切れ';
   // どこまで来たかを8つの丸で
   $('mDots').innerHTML = STEPS.map(m => `<i class="${isCleared(m.id) ? 'on' : ''}"></i>`).join('');
   // つぎに何をするのかを、ボタン自体に書く
   $('mNextLabel').style.display = toNext ? '' : 'none';
+  $('mNextRow').style.display = toNext ? '' : 'none';
   $('mNext').style.display = toNext ? '' : 'none';
-  if (toNext) $('mNext').innerHTML = STEPS[stepIdx + 1].title;
+  // つぎのやることは、一覧の行と同じ形で見せる
+  if (toNext) $('mNextRow').innerHTML = `<b>${stepIdx + 2}</b><span>${STEPS[stepIdx + 1].title}</span>`;
   $('mRetry').style.display = ok ? 'none' : '';
   $('mPlay').style.display = ok && last ? '' : 'none';
   $('mover').classList.add('show');
