@@ -902,7 +902,7 @@ const STEPS = [
    conf: {START: 4, SQUARES: 0, BLUES: 8, TRIS: 0, STAGE_B: M_B_NONE}, clear: {type: 'hit', kind: 'blue', n: 1}},
   {id: 'tri5', title: Y('▲') + ' で玉を5つにする', hint: '黄色い三角に当たると3つに分かれる', seed: 13, layout: 0,
    conf: {START: 5, SQUARES: 0, BLUES: 0, TRIS: 8, STAGE_B: M_B_NONE}, clear: {type: 'balls', n: 5}},
-  {id: 'p100', title: '1回で100点', hint: '釘に当てるほどポイントが増える', seed: 17, layout: 0,
+  {id: 'p100', title: '1回で100点', hint: 'たくさん当てるほどポイントが増える', seed: 17, layout: 0,
    conf: {START: 6, SQUARES: 4, TRIS: 6, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'shotScore', n: 100}},
   {id: 'fever', title: 'フィーバーに入る', hint: 'ポイントがたまると入れる', seed: 19, layout: 2,
    conf: {START: 8, SQUARES: 4, TRIS: 6, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'fever'}},
@@ -1148,11 +1148,61 @@ function banner(word, sub, color) {
   bannerState = {word, sub, color, t: 0};
   edge = {color, t: 0};
 }
+// 引いている間の狙い（進む方向の軌道と、引いた側のパワーの弧）
+function drawAim() {
+  const L = LAUNCH, P = pal();
+  const [vx, vy] = launchVelocity(pullX, pullY, true);
+  // 軌道：細かい丸の点線（進む方向）
+  ctx.fillStyle = P.text;
+  for (let i = 1; i <= 10; i++) {
+    const t = i * .035, x = L.x + vx * t, y = L.y + vy * t + GRAV * t * t / 2;
+    ctx.globalAlpha = (1 - i / 11) * .7;
+    ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  // パワー：引いた側に弧が5本（電波マークのように広がる）。軌道と形がかぶらない
+  const base = Math.atan2(-vy, -vx), spread = .42;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < LEVELS; i++) {
+    const r = 17 + i * 8;
+    ctx.strokeStyle = i < level ? (level === LEVELS ? '#EAA83A' : '#D7141F') : P.peg;
+    ctx.lineWidth = i < level ? 3.5 : 2;
+    ctx.beginPath(); ctx.arc(L.x, L.y, r, base - spread, base + spread); ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+}
+// 発射前の玉。帯より手前に描くので、いつでも見える
+function drawLaunchBall() {
+  if (!canShoot()) return;
+  ctx.fillStyle = pal().ball;
+  ctx.beginPath(); ctx.arc(LAUNCH.x, LAUNCH.y, BR + level / LEVELS * 1.2, 0, 7); ctx.fill();
+}
+// 玉のまわりの飾りと、はじめの説明（帯より奥）
+function drawLaunch(top) {
+  if (!canShoot()) return;
+  const L = LAUNCH, P = pal();
+  if (level === 0) {
+    ctx.strokeStyle = P.dim; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(L.x, L.y, BR + 8 + Math.sin(E.time * 3) * 1.5, 0, 7); ctx.stroke();
+    ctx.setLineDash([2, 5]);
+    ctx.beginPath(); ctx.arc(L.x, L.y, 34, Math.PI, 0); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  if (firstShot && mode !== TUTORIAL) {
+    ctx.fillStyle = P.text; ctx.globalAlpha = .7 + Math.sin(E.time * 3) * .2;
+    ctx.font = `500 13px ${FONT}`;
+    ctx.textAlign = 'center';
+    ctx.fillText('引っ張ってはなす', LW / 2, 188);
+    ctx.fillText('×は倍率　●は戻る玉　点線は減る玉', LW / 2, top - 30);
+    ctx.globalAlpha = 1;
+  }
+}
 function drawBanner() {
   const b = bannerState;
   if (!b || b.t > 1.5) return;
   const t = b.t, off = t < .25 ? -LW * (1 - ease(t / .25)) : t > 1.2 ? LW * ease((t - 1.2) / .3) : 0;
-  const y = 116, h = 56;
+  // 発射位置の玉（y=140）と重ならない高さに置く。文字が玉で隠れてしまうため
+  const y = 150, h = 56;
   ctx.fillStyle = b.color; ctx.fillRect(off, y, LW, h);
   ctx.fillStyle = b.color === '#F2F1EE' || b.color === '#EAA83A' ? '#1C1716' : '#F2F1EE';
   if (b.color === '#D7141F') ctx.fillStyle = '#1C1716';
@@ -1328,7 +1378,12 @@ function draw(dt) {
     ctx.globalAlpha = 1;
   }
 
-  // ---- 帯の演出（玉や釘より奥に描くので隠れない）----
+  // ---- 発射前の飾り（帯より奥に描く）----
+  drawLaunch(top);
+  // ---- 帯の演出 ----
+  // 帯より奥にあるのは、発射前の飾りだけ。
+  // 釘・受け皿・玉・狙いは帯より手前に描くので、帯が遊びを隠すことはない。
+  // （飾りの点線が文字に重なって読めなかったので、そこだけ順番を入れ替えた）
   drawBanner();
 
   // ---- 釘 ----
@@ -1399,6 +1454,9 @@ function draw(dt) {
   ctx.globalAlpha = 1;
 
   drawMilestone();
+  // 発射前の玉と狙いは、いちばん手前。帯が出ていても隠れない
+  if (canShoot() && level > 0) drawAim();
+  drawLaunchBall();
 
   // ---- 玉 ----
   for (const b of E.balls) {
@@ -1452,46 +1510,6 @@ function draw(dt) {
     else { ctx.font = `700 ${24 - k * 10}px ${FONT}`; ctx.fillText('+' + fy.value, x, y); }
   }
 
-  // ---- 発射前：玉は固定。進む方向に軌道、反対側にパワー ----
-  if (canShoot()) {
-    const L = LAUNCH, pw = level / LEVELS;
-    if (level > 0) {
-      const [vx, vy] = launchVelocity(pullX, pullY, true);
-      // 軌道：細かい丸の点線（進む方向）
-      ctx.fillStyle = P.text;
-      for (let i = 1; i <= 10; i++) {
-        const t = i * .035, x = L.x + vx * t, y = L.y + vy * t + GRAV * t * t / 2;
-        ctx.globalAlpha = (1 - i / 11) * .7;
-        ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 7); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      // パワー：引いた側に弧が5本（電波マークのように広がる）。釘や軌道と形がかぶらない
-      const base = Math.atan2(-vy, -vx), spread = .42;
-      ctx.lineCap = 'round';
-      for (let i = 0; i < LEVELS; i++) {
-        const r = 17 + i * 8;
-        ctx.strokeStyle = i < level ? (level === LEVELS ? '#EAA83A' : '#D7141F') : P.peg;
-        ctx.lineWidth = i < level ? 3.5 : 2;
-        ctx.beginPath(); ctx.arc(L.x, L.y, r, base - spread, base + spread); ctx.stroke();
-      }
-      ctx.lineCap = 'butt';
-    } else {
-      ctx.strokeStyle = P.dim; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(L.x, L.y, BR + 8 + Math.sin(E.time * 3) * 1.5, 0, 7); ctx.stroke();
-      ctx.setLineDash([2, 5]);
-      ctx.beginPath(); ctx.arc(L.x, L.y, 34, Math.PI, 0); ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    ctx.fillStyle = P.ball;
-    ctx.beginPath(); ctx.arc(L.x, L.y, BR + pw * 1.2, 0, 7); ctx.fill();
-    if (firstShot && mode !== TUTORIAL) {
-      ctx.fillStyle = P.text; ctx.globalAlpha = .7 + Math.sin(E.time * 3) * .2;
-      ctx.font = `500 13px ${FONT}`;
-      ctx.fillText('引っ張ってはなす', LW / 2, 188);
-      ctx.fillText('×は倍率　●は戻る玉　点線は減る玉', LW / 2, top - 30);
-      ctx.globalAlpha = 1;
-    }
-  }
   ctx.restore();
   if (edge && edge.t < .9) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
