@@ -1089,7 +1089,6 @@ E.hooks.hit = (p, b, n, force, kind, pts) => {
     }
   }
   if (pts > 1) floaters.push({x: p.x, y: p.y - 16, text: '+' + pts, t: 0, color: kind === 'blue' ? '#7FA2EC' : SHAPE[kind]()});
-  if (kind === 'tri' && E.split) floaters.push({x: p.x, y: p.y - 16, text: '×3', t: 0, color: SHAPE.tri()});
   if (n % 10 === 0) { hitStop = Math.max(hitStop, .05); shake = Math.max(shake, .15); }
   if (gauge >= FEVER_AT && !E.fever) E.feverReady = true;
 };
