@@ -1184,7 +1184,7 @@ function drawLaunchBall() {
 function drawLaunch(top) {
   if (!canShoot()) return;
   const L = LAUNCH, P = pal();
-  if (level === 0) {
+  if (level === 0 && !bannerUp()) {
     ctx.strokeStyle = P.dim; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(L.x, L.y, BR + 8 + Math.sin(E.time * 3) * 1.5, 0, 7); ctx.stroke();
     ctx.setLineDash([2, 5]);
@@ -1200,26 +1200,35 @@ function drawLaunch(top) {
     ctx.globalAlpha = 1;
   }
 }
+// 帯が出ている間かどうか。出ている間は発射前の飾りを消して、上を静かにする
+const bannerUp = () => bannerState && bannerState.t < 1.5;
+const BANNER_Y = 116, BANNER_H = 56, SUB_SIZE = 14;
 function drawBanner() {
   const b = bannerState;
   if (!b || b.t > 1.5) return;
   const t = b.t, off = t < .25 ? -LW * (1 - ease(t / .25)) : t > 1.2 ? LW * ease((t - 1.2) / .3) : 0;
-  // 発射位置の玉（y=140）と重ならない高さに置く。文字が玉で隠れてしまうため
-  const y = 150, h = 56;
+  const y = BANNER_Y, h = BANNER_H, mid = y + h / 2;
   ctx.fillStyle = b.color; ctx.fillRect(off, y, LW, h);
-  ctx.fillStyle = b.color === '#F2F1EE' || b.color === '#EAA83A' ? '#1C1716' : '#F2F1EE';
-  if (b.color === '#D7141F') ctx.fillStyle = '#1C1716';
+  const ink = b.color === '#F2F1EE' || b.color === '#EAA83A' || b.color === '#D7141F' ? '#1C1716' : '#F2F1EE';
+  ctx.fillStyle = ink;
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   // 帯に収まるよう、見出しの大きさを自動で合わせる
-  ctx.font = `700 12px ${FONT}`;
-  const subW = ctx.measureText(b.sub).width;
+  ctx.font = `700 ${SUB_SIZE}px ${FONT}`;
+  const subW = b.sub ? ctx.measureText(b.sub).width : 0;
   let size = 40;
   ctx.font = `700 ${size}px ${FONT}`;
-  while (size > 20 && ctx.measureText(b.word).width + subW + 44 > LW) { size -= 2; ctx.font = `700 ${size}px ${FONT}`; }
-  ctx.fillText(b.word, off + 16, y + h / 2 + 2);
+  while (size > 20 && ctx.measureText(b.word).width + subW + 50 > LW) { size -= 2; ctx.font = `700 ${size}px ${FONT}`; }
+  ctx.fillText(b.word, off + 16, mid + 2);
   const w = ctx.measureText(b.word).width;
-  ctx.font = `700 12px ${FONT}`;
-  ctx.fillText(b.sub, off + 28 + w, y + h / 2 + 1);
+  if (b.sub) {
+    // 見出しと説明の間に細い区切りを1本。2つの役割が違うことが形で分かる
+    const x = off + 16 + w + 14;
+    ctx.globalAlpha = .28;
+    ctx.fillRect(x, y + 14, 1.5, h - 28);
+    ctx.globalAlpha = 1;
+    ctx.font = `700 ${SUB_SIZE}px ${FONT}`;
+    ctx.fillText(b.sub, x + 14, mid + 1);
+  }
   ctx.textAlign = 'center';
 }
 let overPending = false;
@@ -1381,8 +1390,11 @@ function draw(dt) {
     ctx.globalAlpha = 1;
   }
 
-  // ---- 発射前の飾り（帯より奥に描く）----
+  // ---- 発射前の飾りと、待っている玉（帯より奥に描く）----
+  // 帯は玉の位置を横切るので、ここで手前に描くと文字が玉で隠れて読めない。
+  // 引きはじめたら下で手前に描き直すので、狙っている間は玉が隠れることはない
   drawLaunch(top);
+  if (level === 0) drawLaunchBall();
   // ---- 帯の演出 ----
   // 帯より奥にあるのは、発射前の飾りだけ。
   // 釘・受け皿・玉・狙いは帯より手前に描くので、帯が遊びを隠すことはない。
@@ -1457,9 +1469,8 @@ function draw(dt) {
   ctx.globalAlpha = 1;
 
   drawMilestone();
-  // 発射前の玉と狙いは、いちばん手前。帯が出ていても隠れない
-  if (canShoot() && level > 0) drawAim();
-  drawLaunchBall();
+  // 引いている間は、狙いも玉もいちばん手前。帯が出ていても狙いは見える
+  if (canShoot() && level > 0) { drawAim(); drawLaunchBall(); }
 
   // ---- 玉 ----
   for (const b of E.balls) {
