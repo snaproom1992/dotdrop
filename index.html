@@ -167,6 +167,7 @@ body.tutorial .stage-hud{display:none}
     <div><b id="stBest">0</b><small>1回の最高</small></div>
   </div>
   <button id="retry">もう一度</button>
+  <button id="toTitle" class="sub">タイトルへ</button>
   <section class="res-sec"><h2>ランキング</h2><div class="ranking" id="overRanking"></div></section>
   <section class="res-sec"><h2>これまでの記録</h2><div class="recgrid" id="overRecords"></div></section>
 </div>
@@ -1267,6 +1268,14 @@ function gameOver() {
   })(t0);
 }
 $('retry').addEventListener('click', () => { unlockAudio(); reset(FREE); });
+// タイトルへ戻る道。これがないと、遊び終わったあと「あそびかた」に行けない
+$('toTitle').addEventListener('click', () => {
+  unlockAudio();
+  running = false;
+  reset(FREE);
+  tutDots();
+  $('start').classList.add('show');
+});
 $('tutBtn').addEventListener('click', () => { unlockAudio(); openTutList(); });
 $('tlistBack').addEventListener('click', () => { $('tlist').classList.remove('show'); });
 $('mNextRow').addEventListener('click', () => { unlockAudio(); stepIdx = Math.min(STEPS.length - 1, stepIdx + 1); reset(TUTORIAL); });
