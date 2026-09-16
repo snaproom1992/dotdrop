@@ -33,6 +33,10 @@ body.fever #gauge{background:rgba(28,23,22,.18)}
 .overlay button{margin-top:28px;font:inherit;font-weight:700;font-size:18px;color:var(--paper);background:var(--red);border:none;border-radius:999px;padding:16px 40px;cursor:pointer}
 .overlay button:focus-visible{outline:3px solid var(--paper);outline-offset:3px}
 .overlay button.sub{margin-top:14px;background:none;border:1.5px solid rgba(242,241,238,.35);font-size:13px;padding:10px 18px}
+#tutBtn{margin-top:14px;display:flex;flex-direction:column;align-items:center;gap:9px;background:none;border:2px solid var(--paper);border-radius:4px;font-size:16px;padding:15px 30px}
+#tutBtn i{display:flex;gap:5px}
+#tutBtn i b{width:6px;height:6px;border-radius:50%;background:var(--paper);opacity:.25}
+#tutBtn i b.on{opacity:1;background:var(--red)}
 .kicker{font-size:13px;font-weight:700;opacity:.7;letter-spacing:.04em}
 .bigscore{font-size:clamp(88px,30vw,150px);font-weight:700;letter-spacing:-.06em;line-height:.9;margin-top:6px;font-variant-numeric:tabular-nums}
 .overlay h2{font-size:12px;font-weight:700;opacity:.6;margin-top:30px;width:100%;max-width:300px;text-align:left;letter-spacing:.04em}
@@ -64,14 +68,25 @@ body.tutorial .stage-hud{display:none}
 .tut-hud u.bump{transform:scale(1.4)}
 .tut-hud u.done{color:#D7141F;font-size:14px;line-height:26px}
 /* どこまで来たかを8つの丸で。ステージの丸と同じ見た目 */
-#mDots{display:flex;gap:6px;justify-content:center;margin-top:18px}
-#mDots i{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.2}
+#mDots{display:flex;gap:7px;justify-content:center;margin-top:22px}
+#mDots i{width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.2}
 #mDots i.on{opacity:1;background:var(--red)}
-#mResMark{width:26px;height:26px;border-radius:50%;margin:26px auto 4px}
-#mResMark.ok{background:var(--red)}
-#mResMark.ng{border:2px dashed rgba(242,241,238,.4)}
+/* できた印はチェック。太さを数字と揃えて、線だけで描く */
+.check{display:block;margin:0 auto;color:var(--red)}
+.check.ng{color:rgba(242,241,238,.3)}
+#mResMark{min-height:76px;display:flex;align-items:center;justify-content:center}
 #mover{justify-content:safe center}
-#mover .kicker{margin-top:0}
+#mover .kicker{margin-top:10px}
+#mover .kicker.lead{margin-top:30px;opacity:.55}
+#mNext{margin-top:8px;font-size:18px;padding:17px 24px;line-height:1.3;background:none;border:2px solid var(--paper);border-radius:4px}
+#mNext i{font-style:normal}
+/* あそび方の一覧。やることの左に番号、できたら右にチェック */
+.tlist{width:100%;max-width:310px;margin-top:10px}
+.tlist button{display:grid;grid-template-columns:26px 1fr 24px;align-items:center;gap:10px;width:100%;margin:0;padding:15px 0;background:none;border:none;border-radius:0;border-top:1px solid rgba(242,241,238,.14);color:var(--paper);font:inherit;font-size:16px;font-weight:700;text-align:left;cursor:pointer}
+.tlist button b{font-size:19px;letter-spacing:-.03em;opacity:.45;font-variant-numeric:tabular-nums}
+.tlist button i{font-style:normal}
+.tlist button.done span{opacity:.5}
+.tlist button.done b{opacity:.5}
 .result{justify-content:flex-start;padding:calc(env(safe-area-inset-top) + 40px) 24px calc(env(safe-area-inset-bottom) + 40px)}
 .result > *{width:100%;max-width:320px}
 .res-top{display:flex;gap:8px;justify-content:center;align-items:center;min-height:26px}
@@ -111,7 +126,7 @@ body.tutorial .stage-hud{display:none}
 <header>
   <div class="stat"><b id="money" class="roll"></b><small>持ち玉</small></div>
   <div class="stage-hud"><small>STAGE</small><b id="stageNo">1</b><div id="stageDots"></div></div>
-  <div class="tut-hud" id="tutHud"><small>TUTORIAL</small><b id="mTitle"></b><u id="mProg"></u></div>
+  <div class="tut-hud" id="tutHud"><small id="mKicker"></small><b id="mTitle"></b><u id="mProg"></u></div>
   <div class="stat right"><b id="points" class="roll"></b><small id="pointsLabel">スコア</small><div id="gauge"><i></i></div><div id="best"></div></div>
 </header>
 <div id="start" class="overlay show">
@@ -121,19 +136,23 @@ body.tutorial .stage-hud{display:none}
     <i style="background:#2456B8;border-radius:50%"></i>
     <i style="width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-bottom:22px solid #EAA83A"></i>
   </div>
-  <div class="ranking" id="startRanking"></div>
   <button id="startBtn">はじめる</button>
-  <button id="tutBtn" class="sub">TUTORIAL</button>
-  <button id="listenBtn" class="sub">節目の音</button>
+  <button id="tutBtn"><span>あそび方をおぼえる</span><i id="tutDots"></i></button>
+</div>
+<div id="tlist" class="overlay result">
+  <small class="kicker">あそび方をおぼえる</small>
+  <div class="tlist" id="tlistRows"></div>
+  <button id="tlistBack" class="sub">もどる</button>
 </div>
 <div id="mover" class="overlay result">
-  <small class="kicker">TUTORIAL</small>
   <div id="mResMark"></div>
+  <small class="kicker" id="mResText">できました</small>
   <div id="mDots"></div>
-  <button id="mNext">NEXT</button>
-  <button id="mRetry">RETRY</button>
-  <button id="mPlay">PLAY</button>
-  <button id="mQuit" class="sub">QUIT</button>
+  <small class="kicker lead" id="mNextLabel">つぎは</small>
+  <button id="mNext"></button>
+  <button id="mRetry">もう一度</button>
+  <button id="mPlay">ゲームをはじめる</button>
+  <button id="mQuit" class="sub">一覧</button>
 </div>
 <div id="over" class="overlay result">
   <div class="res-top"><span class="pill">玉切れ</span><span id="newRank" class="rankbadge"></span></div>
@@ -483,7 +502,6 @@ async function loadRecords() {
   try { const r = store.get('dotdrop-records'); if (r) rec = JSON.parse(r.value); } catch (e) {}
   try { const r = store.get('dotdrop-ranking'); if (r) ranking = JSON.parse(r.value); } catch (e) {}
   renderRecords('startRecords', false);
-  renderRanking('startRanking', null, 5);
 }
 // ---------- ランキング（上位10件を端末に保存） ----------
 function addRanking(entry) {
@@ -865,37 +883,54 @@ const M_B_PLUS = [[0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2]];
 // 文章では言わず、形と色で言う。<i> は色つきの印
 const R = t => `<i style="color:#D7141F">${t}</i>`, Y = t => `<i style="color:#EAA83A">${t}</i>`,
       BL = t => `<i style="color:#2456B8">${t}</i>`;
+// title … 一覧と画面の上に出す「やること」。形と色は残す
+// hint  … はじめに帯で1回だけ出す、ひとことの説明
 const STEPS = [
-  {id: 'shot', title: 'SHOOT', seed: 11, layout: 0,
+  {id: 'shot', title: '玉を打つ', hint: '画面を引っ張って、はなす', seed: 11, layout: 0,
    conf: {START: 3, STAGE_B: M_B_NONE}, clear: {type: 'shots', n: 1}},
-  {id: 'mult3', title: 'DROP IN ' + Y('×3'), seed: 23, layout: 2,
+  {id: 'mult3', title: Y('×3') + ' に入れる', hint: '倍率のぶんスコアが増える', seed: 23, layout: 2,
    conf: {START: 5, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'mult', m: 3}},
-  {id: 'gain', title: 'GET 3 BALLS', seed: 31, layout: 0,
+  {id: 'gain', title: '● で玉を増やす', hint: '●のぶんだけ玉が戻ってくる', seed: 31, layout: 0,
    conf: {START: 4, STAGE_B: M_B_PLUS}, clear: {type: 'gain', n: 3}},
-  {id: 'square', title: 'HIT ' + R('■'), seed: 5, layout: 0,
+  {id: 'square', title: R('■') + ' に当てる', hint: '赤い四角は強くはね返す', seed: 5, layout: 0,
    conf: {START: 4, SQUARES: 8, BLUES: 0, TRIS: 0, STAGE_B: M_B_NONE}, clear: {type: 'hit', kind: 'square', n: 1}},
-  {id: 'blue', title: 'HIT ' + BL('●'), seed: 7, layout: 0,
+  {id: 'blue', title: BL('●') + ' につかまる', hint: '青い円は玉をつかまえて放す', seed: 7, layout: 0,
    conf: {START: 4, SQUARES: 0, BLUES: 8, TRIS: 0, STAGE_B: M_B_NONE}, clear: {type: 'hit', kind: 'blue', n: 1}},
-  {id: 'tri5', title: 'SPLIT TO 5', seed: 13, layout: 0,
+  {id: 'tri5', title: Y('▲') + ' で玉を5つにする', hint: '黄色い三角に当たると3つに分かれる', seed: 13, layout: 0,
    conf: {START: 5, SQUARES: 0, BLUES: 0, TRIS: 8, STAGE_B: M_B_NONE}, clear: {type: 'balls', n: 5}},
-  {id: 'p100', title: '100 POINTS', seed: 17, layout: 0,
+  {id: 'p100', title: '1回で100点', hint: '釘に当てるほどポイントが増える', seed: 17, layout: 0,
    conf: {START: 6, SQUARES: 4, TRIS: 6, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'shotScore', n: 100}},
-  {id: 'fever', title: 'FEVER', seed: 19, layout: 2,
+  {id: 'fever', title: 'フィーバーに入る', hint: 'ポイントがたまると入れる', seed: 19, layout: 2,
    conf: {START: 8, SQUARES: 4, TRIS: 6, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'fever'}},
 ];
+// できた印のチェック。線の太さを数字に合わせて、角は落とさない
+const CHECK = (size, ng) =>
+  `<svg class="check${ng ? ' ng' : ''}" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">` +
+  `<path d="M3.5 12.4 L9.6 18.5 L20.5 5.6" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="miter"/></svg>`;
 const MAX_SHOTS = 25;        // 玉が戻り続けても、これで終わり
 let stepIdx = 0, cleared = [], mProg = null;
 const curStep = () => STEPS[stepIdx];
 try { const r = store.get('dotdrop-tutorial'); if (r) cleared = JSON.parse(r.value); } catch (e) {}
 const isCleared = id => cleared.indexOf(id) >= 0;
-// まだできていない最初のところから始める。全部できていたら最初から
-function startTutorial() {
-  const i = STEPS.findIndex(m => !isCleared(m.id));
-  stepIdx = i < 0 ? 0 : i;
-  $('start').classList.remove('show');
-  running = true;
-  reset(TUTORIAL);
+// タイトルのボタンの中に出す、8つの進み具合
+function tutDots() {
+  $('tutDots').innerHTML = STEPS.map(m => `<b class="${isCleared(m.id) ? 'on' : ''}"></b>`).join('');
 }
+function renderTutList() {
+  $('tlistRows').innerHTML = STEPS.map((m, i) => {
+    const done = isCleared(m.id);
+    return `<button data-i="${i}" class="${done ? 'done' : ''}">` +
+      `<b>${i + 1}</b><span>${m.title}</span>${done ? CHECK(20) : '<span></span>'}</button>`;
+  }).join('');
+  [...$('tlistRows').children].forEach(b => b.addEventListener('click', () => {
+    unlockAudio();
+    stepIdx = +b.dataset.i;
+    $('tlist').classList.remove('show'); $('start').classList.remove('show');
+    running = true;
+    reset(TUTORIAL);
+  }));
+}
+function openTutList() { renderTutList(); $('tlist').classList.add('show'); }
 
 // いまの達成度を［いくつ / いくつ］で返す
 function stepState() {
@@ -913,6 +948,7 @@ function stepState() {
 }
 function stepHud(bumpIt) {
   const [now, goal] = stepState(), done = now >= goal;
+  $('mKicker').textContent = `あそび方 ${stepIdx + 1} / ${STEPS.length}`;
   $('mTitle').innerHTML = curStep().title;
   $('mProg').textContent = goal === 1 ? (done ? '●' : '') : `${Math.min(now, goal)} / ${goal}`;
   $('mProg').classList.toggle('done', done);
@@ -960,6 +996,8 @@ const TUTORIAL = {
     E.boardSeed = m.seed;
     setLayout(m.layout || 0, false);
     stepHud(false);
+    // ひとことの説明は帯で1回だけ。画面は隠さない
+    setTimeout(() => banner(String(stepIdx + 1), m.hint, '#F2F1EE'), 250);
   },
   hit(kind) { mProg.hits[kind] = (mProg.hits[kind] || 0) + 1; },
   land(b, v) {
@@ -993,11 +1031,16 @@ function stepOver() {
     cleared.push(curStep().id);
     store.set('dotdrop-tutorial', JSON.stringify(cleared));
   }
-  const last = stepIdx >= STEPS.length - 1;
-  $('mResMark').className = ok ? 'ok' : 'ng';
+  tutDots();
+  const last = stepIdx >= STEPS.length - 1, toNext = ok && !last;
+  $('mResMark').innerHTML = CHECK(76, !ok);
+  $('mResText').textContent = ok ? 'できました' : '玉がなくなりました';
   // どこまで来たかを8つの丸で
   $('mDots').innerHTML = STEPS.map(m => `<i class="${isCleared(m.id) ? 'on' : ''}"></i>`).join('');
-  $('mNext').style.display = ok && !last ? '' : 'none';
+  // つぎに何をするのかを、ボタン自体に書く
+  $('mNextLabel').style.display = toNext ? '' : 'none';
+  $('mNext').style.display = toNext ? '' : 'none';
+  if (toNext) $('mNext').innerHTML = STEPS[stepIdx + 1].title;
   $('mRetry').style.display = ok ? 'none' : '';
   $('mPlay').style.display = ok && last ? '' : 'none';
   $('mover').classList.add('show');
@@ -1143,7 +1186,6 @@ function gameOver() {
   nr.classList.toggle('show', rank >= 0);
   nr.classList.toggle('top', rank === 0);
   renderRanking('overRanking', entry, 5);
-  renderRanking('startRanking', null, 5);
   renderRecords('overRecords', true);
   $('over').classList.add('show');
   $('over').scrollTop = 0;
@@ -1157,7 +1199,8 @@ function gameOver() {
   })(t0);
 }
 $('retry').addEventListener('click', () => { unlockAudio(); reset(FREE); });
-$('tutBtn').addEventListener('click', () => { unlockAudio(); startTutorial(); });
+$('tutBtn').addEventListener('click', () => { unlockAudio(); openTutList(); });
+$('tlistBack').addEventListener('click', () => { $('tlist').classList.remove('show'); });
 $('mNext').addEventListener('click', () => { unlockAudio(); stepIdx = Math.min(STEPS.length - 1, stepIdx + 1); reset(TUTORIAL); });
 $('mRetry').addEventListener('click', () => { unlockAudio(); reset(TUTORIAL); });
 // 最後まで終わったら、そのままフリープレイへ
@@ -1167,10 +1210,7 @@ $('mQuit').addEventListener('click', () => {
   document.body.classList.remove('tutorial');
   running = false;
   $('start').classList.add('show');
-});
-$('listenBtn').addEventListener('click', () => {
-  unlockAudio();
-  for (let i = 1; i <= 10; i++) setTimeout(() => playMilestone(i), (i - 1) * 1500 + 100);
+  openTutList();
 });
 $('startBtn').addEventListener('click', () => { unlockAudio(); $('start').classList.remove('show'); running = true; reset(FREE); bestAtStart = personalBest(); bestHud(); voice(note(1), .2, .08); voice(note(3), .2, .08, 'triangle', .08); voice(note(5), .3, .08, 'triangle', .16); });
 
@@ -1542,7 +1582,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-fit(); reset(FREE); requestAnimationFrame(frame);
+fit(); reset(FREE); tutDots(); requestAnimationFrame(frame);
 </script>
 </body>
 </html>
