@@ -891,9 +891,9 @@ const R = t => `<i style="color:#D7141F">${t}</i>`, Y = t => `<i style="color:#E
 const STEPS = [
   {id: 'shot', title: '玉を打つ', hint: '画面を引っ張って、はなす', seed: 11, layout: 0,
    conf: {START: 3, STAGE_B: M_B_NONE}, clear: {type: 'shots', n: 1}},
-  {id: 'mult3', title: Y('×3') + ' の受け皿に入れる', hint: '倍率のぶんスコアが増える', seed: 23, layout: 2,
+  {id: 'mult3', title: Y('×3') + ' に入れる', hint: '入ると、スコアが3倍になる', seed: 23, layout: 2,
    conf: {START: 5, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'mult', m: 3}},
-  {id: 'gain', title: '玉が戻る受け皿に入れる', hint: '受け皿の●の数だけ玉が戻る', seed: 31, layout: 0,
+  {id: 'gain', title: '持ち玉を増やす', hint: '● の数だけ持ち玉が戻ってくる', seed: 31, layout: 0,
    conf: {START: 4, STAGE_B: M_B_PLUS}, clear: {type: 'gain', n: 3}},
   {id: 'square', title: R('■') + ' に当てる', hint: '赤い四角は強くはね返す', seed: 5, layout: 0,
    conf: {START: 4, SQUARES: 8, BLUES: 0, TRIS: 0, STAGE_B: M_B_NONE}, clear: {type: 'hit', kind: 'square', n: 1}},
