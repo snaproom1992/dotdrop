@@ -121,10 +121,10 @@ body.fever #gauge{background:rgba(28,23,22,.18)}
 <script>
 // ================= 物理とルール =================
 /*ENGINE*/
-const LW = 360, BR = 7, PR = 4.5, GRAV = 1100, COST = 1, CONV_SPEED = 26;
+const LW = 360, BR = 7, PR = 4.5, GRAV = 1100, CONV_SPEED = 26;
 // 床一面に敷き詰めた受け皿。倍率（m）は固定、戻る玉（b）はステージが進むほど厳しくなる
-const SLOT_M = [0, 1, 3, 0, 0, 1, 5, 0, 0, 1, 3, 0, 0, 1, 3, 0];
-const STAGE_B = [
+const SLOT_M0 = [0, 1, 3, 0, 0, 1, 5, 0, 0, 1, 3, 0, 0, 1, 3, 0];
+const STAGE_B0 = [
   //0  1  2  3   4  5  6  7   8  9 10 11 12 13 14  15
   [ 0, 1, 2, 0, -1, 0, 3, 0, -1, 0, 1, 0, 0, 0, 2, -1],   // ステージ1：気持ちよく増える
   [ 0, 0, 2, 0, -1, 0, 3, 0, -1, 0, 1, 0, 0, 0, 1, -1],   // ステージ2
@@ -133,11 +133,37 @@ const STAGE_B = [
   [-1, 0, 1, 0, -1, 0, 2, 0, -3, 0, 1, -1, 0, 0, 1, -1],  // ステージ5
   [-1, 0, 1, 0, -1, 0, 2, 0, -3, 0, 0, -1, 0, 0, 1, -1],  // ステージ6〜
 ];
-const SLOTS = SLOT_M.map(m => ({m, b: 0}));
-const SLOT_W = 60, CONV_LEN = SLOTS.length * SLOT_W;
-const LAYOUTS = 4, SQUARES = 3, BLUES = 2, TRIS = 3, MAX_BALLS = 27, SQ_H = 7, BLUE_R = 9, TRI_R = 8;
+const SLOT_W = 60, CONV_LEN = SLOT_M0.length * SLOT_W;
+const LAYOUTS = 4, SQ_H = 7, BLUE_R = 9, TRI_R = 8;
+
+// ここから下の数字は、モード（フリープレイ／ミッション）ごとに差し替えられる。
+// 何も渡さなければ、これまでと同じフリープレイの数字になる
+const DEFAULTS = {SLOT_M: SLOT_M0, STAGE_B: STAGE_B0, START: 12, COST: 1, MAX_BALLS: 27,
+  SQUARES: 3, BLUES: 2, TRIS: 3, SHOTS_PER_BOARD: 6, FEVER_AT: 120, FEVER_SHOTS: 3};
+let SLOT_M, STAGE_B, START, COST, MAX_BALLS, SQUARES, BLUES, TRIS, SHOTS_PER_BOARD, FEVER_AT, FEVER_SHOTS;
+function applyConf(c) {
+  ({SLOT_M, STAGE_B, START, COST, MAX_BALLS, SQUARES, BLUES, TRIS, SHOTS_PER_BOARD, FEVER_AT, FEVER_SHOTS} =
+    {...DEFAULTS, ...(c || {})});
+}
+applyConf();
+
+// 乱数は2本に分ける。
+//   台の種（boardRand）… 種を決めれば毎回まったく同じ台が出る。ミッションで使う
+//   打つときのブレ      … いつもの Math.random のまま。はなす瞬間のブレは毎回ちがうほうがいい
+function seeded(a) {
+  return () => {
+    a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+let rng = null;
+const boardRand = () => rng ? rng() : Math.random();
+// 台を組み立てる前に呼ぶ。種があれば、同じ台・同じ▲の位置になる
+const seedBoard = () => { rng = E.boardSeed == null ? null : seeded(E.boardSeed | 0); };
 const E = {LH: 700, pegs: [], balls: [], pot: 0, shotPay: 0, hitCount: 0, conveyor: 0, layout: 0, fever: false, time: 0, stage: 0,
-  convHold: false, hooks: {hit() {}, land() {}, shotEnd() {}, release() {}}};
+  boardSeed: null, convHold: false, hooks: {hit() {}, land() {}, shotEnd() {}, release() {}}};
 
 const slotTop = () => E.LH - 84;
 const field = () => ({top: 200, bottom: E.LH - 135});
@@ -174,7 +200,7 @@ function makeLayout(kind) {
   } else {                     // ランダム
     let tries = 0;
     while (tries++ < 4000) {
-      const x = 30 + Math.random() * (LW - 60), y = f.top + Math.random() * (f.bottom - f.top);
+      const x = 30 + boardRand() * (LW - 60), y = f.top + boardRand() * (f.bottom - f.top);
       if (pts.every(([px, py]) => Math.hypot(px - x, py - y) > 40)) pts.push([x, y]);
     }
   }
@@ -184,6 +210,7 @@ function makeLayout(kind) {
 }
 
 function setLayout(kind, animate) {
+  seedBoard();
   const pts = makeLayout(kind), old = E.pegs;
   E.layout = kind;
   E.pegs = pts.map(([x, y], i) => {
@@ -191,14 +218,15 @@ function setLayout(kind, animate) {
     return {x: o ? o.x : x, y: o ? o.y : y, fx: o ? o.x : x, fy: o ? o.y : y, tx: x, ty: y, m: o ? 0 : 1, lit: 0, pulse: 0, kind: 'dot', cool: 0};
   });
   // 形ごとに役割：■はね返す ●(青)つかまえる ▲分裂
-  const idx = E.pegs.map((_, i) => i).sort(() => Math.random() - .5);
+  const idx = E.pegs.map((_, i) => i).sort(() => boardRand() - .5);
   idx.slice(0, SQUARES).forEach(i => E.pegs[i].kind = 'square');
   idx.slice(SQUARES, SQUARES + BLUES).forEach(i => E.pegs[i].kind = 'blue');
   pickGold();
 }
 function pickGold() {
+  seedBoard();
   E.pegs.forEach(p => { p.triHit = false; if (p.kind === 'tri') p.kind = 'dot'; });
-  const dots = E.pegs.filter(p => p.kind === 'dot').sort(() => Math.random() - .5);
+  const dots = E.pegs.filter(p => p.kind === 'dot').sort(() => boardRand() - .5);
   dots.slice(0, TRIS).forEach(p => p.kind = 'tri');
 }
 
@@ -335,7 +363,6 @@ function stepPhysics(dt) {
 }
 /*END*/
 // ================= 表示と操作 =================
-const START = 12, FEVER_SHOTS = 3, FEVER_AT = 120, SHOTS_PER_BOARD = 6;
 const $ = id => document.getElementById(id);
 const cv = $('c'), ctx = cv.getContext('2d');
 const dpr = Math.min(2, devicePixelRatio || 1);
@@ -1078,7 +1105,7 @@ function draw(dt) {
   }
 
   // ---- 敷き詰めた受け皿（倍率と戻る玉）----
-  for (let i = 0; i < SLOTS.length; i++) {
+  for (let i = 0; i < SLOT_M.length; i++) {
     const x = slotX(i);
     if (x < -SLOT_W || x > LW) continue;
     const info = slotInfo(i), [fill, fg] = slotColors(info.m, info.b);
@@ -1229,7 +1256,7 @@ function frame(now) {
     const gap = slotTop() - b.y;
     if (gap > 0 && gap < 110) {
       const t = gap / b.vy;
-      if (SLOTS[slotAt(b.x + b.vx * t, t)].m >= 5) slow = true;
+      if (slotInfo(slotAt(b.x + b.vx * t, t)).m >= 5) slow = true;
     }
   }
   if (shotBallsMax > 4) slow = false;

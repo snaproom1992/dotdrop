@@ -20,18 +20,18 @@ const from = html.indexOf('/*ENGINE*/'), to = html.indexOf('/*END*/');
 if (from < 0 || to < 0) { console.error('index.html に /*ENGINE*/ 〜 /*END*/ が見つからない'); process.exit(1); }
 const engine = html.slice(from, to);
 
-// 画面側の数字は index.html から読む（ここに書き写さない）
+// 引っ張りの強さは画面側の数字なので、index.html から読む
 const num = (name, fallback) => {
   const m = html.match(new RegExp('\\b' + name + '\\s*=\\s*(\\d+)'));
   return m ? +m[1] : fallback;
 };
-const START = num('START', 12), FEVER_AT = num('FEVER_AT', 120), FEVER_SHOTS = num('FEVER_SHOTS', 3),
-      PER_STAGE = num('SHOTS_PER_BOARD', 6), MAX_PULL = num('MAX_PULL', 130), LEVELS = num('LEVELS', 5);
+const MAX_PULL = num('MAX_PULL', 130), LEVELS = num('LEVELS', 5);
 const TRI_BONUS = 3;  // ▲を3つとも当てると +3玉
 
-// エンジンは画面に触らないので、そのまま関数として読み込める
-const {E, COST, LAYOUTS, TRIS, MAX_BALLS, CONV_LEN, STAGE_B, setLayout, pickGold, launch, launchVelocity, stepPhysics} =
-  new Function(engine + '\nreturn {E, COST, LAYOUTS, TRIS, MAX_BALLS, CONV_LEN, STAGE_B, setLayout, pickGold, launch, launchVelocity, stepPhysics};')();
+// エンジンは画面に触らないので、そのまま関数として読み込める。玉数やフィーバーの数字もここから取る
+const {E, applyConf, START, COST, LAYOUTS, TRIS, MAX_BALLS, CONV_LEN, STAGE_B, SHOTS_PER_BOARD: PER_STAGE,
+       FEVER_AT, FEVER_SHOTS, setLayout, pickGold, launch, launchVelocity, stepPhysics} =
+  new Function(engine + '\nreturn {E, applyConf, START, COST, LAYOUTS, TRIS, MAX_BALLS, CONV_LEN, STAGE_B, SHOTS_PER_BOARD, FEVER_AT, FEVER_SHOTS, setLayout, pickGold, launch, launchVelocity, stepPhysics};')();
 
 const LAYOUT_NAMES = ['千鳥', '同心円', '波', 'ランダム'];
 const STAGES = STAGE_B.length;
