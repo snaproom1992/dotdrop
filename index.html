@@ -53,6 +53,26 @@ body.fever #gauge{background:rgba(28,23,22,.18)}
 #stageDots{display:flex;gap:4px;justify-content:center;margin-top:6px}
 #stageDots i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.2}
 #stageDots i.on{opacity:1;background:#D7141F}
+/* ミッション中の見出し。STAGE の代わりに、いまの条件と達成度を出す */
+.mission-hud{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 18px);transform:translateX(-50%);text-align:center;display:none;width:200px}
+body.mission .mission-hud{display:block}
+body.mission .stage-hud{display:none}
+.mission-hud small{display:block;font-size:10px;font-weight:700;letter-spacing:.12em;opacity:.6}
+.mission-hud b{display:block;font-size:13px;line-height:1.3;margin-top:3px}
+.mission-hud u{display:block;font-size:22px;font-weight:700;text-decoration:none;letter-spacing:-.03em;margin-top:3px;font-variant-numeric:tabular-nums;transition:transform .2s}
+.mission-hud u.bump{transform:scale(1.4)}
+.mission-hud u.done{color:#D7141F}
+/* ミッション一覧 */
+.mlist{width:100%;max-width:320px;margin-top:20px}
+.mlist button{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 8px;padding:13px 16px;background:none;border:1.5px solid rgba(242,241,238,.22);border-radius:8px;color:var(--paper);font:inherit;font-size:14px;font-weight:700;text-align:left;cursor:pointer}
+.mlist button i{flex:none;width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(242,241,238,.3);font-style:normal;font-size:12px;display:flex;align-items:center;justify-content:center}
+.mlist button.done i{background:var(--red);border-color:var(--red);color:var(--paper)}
+.mlist button.done{opacity:.6}
+.mlist button.next{border-color:var(--paper)}
+#mResTitle{display:block;font-size:17px;margin-top:16px}
+#mResMark{width:120px;height:120px;border-radius:50%;margin:34px auto 0}
+#mResMark.ok{background:var(--red)}
+#mResMark.ng{border:3px dashed rgba(242,241,238,.4)}
 .result{justify-content:flex-start;padding:calc(env(safe-area-inset-top) + 40px) 24px calc(env(safe-area-inset-bottom) + 40px)}
 .result > *{width:100%;max-width:320px}
 .res-top{display:flex;gap:8px;justify-content:center;align-items:center;min-height:26px}
@@ -92,6 +112,7 @@ body.fever #gauge{background:rgba(28,23,22,.18)}
 <header>
   <div class="stat"><b id="money" class="roll"></b><small>持ち玉</small></div>
   <div class="stage-hud"><small>STAGE</small><b id="stageNo">1</b><div id="stageDots"></div></div>
+  <div class="mission-hud" id="missionHud"><small id="mKicker">ミッション</small><b id="mTitle"></b><u id="mProg"></u></div>
   <div class="stat right"><b id="points" class="roll"></b><small id="pointsLabel">スコア</small><div id="gauge"><i></i></div><div id="best"></div></div>
 </header>
 <div id="start" class="overlay show">
@@ -103,7 +124,22 @@ body.fever #gauge{background:rgba(28,23,22,.18)}
   </div>
   <div class="ranking" id="startRanking"></div>
   <button id="startBtn">はじめる</button>
+  <button id="missionBtn" class="sub">ミッション</button>
   <button id="listenBtn" class="sub">節目の音を聴く（100〜1000点）</button>
+</div>
+<div id="mlistOverlay" class="overlay result">
+  <div class="res-top"><span class="pill">ミッション</span></div>
+  <small class="kicker">できたら赤くなる</small>
+  <div class="mlist" id="mlist"></div>
+  <button id="mlistBack" class="sub">もどる</button>
+</div>
+<div id="mover" class="overlay result">
+  <div class="res-top"><span class="pill" id="mResPill">クリア</span></div>
+  <div id="mResMark"></div>
+  <b id="mResTitle"></b>
+  <button id="mNext">つぎへ</button>
+  <button id="mRetry" class="sub">もう一度</button>
+  <button id="mQuit" class="sub">一覧へ</button>
 </div>
 <div id="over" class="overlay result">
   <div class="res-top"><span class="pill">玉切れ</span><span id="newRank" class="rankbadge"></span></div>
@@ -498,14 +534,20 @@ function fit() {
 }
 addEventListener('resize', () => { fit(); if (!E.balls.length) setLayout(E.layout, false); });
 
-function reset() {
-  money = START; score = 0; scoreShown = 0; gauge = 0; feverLeft = 0; shots = 0; peak = START; boardShots = 0;
+function reset(next) {
+  mode = next || mode;
+  applyConf(mode.conf());
+  score = 0; scoreShown = 0; gauge = 0; feverLeft = 0; shots = 0; boardShots = 0;
   E.fever = false; E.stage = 0; E.balls = []; E.pot = 0; slotFlash = null; flyers = []; catches = []; fallen = []; sessionNew = new Set();
-  setLayout(0, false); gameBestShot = 0; milestoneFx = null; bestAtStart = personalBest(); beatBest = false; bestHud();
+  money = START; peak = START;
+  gameBestShot = 0; milestoneFx = null; bestAtStart = personalBest(); beatBest = false;
+  document.body.classList.toggle('mission', mode === MISSION);
+  mode.start();
+  bestHud();
   moneyRoll.set(money); pointsRoll.set(0);
   stageHud(false);
   hud();
-  $('over').classList.remove('show');
+  $('over').classList.remove('show'); $('mover').classList.remove('show');
 }
 // 自己ベスト（1ゲームの総合スコア）をスコアの下に。抜いたら NEW RECORD
 function personalBest() { return Math.max(rec.gameScore || 0, ranking.length ? ranking[0].score : 0); }
@@ -796,8 +838,156 @@ function sendScore(value, x, y, color) {
   flyers.push({kind: 'score', value, x0: x, y0: y, t: -.35, color, arc: (Math.random() - .5) * 40});
 }
 
+// ---------- ミッション ----------
+// 台・受け皿・玉数・クリア条件をデータとして持つ。増やすときはここに足すだけ。
+//   seed    … 台の種。同じ数字なら毎回まったく同じ台が出る
+//   conf    … その台だけの数字（受け皿・■青▲の数・持ち玉など）
+//   clear   … クリア条件。種類は missionState() にある9つ
+const M_SLOT_EASY = [1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3];
+const M_B_NONE = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]];
+const M_B_PLUS = [[0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2]];
+const MISSIONS = [
+  {id: 'shot', title: '引っ張って、打ってみよう', seed: 11, layout: 0,
+   conf: {START: 3, STAGE_B: M_B_NONE}, clear: {type: 'shots', n: 1}},
+  {id: 'mult3', title: '×3の受け皿に入れよう', seed: 23, layout: 2,
+   conf: {START: 5, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'mult', m: 3}},
+  {id: 'gain', title: '●のある受け皿で玉を増やそう', seed: 31, layout: 0,
+   conf: {START: 4, STAGE_B: M_B_PLUS}, clear: {type: 'gain', n: 3}},
+  {id: 'square', title: '赤い四角に当てよう', seed: 5, layout: 0,
+   conf: {START: 4, SQUARES: 8, BLUES: 0, TRIS: 0, STAGE_B: M_B_NONE}, clear: {type: 'hit', kind: 'square', n: 1}},
+  {id: 'blue', title: '青い円につかまえさせよう', seed: 7, layout: 0,
+   conf: {START: 4, SQUARES: 0, BLUES: 8, TRIS: 0, STAGE_B: M_B_NONE}, clear: {type: 'hit', kind: 'blue', n: 1}},
+  {id: 'tri5', title: '黄色い三角で玉を5つに増やそう', seed: 13, layout: 0,
+   conf: {START: 5, SQUARES: 0, BLUES: 0, TRIS: 8, STAGE_B: M_B_NONE}, clear: {type: 'balls', n: 5}},
+  {id: 'p100', title: '1回で100点を出そう', seed: 17, layout: 0,
+   conf: {START: 6, SQUARES: 4, TRIS: 6, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'shotScore', n: 100}},
+  {id: 'fever', title: 'フィーバーに入ろう', seed: 19, layout: 2,
+   conf: {START: 8, SQUARES: 4, TRIS: 6, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'fever'}},
+];
+const MAX_SHOTS = 25;        // 玉が戻り続けても、これで終わり
+let missionIdx = 0, cleared = [], mProg = null;
+const curMission = () => MISSIONS[missionIdx];
+try { const r = store.get('dotdrop-missions'); if (r) cleared = JSON.parse(r.value); } catch (e) {}
+const isCleared = id => cleared.indexOf(id) >= 0;
+
+// いまの達成度を［いくつ / いくつ］で返す
+function missionState() {
+  const c = curMission().clear;
+  if (c.type === 'shots')     return [mProg.shots, c.n];
+  if (c.type === 'hit')       return [mProg.hits[c.kind] || 0, c.n];
+  if (c.type === 'mult')      return [mProg.maxMult >= c.m ? 1 : 0, 1];
+  if (c.type === 'gain')      return [mProg.gained, c.n];
+  if (c.type === 'balls')     return [mProg.maxBalls, c.n];
+  if (c.type === 'shotScore') return [mProg.bestShot, c.n];
+  if (c.type === 'score')     return [score, c.n];
+  if (c.type === 'fever')     return [mProg.fever ? 1 : 0, 1];
+  if (c.type === 'survive')   return [mProg.shots, c.n];
+  return [0, 1];
+}
+function missionHud(bumpIt) {
+  const [now, goal] = missionState(), done = now >= goal;
+  $('mKicker').textContent = `ミッション ${missionIdx + 1}`;
+  $('mTitle').textContent = curMission().title;
+  $('mProg').textContent = goal === 1 ? (done ? 'できた' : '') : `${Math.min(now, goal)} / ${goal}`;
+  $('mProg').classList.toggle('done', done);
+  if (bumpIt) bump('mProg');
+}
+function renderMissionList() {
+  $('mlist').innerHTML = MISSIONS.map((m, i) => {
+    const done = isCleared(m.id), next = !done && MISSIONS.slice(0, i).every(q => isCleared(q.id));
+    return `<button data-i="${i}" class="${done ? 'done' : ''}${next ? ' next' : ''}"><i>${done ? '' : i + 1}</i>${m.title}</button>`;
+  }).join('');
+  [...$('mlist').children].forEach(b => b.addEventListener('click', () => {
+    unlockAudio(); missionIdx = +b.dataset.i;
+    $('mlistOverlay').classList.remove('show'); $('start').classList.remove('show');
+    running = true; reset(MISSION);
+  }));
+}
+
+// ---------- モード ----------
+// フリープレイとミッションで違うのは「使う数字」「1回打ち終わったあと」「何で終わるか」の3つだけ。
+// 画面・音・振動は両方とも同じものを使う
+const FREE = {
+  conf: () => null,
+  start() { E.boardSeed = null; setLayout(0, false); },
+  shotEnd() {
+    const newShot = bumpRecord('shotScore', E.shotScore);
+    const newBalls = bumpRecord('shotBalls', shotBallsMax);
+    bumpRecord('shotHits', E.hitCount);
+    renderRecords('startRecords', false);
+    if (newShot && shots > 1) setTimeout(() => banner('BEST', `1回の最高スコアを更新 ${E.shotScore}`, '#F2F1EE'), 500);
+    else if (newBalls && shots > 1) setTimeout(() => banner('×' + shotBallsMax, '1回で増えた玉の最多記録', '#EAA83A'), 500);
+    gameBestShot = Math.max(gameBestShot, E.shotScore);
+    boardShots++;
+    if (boardShots >= SHOTS_PER_BOARD) {
+      boardShots = 0;
+      let next; do { next = Math.random() * LAYOUTS | 0; } while (next === E.layout);
+      setLayout(next, true);
+      const before = stageB();
+      E.stage++;
+      bumpRecord('stage', E.stage + 1);
+      const after = stageB();
+      const changed = before.map((v, i) => v !== after[i] ? i : -1).filter(i => i >= 0);
+      slotFlash = changed.length ? {t: 0, slots: changed} : null;
+      setTimeout(() => banner(`STAGE ${E.stage + 1}`, 'ステージが上がりました', '#F2F1EE'), 900);
+      stageHud(true);
+    } else pickGold();
+    stageHud(false);
+  },
+  isOver: () => money < COST,
+  over: () => gameOver(),
+};
+const MISSION = {
+  conf: () => curMission().conf,
+  start() {
+    const m = curMission();
+    mProg = {shots: 0, hits: {}, maxMult: 0, gained: 0, maxBalls: 1, bestShot: 0, fever: false, cleared: false};
+    E.boardSeed = m.seed;
+    setLayout(m.layout || 0, false);
+    missionHud(false);
+  },
+  hit(kind) { mProg.hits[kind] = (mProg.hits[kind] || 0) + 1; },
+  land(b, v) {
+    if (b.pts > 0) mProg.maxMult = Math.max(mProg.maxMult, b.mult);
+    if (v > 0) mProg.gained += v;
+  },
+  shotEnd() {
+    mProg.shots = shots;
+    mProg.bestShot = Math.max(mProg.bestShot, E.shotScore || 0);
+    mProg.maxBalls = Math.max(mProg.maxBalls, shotBallsMax);
+    if (E.fever) mProg.fever = true;
+    pickGold();
+    const [now, goal] = missionState();
+    if (!mProg.cleared && now >= goal) {
+      mProg.cleared = true;
+      banner('できた', curMission().title, '#D7141F');
+      [0, 4, 7, 12].forEach((sp, k) => voice(note(6) * Math.pow(2, sp / 12), .35, .07, 'square', k * .07));
+      buzzPattern(3, 80);
+    }
+    missionHud(true);
+  },
+  isOver: () => mProg.cleared || money < COST || shots >= MAX_SHOTS,
+  over: () => missionOver(),
+};
+let mode = FREE;
+
+function missionOver() {
+  if ($('mover').classList.contains('show')) return;
+  const ok = mProg.cleared;
+  if (ok && !isCleared(curMission().id)) {
+    cleared.push(curMission().id);
+    store.set('dotdrop-missions', JSON.stringify(cleared));
+  }
+  $('mResPill').textContent = ok ? 'クリア' : '玉切れ';
+  $('mResMark').className = ok ? 'ok' : 'ng';
+  $('mResTitle').textContent = curMission().title;
+  $('mNext').style.display = ok && missionIdx < MISSIONS.length - 1 ? '' : 'none';
+  $('mover').classList.add('show');
+}
+
 // ---------- ゲームのフック ----------
 E.hooks.hit = (p, b, n, force, kind, pts) => {
+  if (mode.hit) mode.hit(kind);
   waves.push({x: p.x, y: p.y, t: 0, big: kind !== 'dot'});
   potPulse = 1;
   if (!E.fever) gauge += pts;
@@ -834,6 +1024,7 @@ E.hooks.hit = (p, b, n, force, kind, pts) => {
 };
 E.hooks.release = p => { voice(note(12), .15, .08, 'triangle'); p.pulse = 1; buzz(6, 0); };
 E.hooks.land = (b, v) => {
+  if (mode.land) mode.land(b, v);
   const top = slotTop(), m = b.mult, gain = b.gain;
   catches.push({slot: b.slot, m, t: 0});
   bumpRecord('ballGain', gain);
@@ -866,40 +1057,23 @@ E.hooks.land = (b, v) => {
   }
 };
 E.hooks.shotEnd = () => {
+  feverStep();
+  mode.shotEnd();
+  hud();
+  checkOver();
+};
+// フィーバーの出入りは両モード共通
+function feverStep() {
   if (E.fever) {
     feverLeft--;
     if (feverLeft <= 0) { E.fever = false; gauge = 0; }
   } else if (gauge >= FEVER_AT) {
     E.fever = true; feverLeft = FEVER_SHOTS;
     banner('FEVER', `${FEVER_SHOTS}回、ポイント2倍・玉が減らない`, '#D7141F');
-    [0, 4, 7, 12, 16, 19, 24].forEach((s, k) => voice(note(1) * Math.pow(2, s / 12), .4, .07, 'square', k * .06));
+    [0, 4, 7, 12, 16, 19, 24].forEach((sp, k) => voice(note(1) * Math.pow(2, sp / 12), .4, .07, 'square', k * .06));
     buzzPattern(4, 80);
   }
-  const newShot = bumpRecord('shotScore', E.shotScore);
-  const newBalls = bumpRecord('shotBalls', shotBallsMax);
-  bumpRecord('shotHits', E.hitCount);
-  renderRecords('startRecords', false);
-  if (newShot && shots > 1) setTimeout(() => banner('BEST', `1回の最高スコアを更新 ${E.shotScore}`, '#F2F1EE'), 500);
-  else if (newBalls && shots > 1) setTimeout(() => banner('×' + shotBallsMax, '1回で増えた玉の最多記録', '#EAA83A'), 500);
-  gameBestShot = Math.max(gameBestShot, E.shotScore);
-  boardShots++;
-  if (boardShots >= SHOTS_PER_BOARD) {
-    boardShots = 0;
-    let next; do { next = Math.random() * LAYOUTS | 0; } while (next === E.layout);
-    setLayout(next, true);
-    const before = stageB();
-    E.stage++;
-    bumpRecord('stage', E.stage + 1);
-    const after = stageB();
-    const changed = before.map((v, i) => v !== after[i] ? i : -1).filter(i => i >= 0);
-    slotFlash = changed.length ? {t: 0, slots: changed} : null;
-    setTimeout(() => banner(`STAGE ${E.stage + 1}`, 'ステージが上がりました', '#F2F1EE'), 900);
-    stageHud(true);
-  } else pickGold();
-  stageHud(false);
-  hud();
-  checkOver();
-};
+}
 
 // 画面を隠さない帯の演出＋画面のふちが光る
 let bannerState = null;
@@ -932,7 +1106,11 @@ let overPending = false;
 function checkOver() {
   if (overPending) return;
   overPending = true;
-  setTimeout(() => { overPending = false; if (money < COST && !E.balls.length && !flyers.length) gameOver(); else if (money < COST) checkOver(); }, 900);
+  setTimeout(() => {
+    overPending = false;
+    if (!mode.isOver()) return;
+    if (!E.balls.length && !flyers.length) mode.over(); else checkOver();
+  }, 900);
 }
 function gameOver() {
   if ($('over').classList.contains('show')) return;
@@ -960,14 +1138,27 @@ function gameOver() {
     else { voice(note(5), .3, .08, 'triangle'); voice(note(8), .4, .07, 'triangle', .08); if (rank === 0) playMilestone(Math.min(10, Math.max(3, Math.floor(score / 300)))); }
   })(t0);
 }
-$('retry').addEventListener('click', () => { unlockAudio(); reset(); });
+$('retry').addEventListener('click', () => { unlockAudio(); reset(FREE); });
+$('missionBtn').addEventListener('click', () => { unlockAudio(); renderMissionList(); $('mlistOverlay').classList.add('show'); });
+$('mlistBack').addEventListener('click', () => { $('mlistOverlay').classList.remove('show'); });
+$('mNext').addEventListener('click', () => { unlockAudio(); missionIdx = Math.min(MISSIONS.length - 1, missionIdx + 1); reset(MISSION); });
+$('mRetry').addEventListener('click', () => { unlockAudio(); reset(MISSION); });
+$('mQuit').addEventListener('click', () => {
+  $('mover').classList.remove('show');
+  document.body.classList.remove('mission');
+  running = false;
+  renderMissionList(); $('mlistOverlay').classList.add('show'); $('start').classList.add('show');
+});
 $('listenBtn').addEventListener('click', () => {
   unlockAudio();
   for (let i = 1; i <= 10; i++) setTimeout(() => playMilestone(i), (i - 1) * 1500 + 100);
 });
-$('startBtn').addEventListener('click', () => { unlockAudio(); $('start').classList.remove('show'); running = true; bestAtStart = personalBest(); bestHud(); voice(note(1), .2, .08); voice(note(3), .2, .08, 'triangle', .08); voice(note(5), .3, .08, 'triangle', .16); });
+$('startBtn').addEventListener('click', () => { unlockAudio(); $('start').classList.remove('show'); running = true; reset(FREE); bestAtStart = personalBest(); bestHud(); voice(note(1), .2, .08); voice(note(3), .2, .08, 'triangle', .08); voice(note(5), .3, .08, 'triangle', .16); });
 
-function canShoot() { return running && !E.balls.length && money >= COST && !$('over').classList.contains('show'); }
+function canShoot() {
+  return running && !E.balls.length && money >= COST &&
+    !$('over').classList.contains('show') && !$('mover').classList.contains('show');
+}
 function shoot() {
   if (!canShoot() || level === 0) return;
   money -= COST; shots++; firstShot = false; moneyRoll.set(money);
@@ -1332,7 +1523,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-fit(); reset(); requestAnimationFrame(frame);
+fit(); reset(FREE); requestAnimationFrame(frame);
 </script>
 </body>
 </html>

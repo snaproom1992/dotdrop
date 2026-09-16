@@ -41,7 +41,9 @@ const STAGES = STAGE_B.length;
 function shoot(angle, level) {
   let done = false;
   const pays = [];                                   // 受け皿ごとの玉の増減（当たった順）
-  E.hooks.land = (b, v) => pays.push(v);
+  const hits = {}, mults = [];
+  E.hooks.hit = (p, b, n, force, kind) => { hits[kind] = (hits[kind] || 0) + 1; };
+  E.hooks.land = (b, v) => { pays.push(v); if (b.pts > 0) mults.push(b.mult); };
   E.hooks.shotEnd = () => { done = true; };
   const a = angle * Math.PI / 180, p = level / LEVELS * MAX_PULL;
   launch(...launchVelocity(Math.cos(a) * p, Math.sin(a) * p));
@@ -49,9 +51,10 @@ function shoot(angle, level) {
   const step = 1 / 360;                              // 画面と同じ刻み（1フレームを6回に分けている）
   while (!done && t < 40) { stepPhysics(step); t += step; maxBalls = Math.max(maxBalls, E.balls.length); }
   const tris = E.pegs.filter(q => q.kind === 'tri');
-  const bonus = tris.length === TRIS && tris.every(q => q.triHit) ? TRI_BONUS : 0;
+  const bonus = TRIS > 0 && tris.length === TRIS && tris.every(q => q.triHit) ? TRI_BONUS : 0;
   if (bonus) pays.push(bonus);
-  return {pays, balls: E.shotPay + bonus, score: E.shotScore || 0, hits: E.hitCount, maxBalls, stuck: !done};
+  return {pays, balls: E.shotPay + bonus, score: E.shotScore || 0, hits: E.hitCount, kinds: hits, pot: E.pot,
+          maxMult: mults.length ? Math.max(...mults) : 0, maxBalls, stuck: !done};
 }
 const randomShot = () => [5 + Math.random() * 170, 1 + (Math.random() * LEVELS | 0)];
 const aim = s => s === 'random' ? randomShot() : [s.angle + (Math.random() - .5) * 6, s.level];
@@ -151,8 +154,7 @@ console.log(`   （${elapsed()}）`);
 // ポイントが貯まるとフィーバー、持ち玉が0になったら終わり
 function game(strat) {
   let money = START, gauge = 0, feverLeft = 0, shots = 0, board = 0, score = 0, peak = START;
-  E.stage = 0; E.fever = false; setLayout(0, false);
-  E.hooks.hit = (p, b, n, force, kind, pts) => { if (!E.fever) gauge += pts; };
+  E.stage = 0; E.fever = false; E.boardSeed = null; setLayout(0, false);
   while (money >= COST && shots < 500) {
     money -= COST; shots++;
     E.conveyor = Math.random() * CONV_LEN;
@@ -160,6 +162,7 @@ function game(strat) {
     // 減る受け皿は、持っている以上には減らない（画面と同じ）
     for (const v of r.pays) money = v < 0 ? Math.max(0, money + v) : money + v;
     peak = Math.max(peak, money); score += r.score;
+    if (!E.fever) gauge += r.pot;                    // ポイントが貯まるとフィーバー
     if (E.fever) { if (--feverLeft <= 0) { E.fever = false; gauge = 0; } }
     else if (gauge >= FEVER_AT) { E.fever = true; feverLeft = FEVER_SHOTS; }
     if (++board >= PER_STAGE) {
@@ -168,7 +171,6 @@ function game(strat) {
       setLayout(next, false);
     } else pickGold();
   }
-  E.hooks.hit = () => {};
   return {shots, stage: E.stage + 1, score, peak, endless: shots >= 500};
 }
 
@@ -183,6 +185,59 @@ for (const [label, strat] of [['適当に打つ人', 'random'], ['うまい人',
               `${pad(median(g.map(x => x.stage)), 12)}${pad(median(g.map(x => x.score)), 16)}${pad(Math.max(...g.map(x => x.peak)), 16)}`);
 }
 console.log(`   （${elapsed()}）`);
+
+// ================= 4. ミッションがクリアできるか =================
+// index.html のミッションのデータをそのまま読んで、適当に打つ人で何%クリアできるか測る
+const mSrc = html.slice(html.indexOf('const M_SLOT_EASY'), html.indexOf('const MAX_SHOTS'));
+const MISSIONS = mSrc ? new Function(mSrc + '\nreturn MISSIONS;')() : [];
+if (MISSIONS.length) {
+  console.log(`\n4. ミッションがクリアできるか（適当に打つ人で100回ずつ）`);
+  console.log(`   ${pad('', 4)}${pad('ミッション', 30)}${pad('クリア率', 10)}${pad('かかった回数(中央)', 20)}`);
+  for (let i = 0; i < MISSIONS.length; i++) {
+    const m = MISSIONS[i];
+    let ok = 0; const used = [];
+    for (let t = 0; t < 100; t++) {
+      applyConf(m.conf);
+      E.stage = 0; E.fever = false; E.boardSeed = m.seed;
+      setLayout(m.layout || 0, false);
+      let money = START, gauge = 0, feverLeft = 0, n = 0, score = 0;
+      const prog = {hits: {}, maxMult: 0, gained: 0, maxBalls: 1, bestShot: 0, fever: false};
+      let done = false;
+      while (!done && money >= COST && n < 25) {
+        money -= COST; n++;
+        E.conveyor = Math.random() * CONV_LEN;
+        const r = shoot(...randomShot());
+        for (const v of r.pays) money = v < 0 ? Math.max(0, money + v) : money + v;
+        for (const k in r.kinds) prog.hits[k] = (prog.hits[k] || 0) + r.kinds[k];
+        prog.maxMult = Math.max(prog.maxMult, r.maxMult);
+        prog.gained += r.pays.filter(v => v > 0).reduce((a, b) => a + b, 0);
+        prog.maxBalls = Math.max(prog.maxBalls, r.maxBalls);
+        prog.bestShot = Math.max(prog.bestShot, r.score);
+        score += r.score;
+        if (!E.fever) gauge += r.pot;
+        if (E.fever) { if (--feverLeft <= 0) { E.fever = false; gauge = 0; } }
+        else if (gauge >= FEVER_AT) { E.fever = true; feverLeft = FEVER_SHOTS; prog.fever = true; }
+        const c = m.clear;
+        done = c.type === 'shots' ? n >= c.n
+          : c.type === 'hit' ? (prog.hits[c.kind] || 0) >= c.n
+          : c.type === 'mult' ? prog.maxMult >= c.m
+          : c.type === 'gain' ? prog.gained >= c.n
+          : c.type === 'balls' ? prog.maxBalls >= c.n
+          : c.type === 'shotScore' ? prog.bestShot >= c.n
+          : c.type === 'score' ? score >= c.n
+          : c.type === 'fever' ? prog.fever
+          : c.type === 'survive' ? n >= c.n : false;
+      }
+      if (done) { ok++; used.push(n); }
+    }
+    const rate = ok + '%';
+    const warn = ok < 60 ? '  ⚠ むずかしすぎるかも' : ok === 100 && median(used) <= 1 ? '  （すぐ終わる）' : '';
+    console.log(`   ${pad(i + 1, 4)}${pad(m.title, 30)}${pad(rate, 10)}${pad(used.length ? median(used) : '—', 20)}${warn}`);
+  }
+  applyConf();
+  E.boardSeed = null;
+  console.log(`   （${elapsed()}）`);
+}
 
 console.log(`\nまとめ`);
 for (const s of summary) {
