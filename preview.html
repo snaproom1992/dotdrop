@@ -78,11 +78,11 @@ body.tutorial .stage-hud{display:none}
 #mover{justify-content:safe center}
 #mover .kicker{margin-top:10px}
 #mover .kicker.lead{margin-top:30px;opacity:.55;max-width:310px;text-align:left;padding-left:2px}
-#mNext{margin-top:20px;letter-spacing:.04em}
-/* つぎのやること。一覧の行と同じ形なので、続きだと分かる */
-.nextrow{display:grid;grid-template-columns:26px 1fr;align-items:center;gap:10px;width:100%;max-width:310px;margin-top:6px;padding:14px 2px;border-top:1px solid rgba(242,241,238,.14);border-bottom:1px solid rgba(242,241,238,.14);font-size:16px;font-weight:700;text-align:left}
-.nextrow b{font-size:19px;letter-spacing:-.03em;opacity:.45;font-variant-numeric:tabular-nums}
-.nextrow i{font-style:normal}
+/* つぎのやること。一覧の行と同じ形なので、続きだと分かる。この行を押すと進む */
+#mNextRow{display:grid;grid-template-columns:26px 1fr 24px;align-items:center;gap:10px;width:100%;max-width:310px;margin-top:6px;padding:17px 2px;background:none;border:none;border-radius:0;border-top:1px solid rgba(242,241,238,.14);border-bottom:1px solid rgba(242,241,238,.14);color:var(--paper);font:inherit;font-size:17px;font-weight:700;text-align:left;cursor:pointer}
+#mNextRow b{font-size:19px;letter-spacing:-.03em;opacity:.45;font-variant-numeric:tabular-nums}
+#mNextRow i{font-style:normal}
+.arrow{display:block;margin-left:auto;color:var(--red)}
 /* あそび方の一覧。やることの左に番号、できたら右にチェック */
 .tlist{width:100%;max-width:310px;margin-top:10px}
 .tlist button{display:grid;grid-template-columns:26px 1fr 24px;align-items:center;gap:10px;width:100%;margin:0;padding:15px 0;background:none;border:none;border-radius:0;border-top:1px solid rgba(242,241,238,.14);color:var(--paper);font:inherit;font-size:16px;font-weight:700;text-align:left;cursor:pointer}
@@ -151,9 +151,8 @@ body.tutorial .stage-hud{display:none}
   <div id="mResMark"></div>
   <small class="kicker" id="mResText">できました</small>
   <div id="mDots"></div>
-  <small class="kicker lead" id="mNextLabel">つぎ</small>
-  <div id="mNextRow" class="nextrow"></div>
-  <button id="mNext">NEXT</button>
+  <small class="kicker lead" id="mNextLabel">NEXT</small>
+  <button id="mNextRow"></button>
   <button id="mRetry">もう一度</button>
   <button id="mPlay">ゲームをはじめる</button>
   <button id="mQuit" class="sub">一覧</button>
@@ -907,6 +906,10 @@ const STEPS = [
   {id: 'fever', title: 'フィーバーに入る', hint: 'ポイントがたまると入れる', seed: 19, layout: 2,
    conf: {START: 8, SQUARES: 4, TRIS: 6, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'fever'}},
 ];
+// 押せることを表す右向きの矢印。チェックと同じ描き方で太さをそろえる
+const ARROW = size =>
+  `<svg class="arrow" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">` +
+  `<path d="M9 4.6 L16.4 12 L9 19.4" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="miter"/></svg>`;
 // できた印のチェック。線の太さを数字に合わせて、角は落とさない
 const CHECK = (size, ng) =>
   `<svg class="check${ng ? ' ng' : ''}" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">` +
@@ -1044,9 +1047,9 @@ function stepOver() {
   // つぎに何をするのかを、ボタン自体に書く
   $('mNextLabel').style.display = toNext ? '' : 'none';
   $('mNextRow').style.display = toNext ? '' : 'none';
-  $('mNext').style.display = toNext ? '' : 'none';
-  // つぎのやることは、一覧の行と同じ形で見せる
-  if (toNext) $('mNextRow').innerHTML = `<b>${stepIdx + 2}</b><span>${STEPS[stepIdx + 1].title}</span>`;
+  // つぎのやることは、一覧の行と同じ形で見せる。この行を押すと進む
+  if (toNext) $('mNextRow').innerHTML =
+    `<b>${stepIdx + 2}</b><span>${STEPS[stepIdx + 1].title}</span>${ARROW(22)}`;
   $('mRetry').style.display = ok ? 'none' : '';
   $('mPlay').style.display = ok && last ? '' : 'none';
   $('mover').classList.add('show');
@@ -1257,7 +1260,7 @@ function gameOver() {
 $('retry').addEventListener('click', () => { unlockAudio(); reset(FREE); });
 $('tutBtn').addEventListener('click', () => { unlockAudio(); openTutList(); });
 $('tlistBack').addEventListener('click', () => { $('tlist').classList.remove('show'); });
-$('mNext').addEventListener('click', () => { unlockAudio(); stepIdx = Math.min(STEPS.length - 1, stepIdx + 1); reset(TUTORIAL); });
+$('mNextRow').addEventListener('click', () => { unlockAudio(); stepIdx = Math.min(STEPS.length - 1, stepIdx + 1); reset(TUTORIAL); });
 $('mRetry').addEventListener('click', () => { unlockAudio(); reset(TUTORIAL); });
 // 最後まで終わったら、そのままフリープレイへ
 $('mPlay').addEventListener('click', () => { unlockAudio(); $('mover').classList.remove('show'); running = true; reset(FREE); });
