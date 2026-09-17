@@ -44,24 +44,34 @@ body.fever #gauge{background:rgba(28,23,22,.18)}
 .overlay{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:safe center;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:var(--brown);color:var(--paper);z-index:6;text-align:center;padding:24px}
 .overlay.show{display:flex}
 .overlay h1{font-size:76px;letter-spacing:-.06em;line-height:.9}
-/* DOT の O は玉。名前のとおり、上から落ちてきて弾んで収まる */
-.overlay h1 i{display:inline-block;width:.60em;height:.60em;margin:0 .045em;border-radius:50%;
-background:currentColor;vertical-align:baseline;position:relative;top:-.06em;
+/* DOT の O は玉。画面の外から落ちてきて、つぶれて弾んで収まる。
+   玉と軌跡の大きさ・間隔は、アイコン（icon-*.png）と同じ比率にそろえている */
+.overlay h1 i{display:inline-block;width:.38em;height:.38em;margin:0 .17em;border-radius:50%;
+background:currentColor;vertical-align:baseline;position:relative;top:-.17em;
 transform-origin:50% 100%;animation:dropIn 1.05s both}
+/* 落ちている間だけ出る軌跡。着地でしぼんで消える */
+.overlay h1 i b{position:absolute;left:50%;border-radius:50%;background:currentColor;
+transform:translateX(-50%);animation:trail 1.05s both}
+.overlay h1 i b:nth-child(1){width:.095em;height:.095em;bottom:.39em;opacity:.5}
+.overlay h1 i b:nth-child(2){width:.072em;height:.072em;bottom:.52em;opacity:.34}
+.overlay h1 i b:nth-child(3){width:.053em;height:.053em;bottom:.64em;opacity:.22}
+@keyframes trail{
+  0%,27%{transform:translateX(-50%) scale(1)}
+  36%,100%{transform:translateX(-50%) scale(0)}}
 /* 落ちるところは加速、跳ねるところは減速。着地のたびに少しつぶれる */
 @keyframes dropIn{
-  0%  {transform:translateY(-3.6em);animation-timing-function:cubic-bezier(.45,0,.9,.4)}
+  0%  {transform:translateY(-4.4em);animation-timing-function:cubic-bezier(.45,0,.9,.4)}
   30% {transform:translateY(0) scale(1,1)}
-  34% {transform:translateY(0) scale(1.20,.76)}
-  38% {transform:translateY(0) scale(.94,1.10);animation-timing-function:cubic-bezier(.15,.7,.4,1)}
-  55% {transform:translateY(-.55em) scale(1,1);animation-timing-function:cubic-bezier(.45,0,.9,.4)}
-  68% {transform:translateY(0) scale(1.14,.84)}
-  71% {transform:translateY(0) scale(.97,1.06);animation-timing-function:cubic-bezier(.15,.7,.4,1)}
-  82% {transform:translateY(-.20em) scale(1,1);animation-timing-function:cubic-bezier(.45,0,.9,.4)}
-  91% {transform:translateY(0) scale(1.07,.93)}
+  34% {transform:translateY(0) scale(1.24,.72)}
+  38% {transform:translateY(0) scale(.93,1.12);animation-timing-function:cubic-bezier(.15,.7,.4,1)}
+  55% {transform:translateY(-.85em) scale(1,1);animation-timing-function:cubic-bezier(.45,0,.9,.4)}
+  68% {transform:translateY(0) scale(1.16,.82)}
+  71% {transform:translateY(0) scale(.96,1.07);animation-timing-function:cubic-bezier(.15,.7,.4,1)}
+  82% {transform:translateY(-.3em) scale(1,1);animation-timing-function:cubic-bezier(.45,0,.9,.4)}
+  91% {transform:translateY(0) scale(1.08,.92)}
   96% {transform:translateY(0) scale(.99,1.02)}
   100%{transform:translateY(0) scale(1,1)}}
-@media (prefers-reduced-motion:reduce){.overlay h1 i{animation:none}}
+@media (prefers-reduced-motion:reduce){.overlay h1 i{animation:none}.overlay h1 i b{display:none}}
 .overlay p{margin-top:14px;font-size:15px;opacity:.75;line-height:1.7}
 .overlay button{margin-top:28px;font:inherit;font-weight:700;font-size:18px;color:var(--paper);background:var(--red);border:none;border-radius:999px;padding:16px 40px;cursor:pointer}
 .overlay button:focus-visible{outline:3px solid var(--paper);outline-offset:3px}
@@ -167,7 +177,7 @@ body.tutorial .stage-hud{display:none}
   <div class="stat right"><b id="points" class="roll"></b><small id="pointsLabel">スコア</small><div id="gauge"><i></i></div><div id="best"></div></div>
 </header>
 <div id="start" class="overlay show">
-  <h1>D<i></i>T<br>DROP</h1>
+  <h1>D<i><b></b><b></b><b></b></i>T<br>DROP</h1>
   <div class="shapes" aria-hidden="true">
     <i style="background:#D7141F"></i>
     <i style="background:#2456B8;border-radius:50%"></i>
