@@ -33,6 +33,10 @@ body.fever #gauge{background:rgba(28,23,22,.18)}
 .overlay button{margin-top:28px;font:inherit;font-weight:700;font-size:18px;color:var(--paper);background:var(--red);border:none;border-radius:999px;padding:16px 40px;cursor:pointer}
 .overlay button:focus-visible{outline:3px solid var(--paper);outline-offset:3px}
 .overlay button.sub{margin-top:14px;background:none;border:1.5px solid rgba(242,241,238,.35);font-size:13px;padding:10px 18px}
+#tutBtn{margin-top:14px;display:flex;flex-direction:column;align-items:center;gap:9px;background:none;border:2px solid var(--paper);border-radius:4px;font-size:16px;padding:15px 30px}
+#tutBtn i{display:flex;gap:5px}
+#tutBtn i b{width:6px;height:6px;border-radius:50%;background:var(--paper);opacity:.25}
+#tutBtn i b.on{opacity:1;background:var(--red)}
 .kicker{font-size:13px;font-weight:700;opacity:.7;letter-spacing:.04em}
 .bigscore{font-size:clamp(88px,30vw,150px);font-weight:700;letter-spacing:-.06em;line-height:.9;margin-top:6px;font-variant-numeric:tabular-nums}
 .overlay h2{font-size:12px;font-weight:700;opacity:.6;margin-top:30px;width:100%;max-width:300px;text-align:left;letter-spacing:.04em}
@@ -53,20 +57,54 @@ body.fever #gauge{background:rgba(28,23,22,.18)}
 #stageDots{display:flex;gap:4px;justify-content:center;margin-top:6px}
 #stageDots i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.2}
 #stageDots i.on{opacity:1;background:#D7141F}
+/* ミッション中の見出し。STAGE の代わりに、いまの条件と達成度を出す */
+.tut-hud{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 18px);transform:translateX(-50%);text-align:center;display:none;width:200px}
+body.tutorial .tut-hud{display:block}
+body.tutorial .stage-hud{display:none}
+.tut-hud small{display:block;font-size:10px;font-weight:700;letter-spacing:.12em;opacity:.6}
+.tut-hud b{display:block;font-size:17px;line-height:1.2;letter-spacing:.01em;margin-top:4px}
+.tut-hud b i{font-style:normal}
+.tut-hud u{display:block;font-size:26px;font-weight:700;text-decoration:none;letter-spacing:-.03em;margin-top:2px;font-variant-numeric:tabular-nums;transition:transform .2s}
+.tut-hud u.bump{transform:scale(1.4)}
+.tut-hud u.done{color:#D7141F;font-size:14px;line-height:26px}
+/* どこまで来たかを8つの丸で。ステージの丸と同じ見た目 */
+#mDots{display:flex;gap:7px;justify-content:center;margin-top:22px}
+#mDots i{width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.2}
+#mDots i.on{opacity:1;background:var(--red)}
+/* できた印はチェック。太さを数字と揃えて、線だけで描く */
+.check{display:block;margin:0 auto;color:var(--red)}
+.check.ng{color:rgba(242,241,238,.3)}
+#mResMark{min-height:76px;display:flex;align-items:center;justify-content:center}
+#mover{justify-content:safe center}
+#mover .kicker{margin-top:10px}
+#mover .kicker.lead{margin-top:30px;opacity:.55;max-width:310px;text-align:left;padding-left:2px}
+/* つぎのやること。一覧の行と同じ形なので、続きだと分かる。この行を押すと進む */
+#mNextRow{display:grid;grid-template-columns:26px 1fr 24px;align-items:center;gap:10px;width:100%;max-width:310px;margin-top:6px;padding:17px 2px;background:none;border:none;border-radius:0;border-top:1px solid rgba(242,241,238,.14);border-bottom:1px solid rgba(242,241,238,.14);color:var(--paper);font:inherit;font-size:17px;font-weight:700;text-align:left;cursor:pointer}
+#mNextRow b{font-size:19px;letter-spacing:-.03em;opacity:.45;font-variant-numeric:tabular-nums}
+#mNextRow i{font-style:normal}
+.arrow{display:block;margin-left:auto;color:var(--red)}
+/* あそび方の一覧。やることの左に番号、できたら右にチェック */
+.tlist{width:100%;max-width:310px;margin-top:10px}
+.tlist button{display:grid;grid-template-columns:26px 1fr 24px;align-items:center;gap:10px;width:100%;margin:0;padding:15px 0;background:none;border:none;border-radius:0;border-top:1px solid rgba(242,241,238,.14);color:var(--paper);font:inherit;font-size:16px;font-weight:700;text-align:left;cursor:pointer}
+.tlist button b{font-size:19px;letter-spacing:-.03em;opacity:.45;font-variant-numeric:tabular-nums}
+.tlist button i{font-style:normal}
+.tlist button.done span{opacity:.5}
+.tlist button.done b{opacity:.5}
 .result{justify-content:flex-start;padding:calc(env(safe-area-inset-top) + 40px) 24px calc(env(safe-area-inset-bottom) + 40px)}
 .result > *{width:100%;max-width:320px}
 .res-top{display:flex;gap:8px;justify-content:center;align-items:center;min-height:26px}
 .pill{font-size:12px;font-weight:700;border:1.5px solid rgba(242,241,238,.35);border-radius:999px;padding:3px 10px}
-.rankbadge{display:none;font-size:12px;font-weight:700;color:var(--ink);background:var(--mustard);border-radius:999px;padding:4px 10px}
+.rankbadge{display:none;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--ink);background:var(--mustard);border-radius:3px;padding:3px 8px}
 .rankbadge.show{display:inline-block}
 .rankbadge.top{background:var(--red);color:var(--paper)}
+.result .res-top{min-height:22px}
 .result .kicker{margin-top:26px;display:block}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);margin-top:22px;border-top:1.5px solid rgba(242,241,238,.2)}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);margin-top:22px;border-top:1.5px solid rgba(242,241,238,.2)}
 .stats div{padding:12px 4px 0;text-align:center}
 .stats div + div{border-left:1.5px solid rgba(242,241,238,.2)}
 .stats b{display:block;font-size:30px;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
 .stats small{display:block;font-size:11px;opacity:.6;margin-top:6px}
-.result #retry{margin:30px auto 0;width:auto;display:block}
+.result #retry{margin:30px auto 0;display:block}
 .res-sec{margin-top:36px;text-align:left}
 .res-sec h2{margin:0 0 6px;max-width:none}
 .recgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -92,6 +130,7 @@ body.fever #gauge{background:rgba(28,23,22,.18)}
 <header>
   <div class="stat"><b id="money" class="roll"></b><small>持ち玉</small></div>
   <div class="stage-hud"><small>STAGE</small><b id="stageNo">1</b><div id="stageDots"></div></div>
+  <div class="tut-hud" id="tutHud"><small id="mKicker"></small><b id="mTitle"></b><u id="mProg"></u></div>
   <div class="stat right"><b id="points" class="roll"></b><small id="pointsLabel">スコア</small><div id="gauge"><i></i></div><div id="best"></div></div>
 </header>
 <div id="start" class="overlay show">
@@ -101,30 +140,44 @@ body.fever #gauge{background:rgba(28,23,22,.18)}
     <i style="background:#2456B8;border-radius:50%"></i>
     <i style="width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-bottom:22px solid #EAA83A"></i>
   </div>
-  <div class="ranking" id="startRanking"></div>
   <button id="startBtn">はじめる</button>
-  <button id="listenBtn" class="sub">節目の音を聴く（100〜1000点）</button>
+  <button id="tutBtn"><span>あそびかた</span><i id="tutDots"></i></button>
+</div>
+<div id="tlist" class="overlay result">
+  <small class="kicker">あそびかた</small>
+  <div class="tlist" id="tlistRows"></div>
+  <button id="tlistBack" class="sub">もどる</button>
+</div>
+<div id="mover" class="overlay result">
+  <div id="mResMark"></div>
+  <small class="kicker" id="mResText">できました</small>
+  <div id="mDots"></div>
+  <small class="kicker lead" id="mNextLabel">NEXT</small>
+  <button id="mNextRow"></button>
+  <button id="mRetry">もう一度</button>
+  <button id="mPlay">ゲームをはじめる</button>
+  <button id="mQuit" class="sub">一覧</button>
 </div>
 <div id="over" class="overlay result">
-  <div class="res-top"><span class="pill">玉切れ</span><span id="newRank" class="rankbadge"></span></div>
+  <div class="res-top"><span id="newRank" class="rankbadge"></span></div>
   <small class="kicker">総合スコア</small>
   <div id="overScore" class="bigscore">0</div>
   <div class="stats">
     <div><b id="stStage">1</b><small>ステージ</small></div>
-    <div><b id="stShots">0</b><small>打った回数</small></div>
     <div><b id="stBest">0</b><small>1回の最高</small></div>
   </div>
   <button id="retry">もう一度</button>
+  <button id="toTitle" class="sub">タイトルへ</button>
   <section class="res-sec"><h2>ランキング</h2><div class="ranking" id="overRanking"></div></section>
   <section class="res-sec"><h2>これまでの記録</h2><div class="recgrid" id="overRecords"></div></section>
 </div>
 <script>
 // ================= 物理とルール =================
 /*ENGINE*/
-const LW = 360, BR = 7, PR = 4.5, GRAV = 1100, COST = 1, CONV_SPEED = 26;
+const LW = 360, BR = 7, PR = 4.5, GRAV = 1100, CONV_SPEED = 26;
 // 床一面に敷き詰めた受け皿。倍率（m）は固定、戻る玉（b）はステージが進むほど厳しくなる
-const SLOT_M = [0, 1, 3, 0, 0, 1, 5, 0, 0, 1, 3, 0, 0, 1, 3, 0];
-const STAGE_B = [
+const SLOT_M0 = [0, 1, 3, 0, 0, 1, 5, 0, 0, 1, 3, 0, 0, 1, 3, 0];
+const STAGE_B0 = [
   //0  1  2  3   4  5  6  7   8  9 10 11 12 13 14  15
   [ 0, 1, 2, 0, -1, 0, 3, 0, -1, 0, 1, 0, 0, 0, 2, -1],   // ステージ1：気持ちよく増える
   [ 0, 0, 2, 0, -1, 0, 3, 0, -1, 0, 1, 0, 0, 0, 1, -1],   // ステージ2
@@ -133,11 +186,37 @@ const STAGE_B = [
   [-1, 0, 1, 0, -1, 0, 2, 0, -3, 0, 1, -1, 0, 0, 1, -1],  // ステージ5
   [-1, 0, 1, 0, -1, 0, 2, 0, -3, 0, 0, -1, 0, 0, 1, -1],  // ステージ6〜
 ];
-const SLOTS = SLOT_M.map(m => ({m, b: 0}));
-const SLOT_W = 60, CONV_LEN = SLOTS.length * SLOT_W;
-const LAYOUTS = 4, SQUARES = 3, BLUES = 2, TRIS = 3, MAX_BALLS = 27, SQ_H = 7, BLUE_R = 9, TRI_R = 8;
+const SLOT_W = 60, CONV_LEN = SLOT_M0.length * SLOT_W;
+const LAYOUTS = 4, SQ_H = 7, BLUE_R = 9, TRI_R = 8;
+
+// ここから下の数字は、モード（フリープレイ／ミッション）ごとに差し替えられる。
+// 何も渡さなければ、これまでと同じフリープレイの数字になる
+const DEFAULTS = {SLOT_M: SLOT_M0, STAGE_B: STAGE_B0, START: 12, COST: 1, MAX_BALLS: 27,
+  SQUARES: 3, BLUES: 2, TRIS: 3, SHOTS_PER_BOARD: 6, FEVER_AT: 120, FEVER_SHOTS: 3};
+let SLOT_M, STAGE_B, START, COST, MAX_BALLS, SQUARES, BLUES, TRIS, SHOTS_PER_BOARD, FEVER_AT, FEVER_SHOTS;
+function applyConf(c) {
+  ({SLOT_M, STAGE_B, START, COST, MAX_BALLS, SQUARES, BLUES, TRIS, SHOTS_PER_BOARD, FEVER_AT, FEVER_SHOTS} =
+    {...DEFAULTS, ...(c || {})});
+}
+applyConf();
+
+// 乱数は2本に分ける。
+//   台の種（boardRand）… 種を決めれば毎回まったく同じ台が出る。ミッションで使う
+//   打つときのブレ      … いつもの Math.random のまま。はなす瞬間のブレは毎回ちがうほうがいい
+function seeded(a) {
+  return () => {
+    a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+let rng = null;
+const boardRand = () => rng ? rng() : Math.random();
+// 台を組み立てる前に呼ぶ。種があれば、同じ台・同じ▲の位置になる
+const seedBoard = () => { rng = E.boardSeed == null ? null : seeded(E.boardSeed | 0); };
 const E = {LH: 700, pegs: [], balls: [], pot: 0, shotPay: 0, hitCount: 0, conveyor: 0, layout: 0, fever: false, time: 0, stage: 0,
-  convHold: false, hooks: {hit() {}, land() {}, shotEnd() {}, release() {}}};
+  boardSeed: null, convHold: false, hooks: {hit() {}, land() {}, shotEnd() {}, release() {}}};
 
 const slotTop = () => E.LH - 84;
 const field = () => ({top: 200, bottom: E.LH - 135});
@@ -174,7 +253,7 @@ function makeLayout(kind) {
   } else {                     // ランダム
     let tries = 0;
     while (tries++ < 4000) {
-      const x = 30 + Math.random() * (LW - 60), y = f.top + Math.random() * (f.bottom - f.top);
+      const x = 30 + boardRand() * (LW - 60), y = f.top + boardRand() * (f.bottom - f.top);
       if (pts.every(([px, py]) => Math.hypot(px - x, py - y) > 40)) pts.push([x, y]);
     }
   }
@@ -184,6 +263,7 @@ function makeLayout(kind) {
 }
 
 function setLayout(kind, animate) {
+  seedBoard();
   const pts = makeLayout(kind), old = E.pegs;
   E.layout = kind;
   E.pegs = pts.map(([x, y], i) => {
@@ -191,14 +271,15 @@ function setLayout(kind, animate) {
     return {x: o ? o.x : x, y: o ? o.y : y, fx: o ? o.x : x, fy: o ? o.y : y, tx: x, ty: y, m: o ? 0 : 1, lit: 0, pulse: 0, kind: 'dot', cool: 0};
   });
   // 形ごとに役割：■はね返す ●(青)つかまえる ▲分裂
-  const idx = E.pegs.map((_, i) => i).sort(() => Math.random() - .5);
+  const idx = E.pegs.map((_, i) => i).sort(() => boardRand() - .5);
   idx.slice(0, SQUARES).forEach(i => E.pegs[i].kind = 'square');
   idx.slice(SQUARES, SQUARES + BLUES).forEach(i => E.pegs[i].kind = 'blue');
   pickGold();
 }
 function pickGold() {
+  seedBoard();
   E.pegs.forEach(p => { p.triHit = false; if (p.kind === 'tri') p.kind = 'dot'; });
-  const dots = E.pegs.filter(p => p.kind === 'dot').sort(() => Math.random() - .5);
+  const dots = E.pegs.filter(p => p.kind === 'dot').sort(() => boardRand() - .5);
   dots.slice(0, TRIS).forEach(p => p.kind = 'tri');
 }
 
@@ -335,7 +416,6 @@ function stepPhysics(dt) {
 }
 /*END*/
 // ================= 表示と操作 =================
-const START = 12, FEVER_SHOTS = 3, FEVER_AT = 120, SHOTS_PER_BOARD = 6;
 const $ = id => document.getElementById(id);
 const cv = $('c'), ctx = cv.getContext('2d');
 const dpr = Math.min(2, devicePixelRatio || 1);
@@ -344,7 +424,7 @@ let scale = 1, ox = 0;
 let money, score, scoreShown, gauge, feverLeft, shots, peak, boardShots, firstShot = true;
 let pullX = 0, pullY = 0, pulling = false, startX = 0, startY = 0, keyCharge = false, keyStart = 0, keyAim = 0;
 const MAX_PULL = 130;
-let shotShow = 0, timeScale = 1, slowPulse = 0, hitStop = 0, shake = 0, potShow = 0, potAlpha = 0, potPulse = 0, countPop = 0;
+let shotShow = 0, timeScale = 1, slowPulse = 0, hitStop = 0, shake = 0, potShow = 0, potAlpha = 0, potPulse = 0;
 let waves = [], floaters = [], flyers = [], catches = [], fallen = [], shotBallsMax = 1, triBonus = false, edge = null;
 let gameBestShot = 0, milestoneFx = null, bestAtStart = 0, beatBest = false;
 let running = false, rec = {}, sessionNew = new Set(), ranking = [], slotFlash = null;
@@ -426,7 +506,6 @@ async function loadRecords() {
   try { const r = store.get('dotdrop-records'); if (r) rec = JSON.parse(r.value); } catch (e) {}
   try { const r = store.get('dotdrop-ranking'); if (r) ranking = JSON.parse(r.value); } catch (e) {}
   renderRecords('startRecords', false);
-  renderRanking('startRanking', null, 5);
 }
 // ---------- ランキング（上位10件を端末に保存） ----------
 function addRanking(entry) {
@@ -471,14 +550,20 @@ function fit() {
 }
 addEventListener('resize', () => { fit(); if (!E.balls.length) setLayout(E.layout, false); });
 
-function reset() {
-  money = START; score = 0; scoreShown = 0; gauge = 0; feverLeft = 0; shots = 0; peak = START; boardShots = 0;
+function reset(next) {
+  mode = next || mode;
+  applyConf(mode.conf());
+  score = 0; scoreShown = 0; gauge = 0; feverLeft = 0; shots = 0; boardShots = 0;
   E.fever = false; E.stage = 0; E.balls = []; E.pot = 0; slotFlash = null; flyers = []; catches = []; fallen = []; sessionNew = new Set();
-  setLayout(0, false); gameBestShot = 0; milestoneFx = null; bestAtStart = personalBest(); beatBest = false; bestHud();
+  money = START; peak = START;
+  gameBestShot = 0; milestoneFx = null; bestAtStart = personalBest(); beatBest = false;
+  document.body.classList.toggle('tutorial', mode === TUTORIAL);
+  mode.start();
+  bestHud();
   moneyRoll.set(money); pointsRoll.set(0);
   stageHud(false);
   hud();
-  $('over').classList.remove('show');
+  $('over').classList.remove('show'); $('mover').classList.remove('show');
 }
 // 自己ベスト（1ゲームの総合スコア）をスコアの下に。抜いたら NEW RECORD
 function personalBest() { return Math.max(rec.gameScore || 0, ranking.length ? ranking[0].score : 0); }
@@ -520,9 +605,18 @@ function buzz(ms = 8, gap = 45) {
 function buzzPattern(times, interval) { for (let i = 0; i < times; i++) setTimeout(() => buzz(18, 0), i * interval); }
 
 // ---------- 音 ----------
-let ac, master, sfxBus, fanBus, unlocked = false;
+// イヤホンを挿す・抜く・Bluetooth につなぐと、iPhone は音の出口を切り替える。
+// そのとき AudioContext が止まったままになったり、出口の周波数が変わって
+// 今の AudioContext からは音が出なくなったりする。
+// 止まったら作り直せるようにしておく（作り直しは画面に触れたときだけ）
+let ac, master, sfxBus, fanBus, unlocked = false, needRebuild = false;
 function audioInit() {
   try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+  if (ac && needRebuild) {
+    needRebuild = false;
+    try { ac.close(); } catch (e) {}
+    ac = null; unlocked = false;
+  }
   if (!ac) {
     try {
       ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -537,9 +631,15 @@ function audioInit() {
       conv.buffer = ir;
       const wet = ac.createGain(); wet.gain.value = .32;
       fanBus.connect(conv).connect(wet).connect(master);
+      ac.onstatechange = () => {
+        // interrupted は iPhone だけの状態。出口が変わったときなどに入る
+        if (!ac) return;
+        if (ac.state === 'interrupted' || ac.state === 'closed') needRebuild = true;
+        else if (ac.state === 'suspended') { try { ac.resume(); } catch (e) {} }
+      };
     } catch (e) { return; }
   }
-  if (ac.state !== 'running') ac.resume();
+  if (ac.state !== 'running') { try { ac.resume(); } catch (e) {} }
   if (!unlocked) {
     const src = ac.createBufferSource(); src.buffer = ac.createBuffer(1, 1, 22050);
     src.connect(ac.destination); src.start(0); unlocked = true;
@@ -552,11 +652,17 @@ function unlockAudio() {
 }
 ['touchstart', 'touchend', 'pointerdown', 'pointerup', 'click', 'keydown'].forEach(ev => addEventListener(ev, unlockAudio, {passive: true, capture: true}));
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ac && ac.state !== 'running') ac.resume(); });
+// 音の出口が変わったら作り直す（拾えるブラウザだけ）
+try { navigator.mediaDevices.addEventListener('devicechange', () => { needRebuild = true; unlockAudio(); }); } catch (e) {}
 
 let voices = 0;
 function voice(freq, dur, gain = .1, type = 'triangle', delay = 0) {
   if (!ac || voices > 90) return;
-  if (ac.state !== 'running') { ac.resume(); return; }
+  if (ac.state !== 'running') {
+    if (ac.state === 'interrupted' || ac.state === 'closed') needRebuild = true;
+    try { ac.resume(); } catch (e) {}
+    return;
+  }
   const t = ac.currentTime + delay;
   [[1, gain], [2, gain * .35], [4.01, gain * .12]].forEach(([mul, g]) => {
     const o = ac.createOscillator(), v = ac.createGain();
@@ -769,8 +875,190 @@ function sendScore(value, x, y, color) {
   flyers.push({kind: 'score', value, x0: x, y0: y, t: -.35, color, arc: (Math.random() - .5) * 40});
 }
 
+// ---------- チュートリアル ----------
+// 台・受け皿・玉数・クリア条件をデータとして持つ。順番に1つずつやっていく。
+//   seed    … 台の種。同じ数字なら毎回まったく同じ台が出る
+//   conf    … その台だけの数字（受け皿・■青▲の数・持ち玉など）
+//   clear   … クリア条件。種類は stepState() にある9つ
+// あとで作る挑戦系のミッションも、同じ形のデータと同じ仕組みで動かせる
+const M_SLOT_EASY = [1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3];
+const M_B_NONE = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]];
+const M_B_PLUS = [[0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2]];
+// 文章では言わず、形と色で言う。<i> は色つきの印
+const R = t => `<i style="color:#D7141F">${t}</i>`, Y = t => `<i style="color:#EAA83A">${t}</i>`,
+      BL = t => `<i style="color:#2456B8">${t}</i>`;
+// title … 一覧と画面の上に出す「やること」。形と色は残す
+// hint  … はじめに帯で1回だけ出す、ひとことの説明
+const STEPS = [
+  {id: 'shot', title: '玉を打つ', hint: '画面を引っ張って、はなす', seed: 11, layout: 0,
+   conf: {START: 3, STAGE_B: M_B_NONE}, clear: {type: 'shots', n: 1}},
+  {id: 'mult3', title: Y('×3') + ' に入れる', hint: '入ると、スコアが3倍になる', seed: 23, layout: 2,
+   conf: {START: 5, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'mult', m: 3}},
+  {id: 'gain', title: '持ち玉を増やす', hint: '● の数だけ持ち玉が戻ってくる', seed: 31, layout: 0,
+   conf: {START: 4, STAGE_B: M_B_PLUS}, clear: {type: 'gain', n: 3}},
+  {id: 'square', title: R('■') + ' に当てる', hint: '赤い四角は強くはね返す', seed: 5, layout: 0,
+   conf: {START: 4, SQUARES: 8, BLUES: 0, TRIS: 0, STAGE_B: M_B_NONE}, clear: {type: 'hit', kind: 'square', n: 1}},
+  {id: 'blue', title: BL('●') + ' につかまる', hint: '青い円は玉をつかまえて放す', seed: 7, layout: 0,
+   conf: {START: 4, SQUARES: 0, BLUES: 8, TRIS: 0, STAGE_B: M_B_NONE}, clear: {type: 'hit', kind: 'blue', n: 1}},
+  {id: 'tri5', title: Y('▲') + ' で玉を5つにする', hint: '黄色い三角に当たると3つに分かれる', seed: 13, layout: 0,
+   conf: {START: 5, SQUARES: 0, BLUES: 0, TRIS: 8, STAGE_B: M_B_NONE}, clear: {type: 'balls', n: 5}},
+  {id: 'p100', title: '1回で100点', hint: 'たくさん当てるほどポイントが増える', seed: 17, layout: 0,
+   conf: {START: 6, SQUARES: 4, TRIS: 6, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'shotScore', n: 100}},
+  {id: 'fever', title: 'フィーバーに入る', hint: 'ポイントがたまると入れる', seed: 19, layout: 2,
+   conf: {START: 8, SQUARES: 4, TRIS: 6, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'fever'}},
+];
+// 押せることを表す右向きの矢印。チェックと同じ描き方で太さをそろえる
+const ARROW = size =>
+  `<svg class="arrow" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">` +
+  `<path d="M9 4.6 L16.4 12 L9 19.4" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="miter"/></svg>`;
+// できた印のチェック。線の太さを数字に合わせて、角は落とさない
+const CHECK = (size, ng) =>
+  `<svg class="check${ng ? ' ng' : ''}" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">` +
+  `<path d="M3.5 12.4 L9.6 18.5 L20.5 5.6" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="miter"/></svg>`;
+const MAX_SHOTS = 25;        // 玉が戻り続けても、これで終わり
+let stepIdx = 0, cleared = [], mProg = null;
+const curStep = () => STEPS[stepIdx];
+try { const r = store.get('dotdrop-tutorial'); if (r) cleared = JSON.parse(r.value); } catch (e) {}
+const isCleared = id => cleared.indexOf(id) >= 0;
+// タイトルのボタンの中に出す、8つの進み具合
+function tutDots() {
+  $('tutDots').innerHTML = STEPS.map(m => `<b class="${isCleared(m.id) ? 'on' : ''}"></b>`).join('');
+}
+function renderTutList() {
+  $('tlistRows').innerHTML = STEPS.map((m, i) => {
+    const done = isCleared(m.id);
+    return `<button data-i="${i}" class="${done ? 'done' : ''}">` +
+      `<b>${i + 1}</b><span>${m.title}</span>${done ? CHECK(20) : '<span></span>'}</button>`;
+  }).join('');
+  [...$('tlistRows').children].forEach(b => b.addEventListener('click', () => {
+    unlockAudio();
+    stepIdx = +b.dataset.i;
+    $('tlist').classList.remove('show'); $('start').classList.remove('show');
+    running = true;
+    reset(TUTORIAL);
+  }));
+}
+function openTutList() { renderTutList(); $('tlist').classList.add('show'); }
+
+// いまの達成度を［いくつ / いくつ］で返す
+function stepState() {
+  const c = curStep().clear;
+  if (c.type === 'shots')     return [mProg.shots, c.n];
+  if (c.type === 'hit')       return [mProg.hits[c.kind] || 0, c.n];
+  if (c.type === 'mult')      return [mProg.maxMult >= c.m ? 1 : 0, 1];
+  if (c.type === 'gain')      return [mProg.gained, c.n];
+  if (c.type === 'balls')     return [mProg.maxBalls, c.n];
+  if (c.type === 'shotScore') return [mProg.bestShot, c.n];
+  if (c.type === 'score')     return [score, c.n];
+  if (c.type === 'fever')     return [mProg.fever ? 1 : 0, 1];
+  if (c.type === 'survive')   return [mProg.shots, c.n];
+  return [0, 1];
+}
+function stepHud(bumpIt) {
+  const [now, goal] = stepState(), done = now >= goal;
+  $('mKicker').textContent = `あそびかた ${stepIdx + 1} / ${STEPS.length}`;
+  $('mTitle').innerHTML = curStep().title;
+  $('mProg').textContent = goal === 1 ? (done ? '●' : '') : `${Math.min(now, goal)} / ${goal}`;
+  $('mProg').classList.toggle('done', done);
+  if (bumpIt) bump('mProg');
+}
+
+// ---------- モード ----------
+// フリープレイとチュートリアルで違うのは「使う数字」「1回打ち終わったあと」「何で終わるか」の3つだけ。
+// 画面・音・振動は両方とも同じものを使う
+const FREE = {
+  conf: () => null,
+  start() { E.boardSeed = null; setLayout(0, false); },
+  shotEnd() {
+    const newShot = bumpRecord('shotScore', E.shotScore);
+    const newBalls = bumpRecord('shotBalls', shotBallsMax);
+    bumpRecord('shotHits', E.hitCount);
+    renderRecords('startRecords', false);
+    if (newShot && shots > 1) setTimeout(() => banner('BEST', `1回の最高スコアを更新 ${E.shotScore}`, '#F2F1EE'), 500);
+    else if (newBalls && shots > 1) setTimeout(() => banner('×' + shotBallsMax, '1回で増えた玉の最多記録', '#EAA83A'), 500);
+    gameBestShot = Math.max(gameBestShot, E.shotScore);
+    boardShots++;
+    if (boardShots >= SHOTS_PER_BOARD) {
+      boardShots = 0;
+      let next; do { next = Math.random() * LAYOUTS | 0; } while (next === E.layout);
+      setLayout(next, true);
+      const before = stageB();
+      E.stage++;
+      bumpRecord('stage', E.stage + 1);
+      const after = stageB();
+      const changed = before.map((v, i) => v !== after[i] ? i : -1).filter(i => i >= 0);
+      slotFlash = changed.length ? {t: 0, slots: changed} : null;
+      setTimeout(() => banner(`STAGE ${E.stage + 1}`, 'ステージが上がりました', '#F2F1EE'), 900);
+      stageHud(true);
+    } else pickGold();
+    stageHud(false);
+  },
+  isOver: () => money < COST,
+  over: () => gameOver(),
+};
+const TUTORIAL = {
+  conf: () => curStep().conf,
+  start() {
+    const m = curStep();
+    mProg = {shots: 0, hits: {}, maxMult: 0, gained: 0, maxBalls: 1, bestShot: 0, fever: false, cleared: false};
+    E.boardSeed = m.seed;
+    setLayout(m.layout || 0, false);
+    stepHud(false);
+    // ひとことの説明は帯で1回だけ。画面は隠さない
+    setTimeout(() => banner(String(stepIdx + 1), m.hint, '#F2F1EE'), 250);
+  },
+  hit(kind) { mProg.hits[kind] = (mProg.hits[kind] || 0) + 1; },
+  land(b, v) {
+    if (b.pts > 0) mProg.maxMult = Math.max(mProg.maxMult, b.mult);
+    if (v > 0) mProg.gained += v;
+  },
+  shotEnd() {
+    mProg.shots = shots;
+    mProg.bestShot = Math.max(mProg.bestShot, E.shotScore || 0);
+    mProg.maxBalls = Math.max(mProg.maxBalls, shotBallsMax);
+    if (E.fever) mProg.fever = true;
+    pickGold();
+    const [now, goal] = stepState();
+    if (!mProg.cleared && now >= goal) {
+      mProg.cleared = true;
+      banner('CLEAR', '', '#D7141F');
+      [0, 4, 7, 12].forEach((sp, k) => voice(note(6) * Math.pow(2, sp / 12), .35, .07, 'square', k * .07));
+      buzzPattern(3, 80);
+    }
+    stepHud(true);
+  },
+  isOver: () => mProg.cleared || money < COST || shots >= MAX_SHOTS,
+  over: () => stepOver(),
+};
+let mode = FREE;
+
+function stepOver() {
+  if ($('mover').classList.contains('show')) return;
+  const ok = mProg.cleared;
+  if (ok && !isCleared(curStep().id)) {
+    cleared.push(curStep().id);
+    store.set('dotdrop-tutorial', JSON.stringify(cleared));
+  }
+  tutDots();
+  const last = stepIdx >= STEPS.length - 1, toNext = ok && !last;
+  $('mResMark').innerHTML = CHECK(76, !ok);
+  $('mResText').textContent = ok ? 'CLEAR' : '玉切れ';
+  // どこまで来たかを8つの丸で
+  $('mDots').innerHTML = STEPS.map(m => `<i class="${isCleared(m.id) ? 'on' : ''}"></i>`).join('');
+  // つぎに何をするのかを、ボタン自体に書く
+  $('mNextLabel').style.display = toNext ? '' : 'none';
+  $('mNextRow').style.display = toNext ? '' : 'none';
+  // つぎのやることは、一覧の行と同じ形で見せる。この行を押すと進む
+  if (toNext) $('mNextRow').innerHTML =
+    `<b>${stepIdx + 2}</b><span>${STEPS[stepIdx + 1].title}</span>${ARROW(22)}`;
+  $('mRetry').style.display = ok ? 'none' : '';
+  $('mPlay').style.display = ok && last ? '' : 'none';
+  $('mover').classList.add('show');
+}
+
 // ---------- ゲームのフック ----------
 E.hooks.hit = (p, b, n, force, kind, pts) => {
+  if (mode.hit) mode.hit(kind);
   waves.push({x: p.x, y: p.y, t: 0, big: kind !== 'dot'});
   potPulse = 1;
   if (!E.fever) gauge += pts;
@@ -789,7 +1077,7 @@ E.hooks.hit = (p, b, n, force, kind, pts) => {
     [0, 4, 7, 12].forEach((s, k) => voice(note(Math.min(count, 15)) * Math.pow(2, s / 12), .35, .08, 'triangle', k * .04));
     noise(.08, .12, 4000);
     hitStop = Math.max(hitStop, count >= 9 ? .1 : .06); shake = Math.max(shake, Math.min(.6, .2 + count * .02));
-    countPop = 1; buzzPattern(2, 50);
+    buzzPattern(2, 50);
     if (count >= 9) slowPulse = .35;
     if (count >= MAX_BALLS && !E.maxShown) { E.maxShown = true; banner('×' + MAX_BALLS, '玉が最大まで増えました', '#EAA83A'); buzzPattern(5, 60); }
     const tris = E.pegs.filter(q => q.kind === 'tri');
@@ -801,12 +1089,12 @@ E.hooks.hit = (p, b, n, force, kind, pts) => {
     }
   }
   if (pts > 1) floaters.push({x: p.x, y: p.y - 16, text: '+' + pts, t: 0, color: kind === 'blue' ? '#7FA2EC' : SHAPE[kind]()});
-  if (kind === 'tri' && E.split) floaters.push({x: p.x, y: p.y - 16, text: '×3', t: 0, color: SHAPE.tri()});
   if (n % 10 === 0) { hitStop = Math.max(hitStop, .05); shake = Math.max(shake, .15); }
   if (gauge >= FEVER_AT && !E.fever) E.feverReady = true;
 };
 E.hooks.release = p => { voice(note(12), .15, .08, 'triangle'); p.pulse = 1; buzz(6, 0); };
 E.hooks.land = (b, v) => {
+  if (mode.land) mode.land(b, v);
   const top = slotTop(), m = b.mult, gain = b.gain;
   catches.push({slot: b.slot, m, t: 0});
   bumpRecord('ballGain', gain);
@@ -839,40 +1127,23 @@ E.hooks.land = (b, v) => {
   }
 };
 E.hooks.shotEnd = () => {
+  feverStep();
+  mode.shotEnd();
+  hud();
+  checkOver();
+};
+// フィーバーの出入りは両モード共通
+function feverStep() {
   if (E.fever) {
     feverLeft--;
     if (feverLeft <= 0) { E.fever = false; gauge = 0; }
   } else if (gauge >= FEVER_AT) {
     E.fever = true; feverLeft = FEVER_SHOTS;
     banner('FEVER', `${FEVER_SHOTS}回、ポイント2倍・玉が減らない`, '#D7141F');
-    [0, 4, 7, 12, 16, 19, 24].forEach((s, k) => voice(note(1) * Math.pow(2, s / 12), .4, .07, 'square', k * .06));
+    [0, 4, 7, 12, 16, 19, 24].forEach((sp, k) => voice(note(1) * Math.pow(2, sp / 12), .4, .07, 'square', k * .06));
     buzzPattern(4, 80);
   }
-  const newShot = bumpRecord('shotScore', E.shotScore);
-  const newBalls = bumpRecord('shotBalls', shotBallsMax);
-  bumpRecord('shotHits', E.hitCount);
-  renderRecords('startRecords', false);
-  if (newShot && shots > 1) setTimeout(() => banner('BEST', `1回の最高スコアを更新 ${E.shotScore}`, '#F2F1EE'), 500);
-  else if (newBalls && shots > 1) setTimeout(() => banner('×' + shotBallsMax, '1回で増えた玉の最多記録', '#EAA83A'), 500);
-  gameBestShot = Math.max(gameBestShot, E.shotScore);
-  boardShots++;
-  if (boardShots >= SHOTS_PER_BOARD) {
-    boardShots = 0;
-    let next; do { next = Math.random() * LAYOUTS | 0; } while (next === E.layout);
-    setLayout(next, true);
-    const before = stageB();
-    E.stage++;
-    bumpRecord('stage', E.stage + 1);
-    const after = stageB();
-    const changed = before.map((v, i) => v !== after[i] ? i : -1).filter(i => i >= 0);
-    slotFlash = changed.length ? {t: 0, slots: changed} : null;
-    setTimeout(() => banner(`STAGE ${E.stage + 1}`, 'ステージが上がりました', '#F2F1EE'), 900);
-    stageHud(true);
-  } else pickGold();
-  stageHud(false);
-  hud();
-  checkOver();
-};
+}
 
 // 画面を隠さない帯の演出＋画面のふちが光る
 let bannerState = null;
@@ -880,32 +1151,95 @@ function banner(word, sub, color) {
   bannerState = {word, sub, color, t: 0};
   edge = {color, t: 0};
 }
+// 引いている間の狙い（進む方向の軌道と、引いた側のパワーの弧）
+function drawAim() {
+  const L = LAUNCH, P = pal();
+  const [vx, vy] = launchVelocity(pullX, pullY, true);
+  // 軌道：細かい丸の点線（進む方向）
+  ctx.fillStyle = P.text;
+  for (let i = 1; i <= 10; i++) {
+    const t = i * .035, x = L.x + vx * t, y = L.y + vy * t + GRAV * t * t / 2;
+    ctx.globalAlpha = (1 - i / 11) * .7;
+    ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  // パワー：引いた側に弧が5本（電波マークのように広がる）。軌道と形がかぶらない
+  const base = Math.atan2(-vy, -vx), spread = .42;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < LEVELS; i++) {
+    const r = 17 + i * 8;
+    ctx.strokeStyle = i < level ? (level === LEVELS ? '#EAA83A' : '#D7141F') : P.peg;
+    ctx.lineWidth = i < level ? 3.5 : 2;
+    ctx.beginPath(); ctx.arc(L.x, L.y, r, base - spread, base + spread); ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+}
+// 発射前の玉。帯より手前に描くので、いつでも見える
+function drawLaunchBall() {
+  if (!canShoot()) return;
+  ctx.fillStyle = pal().ball;
+  ctx.beginPath(); ctx.arc(LAUNCH.x, LAUNCH.y, BR + level / LEVELS * 1.2, 0, 7); ctx.fill();
+}
+// 玉のまわりの飾りと、はじめの説明（帯より奥）
+function drawLaunch(top) {
+  if (!canShoot()) return;
+  const L = LAUNCH, P = pal();
+  if (level === 0 && !bannerUp()) {
+    ctx.strokeStyle = P.dim; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(L.x, L.y, BR + 8 + Math.sin(E.time * 3) * 1.5, 0, 7); ctx.stroke();
+    ctx.setLineDash([2, 5]);
+    ctx.beginPath(); ctx.arc(L.x, L.y, 34, Math.PI, 0); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  if (firstShot && mode !== TUTORIAL) {
+    ctx.fillStyle = P.text; ctx.globalAlpha = .7 + Math.sin(E.time * 3) * .2;
+    ctx.font = `500 13px ${FONT}`;
+    ctx.textAlign = 'center';
+    ctx.fillText('引っ張ってはなす', LW / 2, 188);
+    ctx.fillText('×は倍率　●は戻る玉　点線は減る玉', LW / 2, top - 30);
+    ctx.globalAlpha = 1;
+  }
+}
+// 帯が出ている間かどうか。出ている間は発射前の飾りを消して、上を静かにする
+const bannerUp = () => bannerState && bannerState.t < 1.5;
+const BANNER_Y = 116, BANNER_H = 56, SUB_SIZE = 14;
 function drawBanner() {
   const b = bannerState;
   if (!b || b.t > 1.5) return;
   const t = b.t, off = t < .25 ? -LW * (1 - ease(t / .25)) : t > 1.2 ? LW * ease((t - 1.2) / .3) : 0;
-  const y = 116, h = 56;
+  const y = BANNER_Y, h = BANNER_H, mid = y + h / 2;
   ctx.fillStyle = b.color; ctx.fillRect(off, y, LW, h);
-  ctx.fillStyle = b.color === '#F2F1EE' || b.color === '#EAA83A' ? '#1C1716' : '#F2F1EE';
-  if (b.color === '#D7141F') ctx.fillStyle = '#1C1716';
+  const ink = b.color === '#F2F1EE' || b.color === '#EAA83A' || b.color === '#D7141F' ? '#1C1716' : '#F2F1EE';
+  ctx.fillStyle = ink;
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   // 帯に収まるよう、見出しの大きさを自動で合わせる
-  ctx.font = `700 12px ${FONT}`;
-  const subW = ctx.measureText(b.sub).width;
+  ctx.font = `700 ${SUB_SIZE}px ${FONT}`;
+  const subW = b.sub ? ctx.measureText(b.sub).width : 0;
   let size = 40;
   ctx.font = `700 ${size}px ${FONT}`;
-  while (size > 20 && ctx.measureText(b.word).width + subW + 44 > LW) { size -= 2; ctx.font = `700 ${size}px ${FONT}`; }
-  ctx.fillText(b.word, off + 16, y + h / 2 + 2);
+  while (size > 20 && ctx.measureText(b.word).width + subW + 50 > LW) { size -= 2; ctx.font = `700 ${size}px ${FONT}`; }
+  ctx.fillText(b.word, off + 16, mid + 2);
   const w = ctx.measureText(b.word).width;
-  ctx.font = `700 12px ${FONT}`;
-  ctx.fillText(b.sub, off + 28 + w, y + h / 2 + 1);
+  if (b.sub) {
+    // 見出しと説明の間に細い区切りを1本。2つの役割が違うことが形で分かる
+    const x = off + 16 + w + 14;
+    ctx.globalAlpha = .28;
+    ctx.fillRect(x, y + 14, 1.5, h - 28);
+    ctx.globalAlpha = 1;
+    ctx.font = `700 ${SUB_SIZE}px ${FONT}`;
+    ctx.fillText(b.sub, x + 14, mid + 1);
+  }
   ctx.textAlign = 'center';
 }
 let overPending = false;
 function checkOver() {
   if (overPending) return;
   overPending = true;
-  setTimeout(() => { overPending = false; if (money < COST && !E.balls.length && !flyers.length) gameOver(); else if (money < COST) checkOver(); }, 900);
+  setTimeout(() => {
+    overPending = false;
+    if (!mode.isOver()) return;
+    if (!E.balls.length && !flyers.length) mode.over(); else checkOver();
+  }, 900);
 }
 function gameOver() {
   if ($('over').classList.contains('show')) return;
@@ -913,14 +1247,12 @@ function gameOver() {
   const entry = {score, stage: E.stage + 1, shots, date: Date.now()};
   const rank = addRanking(entry);
   $('stStage').textContent = E.stage + 1;
-  $('stShots').textContent = shots;
   $('stBest').textContent = gameBestShot;
   const nr = $('newRank');
-  nr.textContent = rank === 0 && ranking.length > 1 ? 'ハイスコア更新' : rank >= 0 ? `${rank + 1}位` : '';
+  nr.textContent = rank === 0 && ranking.length > 1 ? 'NEW RECORD' : rank >= 0 ? `${rank + 1}位` : '';
   nr.classList.toggle('show', rank >= 0);
   nr.classList.toggle('top', rank === 0);
   renderRanking('overRanking', entry, 5);
-  renderRanking('startRanking', null, 5);
   renderRecords('overRecords', true);
   $('over').classList.add('show');
   $('over').scrollTop = 0;
@@ -933,14 +1265,34 @@ function gameOver() {
     else { voice(note(5), .3, .08, 'triangle'); voice(note(8), .4, .07, 'triangle', .08); if (rank === 0) playMilestone(Math.min(10, Math.max(3, Math.floor(score / 300)))); }
   })(t0);
 }
-$('retry').addEventListener('click', () => { unlockAudio(); reset(); });
-$('listenBtn').addEventListener('click', () => {
+$('retry').addEventListener('click', () => { unlockAudio(); reset(FREE); });
+// タイトルへ戻る道。これがないと、遊び終わったあと「あそびかた」に行けない
+$('toTitle').addEventListener('click', () => {
   unlockAudio();
-  for (let i = 1; i <= 10; i++) setTimeout(() => playMilestone(i), (i - 1) * 1500 + 100);
+  running = false;
+  reset(FREE);
+  tutDots();
+  $('start').classList.add('show');
 });
-$('startBtn').addEventListener('click', () => { unlockAudio(); $('start').classList.remove('show'); running = true; bestAtStart = personalBest(); bestHud(); voice(note(1), .2, .08); voice(note(3), .2, .08, 'triangle', .08); voice(note(5), .3, .08, 'triangle', .16); });
+$('tutBtn').addEventListener('click', () => { unlockAudio(); openTutList(); });
+$('tlistBack').addEventListener('click', () => { $('tlist').classList.remove('show'); });
+$('mNextRow').addEventListener('click', () => { unlockAudio(); stepIdx = Math.min(STEPS.length - 1, stepIdx + 1); reset(TUTORIAL); });
+$('mRetry').addEventListener('click', () => { unlockAudio(); reset(TUTORIAL); });
+// 最後まで終わったら、そのままフリープレイへ
+$('mPlay').addEventListener('click', () => { unlockAudio(); $('mover').classList.remove('show'); running = true; reset(FREE); });
+$('mQuit').addEventListener('click', () => {
+  $('mover').classList.remove('show');
+  document.body.classList.remove('tutorial');
+  running = false;
+  $('start').classList.add('show');
+  openTutList();
+});
+$('startBtn').addEventListener('click', () => { unlockAudio(); $('start').classList.remove('show'); running = true; reset(FREE); bestAtStart = personalBest(); bestHud(); voice(note(1), .2, .08); voice(note(3), .2, .08, 'triangle', .08); voice(note(5), .3, .08, 'triangle', .16); });
 
-function canShoot() { return running && !E.balls.length && money >= COST && !$('over').classList.contains('show'); }
+function canShoot() {
+  return running && !E.balls.length && money >= COST &&
+    !$('over').classList.contains('show') && !$('mover').classList.contains('show');
+}
 function shoot() {
   if (!canShoot() || level === 0) return;
   money -= COST; shots++; firstShot = false; moneyRoll.set(money);
@@ -1045,7 +1397,15 @@ function draw(dt) {
     ctx.globalAlpha = 1;
   }
 
-  // ---- 帯の演出（玉や釘より奥に描くので隠れない）----
+  // ---- 発射前の飾りと、待っている玉（帯より奥に描く）----
+  // 帯は玉の位置を横切るので、ここで手前に描くと文字が玉で隠れて読めない。
+  // 引きはじめたら下で手前に描き直すので、狙っている間は玉が隠れることはない
+  drawLaunch(top);
+  if (level === 0) drawLaunchBall();
+  // ---- 帯の演出 ----
+  // 帯より奥にあるのは、発射前の飾りだけ。
+  // 釘・受け皿・玉・狙いは帯より手前に描くので、帯が遊びを隠すことはない。
+  // （飾りの点線が文字に重なって読めなかったので、そこだけ順番を入れ替えた）
   drawBanner();
 
   // ---- 釘 ----
@@ -1078,7 +1438,7 @@ function draw(dt) {
   }
 
   // ---- 敷き詰めた受け皿（倍率と戻る玉）----
-  for (let i = 0; i < SLOTS.length; i++) {
+  for (let i = 0; i < SLOT_M.length; i++) {
     const x = slotX(i);
     if (x < -SLOT_W || x > LW) continue;
     const info = slotInfo(i), [fill, fg] = slotColors(info.m, info.b);
@@ -1116,6 +1476,8 @@ function draw(dt) {
   ctx.globalAlpha = 1;
 
   drawMilestone();
+  // 引いている間は、狙いも玉もいちばん手前。帯が出ていても狙いは見える
+  if (canShoot() && level > 0) { drawAim(); drawLaunchBall(); }
 
   // ---- 玉 ----
   for (const b of E.balls) {
@@ -1136,14 +1498,6 @@ function draw(dt) {
     });
     ctx.globalAlpha = .2; ctx.beginPath(); ctx.arc(b.x, b.y, BR + 6, 0, 7); ctx.fill();
     ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(b.x, b.y, BR, 0, 7); ctx.fill();
-  }
-
-  // ---- 盤面にある玉の数 ----
-  const alive = E.balls.filter(b => b.state !== 'land').length;
-  if (shotBallsMax > 1 && alive > 1) {
-    ctx.fillStyle = SHAPE.tri();
-    ctx.font = `700 ${34 + countPop * 18}px ${FONT}`;
-    ctx.fillText('×' + alive, LW / 2, 140);
   }
 
   // ---- 吹き出し ----
@@ -1169,46 +1523,6 @@ function draw(dt) {
     else { ctx.font = `700 ${24 - k * 10}px ${FONT}`; ctx.fillText('+' + fy.value, x, y); }
   }
 
-  // ---- 発射前：玉は固定。進む方向に軌道、反対側にパワー ----
-  if (canShoot()) {
-    const L = LAUNCH, pw = level / LEVELS;
-    if (level > 0) {
-      const [vx, vy] = launchVelocity(pullX, pullY, true);
-      // 軌道：細かい丸の点線（進む方向）
-      ctx.fillStyle = P.text;
-      for (let i = 1; i <= 10; i++) {
-        const t = i * .035, x = L.x + vx * t, y = L.y + vy * t + GRAV * t * t / 2;
-        ctx.globalAlpha = (1 - i / 11) * .7;
-        ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 7); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      // パワー：引いた側に弧が5本（電波マークのように広がる）。釘や軌道と形がかぶらない
-      const base = Math.atan2(-vy, -vx), spread = .42;
-      ctx.lineCap = 'round';
-      for (let i = 0; i < LEVELS; i++) {
-        const r = 17 + i * 8;
-        ctx.strokeStyle = i < level ? (level === LEVELS ? '#EAA83A' : '#D7141F') : P.peg;
-        ctx.lineWidth = i < level ? 3.5 : 2;
-        ctx.beginPath(); ctx.arc(L.x, L.y, r, base - spread, base + spread); ctx.stroke();
-      }
-      ctx.lineCap = 'butt';
-    } else {
-      ctx.strokeStyle = P.dim; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(L.x, L.y, BR + 8 + Math.sin(E.time * 3) * 1.5, 0, 7); ctx.stroke();
-      ctx.setLineDash([2, 5]);
-      ctx.beginPath(); ctx.arc(L.x, L.y, 34, Math.PI, 0); ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    ctx.fillStyle = P.ball;
-    ctx.beginPath(); ctx.arc(L.x, L.y, BR + pw * 1.2, 0, 7); ctx.fill();
-    if (firstShot) {
-      ctx.fillStyle = P.text; ctx.globalAlpha = .7 + Math.sin(E.time * 3) * .2;
-      ctx.font = `500 13px ${FONT}`;
-      ctx.fillText('引っ張ってはなすと、反対側へ飛びます', LW / 2, 188);
-      ctx.fillText('×はスコアの倍率　●は戻る玉　点線の丸は減る玉', LW / 2, top - 30);
-      ctx.globalAlpha = 1;
-    }
-  }
   ctx.restore();
   if (edge && edge.t < .9) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1229,7 +1543,7 @@ function frame(now) {
     const gap = slotTop() - b.y;
     if (gap > 0 && gap < 110) {
       const t = gap / b.vy;
-      if (SLOTS[slotAt(b.x + b.vx * t, t)].m >= 5) slow = true;
+      if (slotInfo(slotAt(b.x + b.vx * t, t)).m >= 5) slow = true;
     }
   }
   if (shotBallsMax > 4) slow = false;
@@ -1294,7 +1608,6 @@ function frame(now) {
     }
   }
   potPulse = Math.max(0, potPulse - real * 6);
-  countPop = Math.max(0, countPop - real * 4);
   waves.forEach(w => w.t += real); waves = waves.filter(w => w.t < .7);
   if (waves.length > 40) waves.splice(0, waves.length - 40);
   floaters.forEach(fl => fl.t += real); floaters = floaters.filter(fl => fl.t < (fl.life || .9));
@@ -1305,7 +1618,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-fit(); reset(); requestAnimationFrame(frame);
+fit(); reset(FREE); tutDots(); requestAnimationFrame(frame);
 </script>
 </body>
 </html>
