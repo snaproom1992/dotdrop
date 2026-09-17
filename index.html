@@ -1501,25 +1501,25 @@ function draw(dt) {
     const info = slotInfo(i), [fill, fg] = slotColors(info.m, info.b);
     const c = catches.filter(k => k.slot === i).pop();
     const k = c ? 1 - ease(c.t / .5) : 0, lift = c && c.m > 0 ? 8 * k : 0;
-    rrect(x + 2, top + 6 - lift, SLOT_W - 4, E.LH - top - 14 + lift, 6);
+    rrect(x + 2, top + 6 - lift, SLOT_W - 4, E.LH - top - 26 + lift, 6);
     ctx.fillStyle = fill; ctx.fill();
     if (c && c.m > 0) { ctx.strokeStyle = P.ball; ctx.lineWidth = 2.5 * k; if (k > .05) ctx.stroke(); }
     if (slotFlash && slotFlash.t < 2 && slotFlash.slots.includes(i) && Math.sin(slotFlash.t * 18) > 0) {
-      rrect(x + 2, top + 6, SLOT_W - 4, E.LH - top - 14, 6);
+      rrect(x + 2, top + 6, SLOT_W - 4, E.LH - top - 26, 6);
       ctx.strokeStyle = '#D7141F'; ctx.lineWidth = 3; ctx.stroke();
     }
     ctx.fillStyle = fg; ctx.font = `700 ${(info.m >= 5 ? 26 : 22) + k * 8}px ${FONT}`;
-    ctx.fillText('×' + info.m, x + SLOT_W / 2, top + 30 - lift);
+    ctx.fillText('×' + info.m, x + SLOT_W / 2, top + 28 - lift);
     // 戻ってくる玉の数を丸で表示
     for (let j = 0; j < info.b; j++) {
-      ctx.beginPath(); ctx.arc(x + SLOT_W / 2 + (j - (info.b - 1) / 2) * 11, top + 54 - lift, 3.5, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + SLOT_W / 2 + (j - (info.b - 1) / 2) * 11, top + 50 - lift, 3.5, 0, 7); ctx.fill();
     }
     if (info.b < 0) {
       // 玉が減る受け皿：点線の丸（ここにあるはずの玉がない）
       const n = -info.b;
       ctx.strokeStyle = E.fever ? '#1C1716' : '#D7141F'; ctx.lineWidth = 1.6; ctx.setLineDash([2.2, 2]);
       for (let j = 0; j < n; j++) {
-        ctx.beginPath(); ctx.arc(x + SLOT_W / 2 + (j - (n - 1) / 2) * 14, top + 54 - lift, 5, 0, 7); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x + SLOT_W / 2 + (j - (n - 1) / 2) * 14, top + 50 - lift, 5, 0, 7); ctx.stroke();
       }
       ctx.setLineDash([]);
     }
