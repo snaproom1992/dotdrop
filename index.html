@@ -247,10 +247,10 @@ const LAYOUTS = 4, SQ_H = 7, BLUE_R = 9, TRI_R = 8;
 // ここから下の数字は、モード（フリープレイ／ミッション）ごとに差し替えられる。
 // 何も渡さなければ、これまでと同じフリープレイの数字になる
 const DEFAULTS = {SLOT_M: SLOT_M0, STAGE_B: STAGE_B0, START: 12, COST: 1, MAX_BALLS: 27,
-  SQUARES: 3, BLUES: 2, TRIS: 3, SHOTS_PER_BOARD: 6, FEVER_AT: 120, FEVER_SHOTS: 3};
-let SLOT_M, STAGE_B, START, COST, MAX_BALLS, SQUARES, BLUES, TRIS, SHOTS_PER_BOARD, FEVER_AT, FEVER_SHOTS;
+  SQUARES: 3, BLUES: 2, TRIS: 3, SHOTS_PER_BOARD: 6, FEVER_AT: 120, FEVER_SHOTS: 3, PERFECT: 500};
+let SLOT_M, STAGE_B, START, COST, MAX_BALLS, SQUARES, BLUES, TRIS, SHOTS_PER_BOARD, FEVER_AT, FEVER_SHOTS, PERFECT;
 function applyConf(c) {
-  ({SLOT_M, STAGE_B, START, COST, MAX_BALLS, SQUARES, BLUES, TRIS, SHOTS_PER_BOARD, FEVER_AT, FEVER_SHOTS} =
+  ({SLOT_M, STAGE_B, START, COST, MAX_BALLS, SQUARES, BLUES, TRIS, SHOTS_PER_BOARD, FEVER_AT, FEVER_SHOTS, PERFECT} =
     {...DEFAULTS, ...(c || {})});
 }
 applyConf();
@@ -271,7 +271,7 @@ const boardRand = () => rng ? rng() : Math.random();
 // 台を組み立てる前に呼ぶ。種があれば、同じ台・同じ▲の位置になる
 const seedBoard = () => { rng = E.boardSeed == null ? null : seeded(E.boardSeed | 0); };
 const E = {LH: 700, pegs: [], balls: [], pot: 0, shotPay: 0, hitCount: 0, conveyor: 0, layout: 0, fever: false, time: 0, stage: 0,
-  boardSeed: null, convHold: false, hooks: {hit() {}, land() {}, shotEnd() {}, release() {}}};
+  boardSeed: null, convHold: false, hooks: {hit() {}, land() {}, shotEnd() {}, release() {}, perfect() {}}};
 
 const slotTop = () => E.LH - 84;
 const field = () => ({top: 200, bottom: E.LH - 135});
@@ -323,8 +323,9 @@ function setLayout(kind, animate) {
   E.layout = kind;
   E.pegs = pts.map(([x, y], i) => {
     const o = animate && old.length ? old[i % old.length] : null;
-    return {x: o ? o.x : x, y: o ? o.y : y, fx: o ? o.x : x, fy: o ? o.y : y, tx: x, ty: y, m: o ? 0 : 1, lit: 0, pulse: 0, kind: 'dot', cool: 0};
+    return {x: o ? o.x : x, y: o ? o.y : y, fx: o ? o.x : x, fy: o ? o.y : y, tx: x, ty: y, m: o ? 0 : 1, lit: 0, pulse: 0, kind: 'dot', cool: 0, boardHit: false};
   });
+  E.perfect = false;   // この台でまだ全部に当てていない
   // 形ごとに役割：■はね返す ●(青)つかまえる ▲分裂
   const idx = E.pegs.map((_, i) => i).sort(() => boardRand() - .5);
   idx.slice(0, SQUARES).forEach(i => E.pegs[i].kind = 'square');
@@ -357,7 +358,7 @@ function hitPeg(p, b, force) {
   E.hitCount++;
   const kind = p.kind, pts = POINTS[kind] * (E.fever ? 2 : 1);
   E.pot += pts; b.pts += pts;
-  p.lit = 1; p.pulse = 1;
+  p.lit = 1; p.pulse = 1; p.boardHit = true;   // この台で当てたしるし（消えない）
   let split = 0;
   if (kind === 'tri') {
     p.triHit = true;
@@ -396,8 +397,9 @@ function stepPhysics(dt) {
     b.vy += GRAV * dt;
     b.x += b.vx * dt; b.y += b.vy * dt;
     if (b.y < 40 && b.vy < 0) { b.y = 40; b.vy = -b.vy * .4; }
-    if (b.x < BR) { b.x = BR; b.vx = Math.abs(b.vx) * .6; }
-    if (b.x > LW - BR) { b.x = LW - BR; b.vx = -Math.abs(b.vx) * .6; }
+    // 壁は強めに跳ね返し、必ず内側へ戻る速さを持たせる（端に吸い込まれて落ちるのを防ぐ）
+    if (b.x < BR) { b.x = BR; b.vx = Math.max(Math.abs(b.vx) * .8, 150); }
+    if (b.x > LW - BR) { b.x = LW - BR; b.vx = -Math.max(Math.abs(b.vx) * .8, 150); }
     for (const p of (b.ghostUntil > E.time ? [] : E.pegs)) {
       const reach = BR + 10, dx0 = b.x - p.x, dy0 = b.y - p.y;
       if (dx0 > reach || dx0 < -reach || dy0 > reach || dy0 < -reach) continue;
@@ -466,6 +468,12 @@ function stepPhysics(dt) {
   }
   if (E.balls.length && E.balls.every(b => b.state === 'land' && b.landT > .5)) {
     E.balls = [];
+    // 台の釘を1つ残らず当てた（＝全部赤くなった）。1つの台につき1回だけ
+    if (PERFECT > 0 && !E.perfect && E.pegs.length && E.pegs.every(p => p.boardHit)) {
+      E.perfect = true;
+      E.shotScore = (E.shotScore || 0) + PERFECT;
+      E.hooks.perfect(PERFECT);
+    }
     E.hooks.shotEnd(E.shotPay);
   }
 }
@@ -482,6 +490,16 @@ const MAX_PULL = 130;
 let shotShow = 0, timeScale = 1, slowPulse = 0, hitStop = 0, shake = 0, potShow = 0, potAlpha = 0, potPulse = 0;
 let waves = [], floaters = [], flyers = [], catches = [], fallen = [], shotBallsMax = 1, triBonus = false, edge = null;
 let gameBestShot = 0, milestoneFx = null, bestAtStart = 0, beatBest = false;
+let perfectFx = null;   // 台をぜんぶ赤くしたときの光の波
+// 上から下へ光が走り、そのあと全部がゆっくり脈打つ。画面を覆わず、釘そのものを光らせる
+function perfectGlow(p) {
+  if (!perfectFx) return 0;
+  const t = perfectFx.t;
+  if (t > 1.9) return 0;
+  const wave = Math.max(0, 1 - Math.abs(p.y - (t * 820 - 60)) / 95);
+  const pulse = t > .85 ? Math.max(0, 1 - (t - .85) / 1.05) * (.4 + Math.sin(t * 20) * .3) : 0;
+  return Math.max(0, Math.min(1, wave + pulse));
+}
 let running = false, rec = {}, sessionNew = new Set(), ranking = [], slotFlash = null;
 let bg = [42, 35, 34];
 
@@ -622,7 +640,7 @@ function reset(next) {
   score = 0; scoreShown = 0; gauge = 0; feverLeft = 0; shots = 0; boardShots = 0;
   E.fever = false; E.stage = 0; E.balls = []; E.pot = 0; slotFlash = null; flyers = []; catches = []; fallen = []; sessionNew = new Set();
   money = START; peak = START;
-  gameBestShot = 0; milestoneFx = null; bestAtStart = personalBest(); beatBest = false;
+  gameBestShot = 0; milestoneFx = null; perfectFx = null; bestAtStart = personalBest(); beatBest = false;
   document.body.classList.toggle('tutorial', mode === TUTORIAL);
   mode.start();
   bestHud();
@@ -830,6 +848,48 @@ function bell(freq, dur, gain = .05, delay = 0) {
   v.gain.setValueAtTime(gain, t); v.gain.exponentialRampToValueAtTime(.0001, t + dur);
   car.connect(v).connect(fanBus);
   car.start(t); mod.start(t); car.stop(t + dur); mod.stop(t + dur);
+}
+// 歓声：ノイズを人の声の帯に絞り、細かく揺らして「わあっ」を作る
+function cheer(dur = 2.4, gain = .17) {
+  if (!ac || ac.state !== 'running') return;
+  const t = ac.currentTime, len = Math.floor(ac.sampleRate * dur), sr = ac.sampleRate;
+  const buf = ac.createBuffer(2, len, sr);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    let lp = 0, ph = ch * 1.7;
+    for (let i = 0; i < len; i++) {
+      lp += (Math.random() * 2 - 1 - lp) * .4;
+      const s = i / sr;
+      // 声の山がいくつも重なって、ざわめいて聞こえる
+      const wob = 1 + Math.sin((s * 7.3 + ph) * 6.283) * .26 + Math.sin((s * 11.9 + ph) * 6.283) * .19
+                    + Math.sin((s * 3.1 + ph) * 6.283) * .14;
+      d[i] = lp * wob;
+    }
+  }
+  const src = ac.createBufferSource(), f = ac.createBiquadFilter(), hp = ac.createBiquadFilter(), g = ac.createGain();
+  src.buffer = buf;
+  hp.type = 'highpass'; hp.frequency.value = 450;
+  f.type = 'bandpass'; f.Q.value = .7;
+  f.frequency.setValueAtTime(650, t);
+  f.frequency.exponentialRampToValueAtTime(2200, t + .4);
+  f.frequency.exponentialRampToValueAtTime(1000, t + dur);
+  g.gain.setValueAtTime(.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain, t + .3);
+  g.gain.setValueAtTime(gain, t + dur * .42);
+  g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  src.connect(hp).connect(f).connect(g).connect(fanBus);
+  src.start(t); src.stop(t + dur);
+}
+// 台をぜんぶ赤くしたときのファンファーレ。節目の音よりも長く、層を厚くする
+function fanfarePerfect() {
+  duck(2.6);
+  const C = 261.63, n = sp => C * Math.pow(2, sp / 12);
+  [[0, 0], [4, .09], [7, .18], [12, .27]].forEach(([sp, d]) => brass(n(sp), .52, .11, d));
+  [[12, .52], [16, .62], [19, .74], [24, .86]].forEach(([sp, d]) => brass(n(sp), .62, .1, d));
+  [24, 19, 12].forEach((sp, i) => brass(n(sp), 1.5, .11 - i * .02, 1.08));
+  [12, 17, 22, 26, 29, 33, 36, 40].forEach((sp, i) => bell(n(sp), .95, .05, i * .13));
+  [0, .27, .54, .86, 1.08].forEach(d => kick(d, .42));
+  sweep(.55, .22, 380, 5200, 1.0);
 }
 // 節目の音が鳴っている間、ほかの効果音を小さくする
 function duck(dur) {
@@ -1063,7 +1123,7 @@ const FREE = {
   over: () => gameOver(),
 };
 const TUTORIAL = {
-  conf: () => curStep().conf,
+  conf: () => ({...curStep().conf, PERFECT: 0}),
   start() {
     const m = curStep();
     mProg = {shots: 0, hits: {}, maxMult: 0, gained: 0, maxBalls: 1, bestShot: 0, fever: false, cleared: false};
@@ -1157,6 +1217,17 @@ E.hooks.hit = (p, b, n, force, kind, pts) => {
   if (pts > 1) floaters.push({x: p.x, y: p.y - 16, text: '+' + pts, t: 0, color: kind === 'blue' ? '#7FA2EC' : SHAPE[kind]()});
   if (n % 10 === 0) { hitStop = Math.max(hitStop, .05); shake = Math.max(shake, .15); }
   if (gauge >= FEVER_AT && !E.fever) E.feverReady = true;
+};
+// 台の釘を1つ残らず当てた。いちばん大きい演出
+E.hooks.perfect = bonus => {
+  perfectFx = {t: 0};
+  hitStop = Math.max(hitStop, .45);
+  shake = Math.max(shake, 1.1);
+  edge = {color: 'cycle', t: 0, width: 44};
+  banner('PERFECT', `ぜんぶ赤くした +${bonus}`, '#D7141F');
+  fanfarePerfect();
+  cheer();
+  buzzPattern(8, 95);
 };
 E.hooks.release = p => { voice(note(12), .15, .08, 'triangle'); p.pulse = 1; buzz(6, 0); };
 E.hooks.land = (b, v) => {
@@ -1483,7 +1554,8 @@ function draw(dt) {
       const k = 1 - Math.abs(d - front) / 26;
       if (k > 0 && d < 150) bumpR += k * (1 - d / 150) * (w.big ? 4 : 2.2);
     }
-    const grow = p.pulse * 5 + Math.min(bumpR, 6);
+    const pg = perfectGlow(p);
+    const grow = p.pulse * 5 + Math.min(bumpR, 6) + pg * 4.5;
     if (p.kind === 'square') {
       const h = SQ_H + grow;
       ctx.fillStyle = SHAPE.square(); ctx.fillRect(p.x - h, p.y - h, h * 2, h * 2);
@@ -1498,7 +1570,10 @@ function draw(dt) {
       ctx.globalAlpha = 1;
     } else {
       ctx.beginPath(); ctx.arc(p.x, p.y, PR + grow + p.lit * 1.5, 0, 7);
-      if (p.lit > .02) { ctx.fillStyle = '#D7141F'; ctx.globalAlpha = .3 + p.lit * .7; }
+      if (pg > .02) { ctx.fillStyle = '#D7141F'; ctx.globalAlpha = 1; }
+      else if (p.lit > .02) { ctx.fillStyle = '#D7141F'; ctx.globalAlpha = .3 + p.lit * .7; }
+      // その台で当てた丸は薄い赤のまま残す。あと何本残っているかが見える
+      else if (p.boardHit) { ctx.fillStyle = '#D7141F'; ctx.globalAlpha = .4; }
       else ctx.fillStyle = P.peg;
       ctx.fill(); ctx.globalAlpha = 1;
     }
@@ -1629,6 +1704,7 @@ function frame(now) {
   if (!E.balls.length) { E.time += real; E.conveyor += CONV_SPEED * real; }
   if (edge) edge.t += real;
   if (milestoneFx) milestoneFx.t += real;
+  if (perfectFx) { perfectFx.t += real; if (perfectFx.t > 2.1) perfectFx = null; }
   if (slotFlash) slotFlash.t += real;
   if (bannerState) bannerState.t += real;
 
