@@ -44,17 +44,23 @@ body.fever #gauge{background:rgba(28,23,22,.18)}
 .overlay{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:safe center;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:var(--brown);color:var(--paper);z-index:6;text-align:center;padding:24px}
 .overlay.show{display:flex}
 .overlay h1{font-size:76px;letter-spacing:-.06em;line-height:.9}
-/* DOT の O は玉。名前のとおり、上から落ちてきて収まる */
-.overlay h1 i{display:inline-block;width:.70em;height:.70em;margin:0 .085em;border-radius:50%;
-background:currentColor;vertical-align:baseline;animation:dropIn .85s cubic-bezier(.3,0,.5,1) both}
+/* DOT の O は玉。名前のとおり、上から落ちてきて弾んで収まる */
+.overlay h1 i{display:inline-block;width:.60em;height:.60em;margin:0 .045em;border-radius:50%;
+background:currentColor;vertical-align:baseline;position:relative;top:-.06em;
+transform-origin:50% 100%;animation:dropIn 1.05s both}
+/* 落ちるところは加速、跳ねるところは減速。着地のたびに少しつぶれる */
 @keyframes dropIn{
-  0%{transform:translateY(-2.2em);opacity:0}
-  35%{opacity:1}
-  55%{transform:translateY(0)}
-  70%{transform:translateY(-.18em)}
-  85%{transform:translateY(0)}
-  93%{transform:translateY(-.05em)}
-  100%{transform:translateY(0)}}
+  0%  {transform:translateY(-3.6em);animation-timing-function:cubic-bezier(.45,0,.9,.4)}
+  30% {transform:translateY(0) scale(1,1)}
+  34% {transform:translateY(0) scale(1.20,.76)}
+  38% {transform:translateY(0) scale(.94,1.10);animation-timing-function:cubic-bezier(.15,.7,.4,1)}
+  55% {transform:translateY(-.55em) scale(1,1);animation-timing-function:cubic-bezier(.45,0,.9,.4)}
+  68% {transform:translateY(0) scale(1.14,.84)}
+  71% {transform:translateY(0) scale(.97,1.06);animation-timing-function:cubic-bezier(.15,.7,.4,1)}
+  82% {transform:translateY(-.20em) scale(1,1);animation-timing-function:cubic-bezier(.45,0,.9,.4)}
+  91% {transform:translateY(0) scale(1.07,.93)}
+  96% {transform:translateY(0) scale(.99,1.02)}
+  100%{transform:translateY(0) scale(1,1)}}
 @media (prefers-reduced-motion:reduce){.overlay h1 i{animation:none}}
 .overlay p{margin-top:14px;font-size:15px;opacity:.75;line-height:1.7}
 .overlay button{margin-top:28px;font:inherit;font-weight:700;font-size:18px;color:var(--paper);background:var(--red);border:none;border-radius:999px;padding:16px 40px;cursor:pointer}
