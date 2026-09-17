@@ -174,12 +174,13 @@ function game(strat) {
   }
   return {shots, stage: E.stage + 1, score, peak, endless: shots >= 500};
 }
+const GAMES = 250;   // 60回では同じ設定でも中央値が34〜39にブレたので増やした
 
-console.log(`\n3. 1ゲームの長さ（${START}玉スタート、60ゲームずつ。目標は25〜35回）`);
+console.log(`\n3. 1ゲームの長さ（${START}玉スタート、${GAMES}ゲームずつ。目標は25〜35回）`);
 console.log(`   ${pad('', 14)}${pad('回数(中央)', 14)}${pad('最短', 8)}${pad('最長', 8)}${pad('ステージ', 12)}${pad('スコア(中央)', 16)}${pad('持ち玉の最高', 16)}`);
 const summary = [];
 for (const [label, strat] of [['適当に打つ人', 'random'], ['うまい人', best]]) {
-  const g = Array.from({length: 60}, () => game(strat));
+  const g = Array.from({length: GAMES}, () => game(strat));
   const shots = g.map(x => x.shots), mid = median(shots);
   summary.push({label, mid, max: Math.max(...shots), endless: g.filter(x => x.endless).length});
   console.log(`   ${pad(label, 14)}${pad(mid, 14)}${pad(Math.min(...shots), 8)}${pad(Math.max(...shots), 8)}` +
