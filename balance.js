@@ -36,6 +36,15 @@ const {E, applyConf, START, COST, LAYOUTS, TRIS, MAX_BALLS, CONV_LEN, STAGE_B, S
 
 const LAYOUT_NAMES = ['千鳥', '同心円', '波', 'ランダム'];
 const STAGES = STAGE_B.length;
+// 中身が同じ段は続けてひとまとめにする（ステージ7〜9 のように。13段を横に並べると読めないため）
+const TIERS = [];
+STAGE_B.forEach((row, i) => {
+  const last = TIERS[TIERS.length - 1];
+  if (last && String(STAGE_B[last.stage]) === String(row)) last.to = i;
+  else TIERS.push({stage: i, to: i});
+});
+const tierName = t => 'ステージ' + (t.stage + 1) +
+  (t.to === STAGES - 1 ? '〜' : t.to > t.stage ? '〜' + (t.to + 1) : '');
 
 // ---------- 1回打つ ----------
 // angle は飛ぶ方向（0=左へ水平 / 90=真上 / 180=右へ水平）、level は引きの強さ 1〜5
@@ -92,11 +101,11 @@ console.log(`持ち玉${START}スタート / ${PER_STAGE}回でステージが�
 
 // ================= 1. ステージ別の玉の増減 =================
 console.log(`\n1. ステージ別の玉の増減（適当に打った1回あたり。プラスなら持ち玉が増えていく）`);
-console.log(`   ${pad('', 12)}${LAYOUT_NAMES.map(n => pad(n, 10)).join('')}${pad('平均', 10)}${pad('フィーバー中', 16)}`);
+console.log(`   ${pad('', 14)}${LAYOUT_NAMES.map(n => pad(n, 10)).join('')}${pad('平均', 10)}${pad('フィーバー中', 16)}`);
 const stageNet = [];
 let stuckTotal = 0;
-for (let st = 0; st < STAGES; st++) {
-  const row = [];
+for (const tier of TIERS) {
+  const st = tier.stage, row = [];
   for (let k = 0; k < LAYOUTS; k++) { const r = measure(400, {stage: st, layout: k}); row.push(r.net); stuckTotal += r.stuck; }
   const avg = row.reduce((a, b) => a + b) / row.length;
   let fev = 0;
@@ -105,10 +114,10 @@ for (let st = 0; st < STAGES; st++) {
     fev += r.net / LAYOUTS; stuckTotal += r.stuck;
   }
   stageNet.push(avg);
-  const label = `ステージ${st + 1}` + (st === STAGES - 1 ? '〜' : '');
-  console.log(`   ${pad(label, 12)}${row.map(v => pad(sign(v), 10)).join('')}${pad(sign(avg), 10)}${pad(sign(fev), 16)}`);
+  const label = tierName(tier);
+  console.log(`   ${pad(label, 14)}${row.map(v => pad(sign(v), 10)).join('')}${pad(sign(avg), 10)}${pad(sign(fev), 16)}`);
 }
-console.log(`   → ステージ1は ${sign(stageNet[0])}、ステージ2以降の平均は ${sign(stageNet.slice(1).reduce((a, b) => a + b) / (STAGES - 1))}`);
+console.log(`   → ステージ1は ${sign(stageNet[0])}、ステージ2以降の平均は ${sign(stageNet.slice(1).reduce((a, b) => a + b) / (stageNet.length - 1))}`);
 console.log(`     ${stageNet[0] > 0 ? 'ステージ1は増える。' : '⚠ ステージ1で増えていない。'}` +
             `${stageNet.slice(1).every(v => v < 0) ? 'ステージ2以降はどこも少しマイナス。' : '⚠ ステージ2以降にプラスのステージがある（終わらなくなる）。'}`);
 if (stuckTotal) console.log(`   ⚠ 玉が落ちてこなかった回が ${stuckTotal} 回あった（どこかで挟まっている）`);
@@ -140,14 +149,14 @@ console.log(`   （0°=左へ水平、90°=真上、180°=右へ水平）`);
 const best = found[0];
 console.log(`\n   一番得な打ち方（${best.angle}° 強さ${best.level}）をステージ別に見ると`);
 const bestNet = [];
-for (let st = 0; st < STAGES; st++) {
+for (const tier of TIERS) {
   let net = 0;
-  for (let k = 0; k < LAYOUTS; k++) net += measure(100, {stage: st, layout: k, strat: best}).net / LAYOUTS;
+  for (let k = 0; k < LAYOUTS; k++) net += measure(100, {stage: tier.stage, layout: k, strat: best}).net / LAYOUTS;
   bestNet.push(net);
 }
-console.log(`   ${pad('', 12)}${bestNet.map((_, i) => pad(`ステージ${i + 1}`, 11)).join('')}`);
-console.log(`   ${pad('玉の増減', 12)}${bestNet.map(v => pad(sign(v), 11)).join('')}`);
-console.log(`     ${bestNet[STAGES - 1] < 0 ? '後半はマイナス。うまい人でも終わる。' : '⚠ 後半でも増えている。うまい人だと終わらない。'}`);
+console.log(`   ${pad('', 12)}${TIERS.map(t => pad(tierName(t), 14)).join('')}`);
+console.log(`   ${pad('玉の増減', 12)}${bestNet.map(v => pad(sign(v), 14)).join('')}`);
+console.log(`     ${bestNet[bestNet.length - 1] < 0 ? '後半はマイナス。うまい人でも終わる。' : '⚠ 後半でも増えている。うまい人だと終わらない。'}`);
 console.log(`   （${elapsed()}）`);
 
 // ================= 3. 1ゲームの長さ =================
