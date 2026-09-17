@@ -28,6 +28,9 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 body{background:var(--brown);color:var(--paper);font-family:"Helvetica Neue",Helvetica,Arial,"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:background-color .5s,color .5s}
 body.fever{background:var(--mustard);color:var(--ink)}
 canvas{position:fixed;inset:0;display:block;background:var(--brown)}
+/* 下のホームバーの帯の高さを測るための目印（見えない） */
+#safeProbe{position:fixed;left:-9px;bottom:0;width:1px;height:0;pointer-events:none;
+padding-bottom:env(safe-area-inset-bottom,0px)}
 header{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:calc(env(safe-area-inset-top) + 18px) 20px 0;pointer-events:none}
 .stat b{display:flex;font-size:52px;line-height:.9;letter-spacing:-.05em;transition:transform .12s}
 .stat.right b{justify-content:flex-end;transform-origin:right center}
@@ -170,6 +173,7 @@ body.tutorial .stage-hud{display:none}
 </head>
 <body>
 <canvas id="c"></canvas>
+<i id="safeProbe" aria-hidden="true"></i>
 <header>
   <div class="stat"><b id="money" class="roll"></b><small>持ち玉</small></div>
   <div class="stage-hud"><small>STAGE</small><b id="stageNo">1</b><div id="stageDots"></div></div>
@@ -585,13 +589,23 @@ function renderRecords(id, markNew) {
 loadRecords();
 
 function fit() {
-  scale = Math.min(innerWidth / LW, innerHeight / 640);
-  E.LH = innerHeight / scale;
+  // 画面のいちばん下にはホームバーの帯がある。そこに受け皿を置くと、
+  // 戻る玉の●や点線の丸が隠れて見えない。その高さを除いた中に台を収める
+  const safeB = parseFloat(getComputedStyle($('safeProbe')).paddingBottom) || 0;
+  const h = Math.max(400, innerHeight - safeB);
+  scale = Math.min(innerWidth / LW, h / 640);
+  E.LH = h / scale;
   ox = (innerWidth - LW * scale) / 2;
+  // canvas は画面いっぱい。背景は全面に塗るので、帯のところも同じ色になる
   cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
   cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
 }
-addEventListener('resize', () => { fit(); if (!E.balls.length) setLayout(E.layout, false); });
+function refit() { fit(); if (!E.balls.length) setLayout(E.layout, false); }
+addEventListener('resize', refit);
+addEventListener('orientationchange', () => setTimeout(refit, 250));
+// ホーム画面から起動したときなど、最初の画面の高さが後から変わることがある
+if (window.visualViewport) visualViewport.addEventListener('resize', refit);
+setTimeout(refit, 300);
 
 function reset(next) {
   mode = next || mode;
