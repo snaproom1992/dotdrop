@@ -466,7 +466,7 @@ function stepPhysics(dt) {
 const $ = id => document.getElementById(id);
 const cv = $('c'), ctx = cv.getContext('2d');
 const dpr = Math.min(2, devicePixelRatio || 1);
-let scale = 1, ox = 0;
+let scale = 1, ox = 0, screenH = 700;   // screenH：ホームバーの帯も含めた、画面の下端
 
 let money, score, scoreShown, gauge, feverLeft, shots, peak, boardShots, firstShot = true;
 let pullX = 0, pullY = 0, pulling = false, startX = 0, startY = 0, keyCharge = false, keyStart = 0, keyAim = 0;
@@ -596,6 +596,7 @@ function fit() {
   scale = Math.min(innerWidth / LW, h / 640);
   E.LH = h / scale;
   ox = (innerWidth - LW * scale) / 2;
+  screenH = innerHeight / scale;
   // canvas は画面いっぱい。背景は全面に塗るので、帯のところも同じ色になる
   cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
   cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
@@ -1421,7 +1422,8 @@ function draw(dt) {
 
   const sx = shake > 0 ? (Math.random() - .5) * 14 * shake : 0, sy = shake > 0 ? (Math.random() - .5) * 14 * shake : 0;
   ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * sy);
-  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, LW, E.LH); ctx.clip();
+  // 受け皿を画面の下まで流したいので、切り取りは画面の下端まで（横は台の幅のまま）
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, LW, screenH); ctx.clip();
 
   const top = slotTop(), f = field(), cy = (f.top + f.bottom) / 2;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1501,11 +1503,13 @@ function draw(dt) {
     const info = slotInfo(i), [fill, fg] = slotColors(info.m, info.b);
     const c = catches.filter(k => k.slot === i).pop();
     const k = c ? 1 - ease(c.t / .5) : 0, lift = c && c.m > 0 ? 8 * k : 0;
-    rrect(x + 2, top + 6 - lift, SLOT_W - 4, E.LH - top - 26 + lift, 6);
+    // 受け皿は画面の下へそのまま流す（下の余白はなし）。
+    // 倍率と●は top からの位置なので、ホームバーの帯より上に必ず収まる
+    rrect(x + 2, top + 6 - lift, SLOT_W - 4, screenH + 14 - top - 6 + lift, 6);
     ctx.fillStyle = fill; ctx.fill();
     if (c && c.m > 0) { ctx.strokeStyle = P.ball; ctx.lineWidth = 2.5 * k; if (k > .05) ctx.stroke(); }
     if (slotFlash && slotFlash.t < 2 && slotFlash.slots.includes(i) && Math.sin(slotFlash.t * 18) > 0) {
-      rrect(x + 2, top + 6, SLOT_W - 4, E.LH - top - 26, 6);
+      rrect(x + 2, top + 6, SLOT_W - 4, screenH + 14 - top - 6, 6);
       ctx.strokeStyle = '#D7141F'; ctx.lineWidth = 3; ctx.stroke();
     }
     ctx.fillStyle = fg; ctx.font = `700 ${(info.m >= 5 ? 26 : 22) + k * 8}px ${FONT}`;
