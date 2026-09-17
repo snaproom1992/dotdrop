@@ -849,36 +849,66 @@ function bell(freq, dur, gain = .05, delay = 0) {
   car.connect(v).connect(fanBus);
   car.start(t); mod.start(t); car.stop(t + dur); mod.stop(t + dur);
 }
-// 歓声：ノイズを人の声の帯に絞り、細かく揺らして「わあっ」を作る
-function cheer(dur = 2.4, gain = .17) {
+// 歓声：大勢の「わー」と拍手を重ねる。どちらもノイズから作る
+// 「わー」＝声の帯（500〜1500Hz）のノイズを、ばらばらの速さで揺らして人数を出す
+// 拍手  ＝ごく短いノイズの粒を1秒に数百発ばらまく。粒が重なって「パチパチ」になる
+function cheer(dur = 2.6, gain = .2) {
   if (!ac || ac.state !== 'running') return;
-  const t = ac.currentTime, len = Math.floor(ac.sampleRate * dur), sr = ac.sampleRate;
-  const buf = ac.createBuffer(2, len, sr);
+  const t = ac.currentTime, sr = ac.sampleRate, len = Math.floor(sr * dur);
+
+  // ---- 「わー」----
+  const vb = ac.createBuffer(2, len, sr);
   for (let ch = 0; ch < 2; ch++) {
-    const d = buf.getChannelData(ch);
-    let lp = 0, ph = ch * 1.7;
+    const d = vb.getChannelData(ch);
+    let lp = 0;
+    // 速さの違う揺れを8本重ねる＝8人ぶんの声の波。数が増えるほど「大勢」に聞こえる
+    const w = Array.from({length: 8}, () => ({f: 2.5 + Math.random() * 11, p: Math.random() * 6.283, a: .1 + Math.random() * .2}));
     for (let i = 0; i < len; i++) {
-      lp += (Math.random() * 2 - 1 - lp) * .4;
-      const s = i / sr;
-      // 声の山がいくつも重なって、ざわめいて聞こえる
-      const wob = 1 + Math.sin((s * 7.3 + ph) * 6.283) * .26 + Math.sin((s * 11.9 + ph) * 6.283) * .19
-                    + Math.sin((s * 3.1 + ph) * 6.283) * .14;
+      lp += (Math.random() * 2 - 1 - lp) * .42;
+      const sec = i / sr;
+      let wob = 1;
+      for (const o of w) wob += Math.sin(sec * o.f * 6.283 + o.p) * o.a;
       d[i] = lp * wob;
     }
   }
-  const src = ac.createBufferSource(), f = ac.createBiquadFilter(), hp = ac.createBiquadFilter(), g = ac.createGain();
-  src.buffer = buf;
-  hp.type = 'highpass'; hp.frequency.value = 450;
-  f.type = 'bandpass'; f.Q.value = .7;
-  f.frequency.setValueAtTime(650, t);
-  f.frequency.exponentialRampToValueAtTime(2200, t + .4);
-  f.frequency.exponentialRampToValueAtTime(1000, t + dur);
-  g.gain.setValueAtTime(.0001, t);
-  g.gain.exponentialRampToValueAtTime(gain, t + .3);
-  g.gain.setValueAtTime(gain, t + dur * .42);
-  g.gain.exponentialRampToValueAtTime(.0001, t + dur);
-  src.connect(hp).connect(f).connect(g).connect(fanBus);
-  src.start(t); src.stop(t + dur);
+  const vs = ac.createBufferSource(), vf = ac.createBiquadFilter(), vo = ac.createBiquadFilter(), vg = ac.createGain();
+  vs.buffer = vb;
+  vf.type = 'bandpass'; vf.Q.value = .6;
+  vf.frequency.setValueAtTime(600, t);
+  vf.frequency.exponentialRampToValueAtTime(1500, t + .4);
+  vf.frequency.exponentialRampToValueAtTime(900, t + dur);
+  vo.type = 'peaking'; vo.frequency.value = 1050; vo.Q.value = 1.1; vo.gain.value = 7;  // 「あ」に寄せる
+  vg.gain.setValueAtTime(.0001, t);
+  vg.gain.exponentialRampToValueAtTime(gain, t + .28);
+  vg.gain.setValueAtTime(gain, t + dur * .4);
+  vg.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  vs.connect(vf).connect(vo).connect(vg).connect(fanBus);
+  vs.start(t); vs.stop(t + dur);
+
+  // ---- 拍手 ----
+  const ab = ac.createBuffer(2, len, sr);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = ab.getChannelData(ch);
+    const shots = Math.floor(dur * 420);
+    for (let k = 0; k < shots; k++) {
+      const at = Math.random() * dur;
+      // はじめはまばら、すぐ密に、終わりに向かって減る
+      const dens = at < .18 ? at / .18 : at > dur * .55 ? Math.max(.12, 1 - (at - dur * .55) / (dur * .45)) : 1;
+      if (Math.random() > dens) continue;
+      const st = Math.floor(at * sr), n = Math.floor(sr * (.005 + Math.random() * .009)), amp = .2 + Math.random() * .8;
+      for (let i = 0; i < n && st + i < len; i++) d[st + i] += (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.6) * amp;
+    }
+  }
+  const as = ac.createBufferSource(), ah = ac.createBiquadFilter(), al = ac.createBiquadFilter(), ag = ac.createGain();
+  as.buffer = ab;
+  ah.type = 'highpass'; ah.frequency.value = 900;
+  al.type = 'lowpass'; al.frequency.value = 7000;
+  ag.gain.setValueAtTime(.0001, t);
+  ag.gain.exponentialRampToValueAtTime(gain * .85, t + .22);
+  ag.gain.setValueAtTime(gain * .85, t + dur * .55);
+  ag.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  as.connect(ah).connect(al).connect(ag).connect(fanBus);
+  as.start(t); as.stop(t + dur);
 }
 // 台をぜんぶ赤くしたときのファンファーレ。節目の音よりも長く、層を厚くする
 function fanfarePerfect() {
@@ -1224,7 +1254,7 @@ E.hooks.perfect = bonus => {
   hitStop = Math.max(hitStop, .45);
   shake = Math.max(shake, 1.1);
   edge = {color: 'cycle', t: 0, width: 44};
-  banner('PERFECT', `ぜんぶ赤くした +${bonus}`, '#D7141F');
+  banner('PERFECT', `ドットをすべて赤くした +${bonus}`, '#D7141F');
   fanfarePerfect();
   cheer();
   buzzPattern(8, 95);
@@ -1349,12 +1379,18 @@ function drawBanner() {
   const ink = b.color === '#F2F1EE' || b.color === '#EAA83A' || b.color === '#D7141F' ? '#1C1716' : '#F2F1EE';
   ctx.fillStyle = ink;
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  // 帯に収まるよう、見出しの大きさを自動で合わせる
-  ctx.font = `700 ${SUB_SIZE}px ${FONT}`;
-  const subW = b.sub ? ctx.measureText(b.sub).width : 0;
-  let size = 40;
+  // 帯に収まるよう、見出しと説明の大きさを自動で合わせる。
+  // まず見出しを縮め、それでも入らなければ説明も縮める（長い説明が右で切れていた）
+  let size = 40, subSize = SUB_SIZE;
+  const total = () => {
+    ctx.font = `700 ${size}px ${FONT}`;
+    const w1 = ctx.measureText(b.word).width;
+    ctx.font = `700 ${subSize}px ${FONT}`;
+    return w1 + (b.sub ? ctx.measureText(b.sub).width : 0) + 62;
+  };
+  while (size > 20 && total() > LW) size -= 2;
+  while (subSize > 11 && total() > LW) subSize -= 1;
   ctx.font = `700 ${size}px ${FONT}`;
-  while (size > 20 && ctx.measureText(b.word).width + subW + 50 > LW) { size -= 2; ctx.font = `700 ${size}px ${FONT}`; }
   ctx.fillText(b.word, off + 16, mid + 2);
   const w = ctx.measureText(b.word).width;
   if (b.sub) {
@@ -1363,7 +1399,7 @@ function drawBanner() {
     ctx.globalAlpha = .28;
     ctx.fillRect(x, y + 14, 1.5, h - 28);
     ctx.globalAlpha = 1;
-    ctx.font = `700 ${SUB_SIZE}px ${FONT}`;
+    ctx.font = `700 ${subSize}px ${FONT}`;
     ctx.fillText(b.sub, x + 14, mid + 1);
   }
   ctx.textAlign = 'center';
