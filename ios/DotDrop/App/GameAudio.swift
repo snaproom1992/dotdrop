@@ -201,11 +201,9 @@ final class GameAudio {
             voice(freq: C * pow(2.0, Double(sp) / 12.0), dur: 0.62, gain: 0.09, delay: 0.52 + Double(i) * 0.1)
         }
         noise(dur: 0.3, gain: 0.15, freq: 800)
-        // 歓声っぽい帯
-        noise(dur: 0.8, gain: 0.1, freq: 1200)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            self?.noise(dur: 0.6, gain: 0.08, freq: 900)
-        }
+        // 歓声。ノイズを帯で絞っただけでは「サー」にしかならないので、
+        // 大勢の「わー」と拍手を作って鳴らす（MilestoneAudio.swift）
+        cheer()
     }
 
     func playFever() {

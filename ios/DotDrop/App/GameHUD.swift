@@ -80,6 +80,9 @@ struct GameHUD: View {
                     .font(DD.bold(22))
                     .tracking(-0.88)
                     .padding(.top, 1)
+                    // 本家の .stage-hud b.bump。持ち玉・スコア（1.08倍）より大きく跳ねる
+                    .scaleEffect(session.stageBump ? 1.4 : 1)
+                    .animation(.easeOut(duration: 0.2), value: session.stageBump)
                 HStack(spacing: 4) {
                     ForEach(0..<session.engine.config.shotsPerBoard, id: \.self) { i in
                         Circle()

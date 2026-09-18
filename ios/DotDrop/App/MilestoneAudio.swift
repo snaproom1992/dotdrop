@@ -206,6 +206,93 @@ extension GameAudio {
         }
     }
 
+    // MARK: - 歓声（PERFECT 用）
+
+    /// 大勢の「わー」と拍手。どちらもノイズから作る。
+    ///
+    /// **「わー」は、速さの違う揺れを8本重ねるのが肝。**揺れの数がそのまま人数に聞こえる。
+    /// ノイズを帯で絞っただけでは、ただの「サー」にしかならない。
+    /// **拍手は粒。**ごく短いノイズ（5〜14ms、急に減衰）を1秒に約420発ばらまくと、
+    /// 粒が重なって「パチパチ」になる。まばら→密→減る、と密度を変えると自然に聞こえる
+    func cheer(dur: Double = 2.6, gain: Double = 0.2) {
+        unlock()
+        guard let eng = engine, let fan, eng.isRunning else { return }
+        let format = fan.outputFormat(forBus: 0)
+        guard format.sampleRate > 0 else { return }
+        let sr = format.sampleRate
+        let len = Int(dur * sr)
+        guard len > 0, let buf = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(len)) else { return }
+        buf.frameLength = AVAudioFrameCount(len)
+        guard let chans = buf.floatChannelData else { return }
+        let channels = Int(format.channelCount)
+
+        for ch in 0..<channels {
+            let d = chans[ch]
+            for i in 0..<len { d[i] = 0 }
+
+            // ---- 「わー」----
+            // 速さの違う揺れを8本＝8人ぶんの声の波
+            let wob = (0..<8).map { _ in
+                (f: Double.random(in: 2.5...13.5), p: Double.random(in: 0...6.283), a: Double.random(in: 0.1...0.3))
+            }
+            var lp = 0.0, bpLP = 0.0, bpBP = 0.0
+            for i in 0..<len {
+                lp += (Double.random(in: -1...1) - lp) * 0.42
+                let sec = Double(i) / sr
+                var w = 1.0
+                for o in wob { w += sin(sec * o.f * 6.283 + o.p) * o.a }
+                // 帯を 600 →(0.4秒)→ 1500 →(おわり)→ 900 へ動かす
+                let k = sec < 0.4 ? sec / 0.4 : 1
+                let f = sec < 0.4 ? 600 * pow(1500.0 / 600.0, k)
+                                  : 1500 * pow(900.0 / 1500.0, (sec - 0.4) / max(0.001, dur - 0.4))
+                let fc = min(0.99, 2 * sin(.pi * min(f, sr * 0.45) / sr))
+                let q = 1.0 / 0.6
+                bpLP += fc * bpBP
+                let hp = lp * w - bpLP - q * bpBP
+                bpBP += fc * hp
+                // 音量：0.28秒で立ち上げ、4割まで保って、おわりに消える
+                let env: Double
+                if sec < 0.28 { env = 0.0001 * pow(gain / 0.0001, sec / 0.28) }
+                else if sec < dur * 0.4 { env = gain }
+                else { env = gain * pow(0.0001 / gain, (sec - dur * 0.4) / max(0.001, dur * 0.6)) }
+                d[i] += Float(bpBP * env * 2.2)
+            }
+
+            // ---- 拍手 ----
+            let shots = Int(dur * 420)
+            for _ in 0..<shots {
+                let at = Double.random(in: 0..<dur)
+                // はじめはまばら、すぐ密に、おわりに向かって減る
+                let dens = at < 0.18 ? at / 0.18
+                    : at > dur * 0.55 ? max(0.12, 1 - (at - dur * 0.55) / (dur * 0.45)) : 1
+                if Double.random(in: 0...1) > dens { continue }
+                let st = Int(at * sr)
+                let n = Int(sr * Double.random(in: 0.005...0.014))
+                let amp = Double.random(in: 0.2...1.0)
+                let env: Double
+                if at < 0.22 { env = 0.0001 * pow(gain * 0.85 / 0.0001, at / 0.22) }
+                else if at < dur * 0.55 { env = gain * 0.85 }
+                else { env = gain * 0.85 * pow(0.0001 / (gain * 0.85), (at - dur * 0.55) / max(0.001, dur * 0.45)) }
+                for i in 0..<n where st + i < len {
+                    let g = pow(1 - Double(i) / Double(n), 2.6) * amp
+                    d[st + i] += Float(Double.random(in: -1...1) * g * env * 1.6)
+                }
+            }
+
+            for i in 0..<len { d[i] = max(-1, min(1, d[i])) }
+        }
+
+        let player = AVAudioPlayerNode()
+        eng.attach(player)
+        eng.connect(player, to: fan, format: format)
+        nonisolated(unsafe) let unsafeEng = eng
+        nonisolated(unsafe) let unsafePlayer = player
+        player.scheduleBuffer(buf, completionHandler: {
+            Task { @MainActor in unsafeEng.detach(unsafePlayer) }
+        })
+        player.play()
+    }
+
     // MARK: - 合成して節目バスへ流す
 
     /// `body` は (経過秒, サンプリング周波数) を受け取り、

@@ -15,6 +15,8 @@ final class GameSession {
     var scoreShown = 0
     var moneyBump = false
     var scoreBump = false
+    /// STAGE の数字のはね。持ち玉・スコアより大きく跳ねる（本家は1.4倍）
+    var stageBump = false
     var boardShots = 0
     var gauge = 0
     var feverLeft = 0
@@ -474,6 +476,10 @@ final class GameSession {
                 slotFlash = .init(slots: changed)
             }
             noteRecord("stage", engine.stage + 1)
+            stageBump = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                self?.stageBump = false
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { [weak self] in
                 self?.showBanner("STAGE \( (self?.engine.stage ?? 0) + 1)", "ステージが上がりました", DD.paper)
             }
