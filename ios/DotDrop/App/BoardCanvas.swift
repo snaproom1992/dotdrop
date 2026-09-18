@@ -7,9 +7,9 @@ struct BoardCanvas: View {
     var fit: BoardFit
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
+        // 物理更新は GameSession のタイマー。ここでは描画だけ（view update 中の @Published 禁止対策）
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { _ in
             Canvas { ctx, size in
-                session.tickFrame(now: timeline.date)
                 draw(ctx: ctx, size: size)
             }
         }
@@ -150,7 +150,7 @@ struct BoardCanvas: View {
             // 点線の弧（drawLaunch）
             if session.level == 0 {
                 var arc = Path()
-                arc.addArc(center: c, radius: 34 * s, startAngle: .pi, endAngle: 0, clockwise: false)
+                arc.addArc(center: c, radius: 34 * s, startAngle: .radians(.pi), endAngle: .radians(0), clockwise: false)
                 ctx.stroke(arc, with: .color(DD.fg(fever: fever).opacity(0.35)), style: StrokeStyle(lineWidth: 1.5 * s, dash: [2 * s, 5 * s]))
             }
             ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(ball))
