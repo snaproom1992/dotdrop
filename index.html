@@ -189,7 +189,7 @@ body.tutorial .stage-hud{display:none}
 <header>
   <button id="quitBtn">やめる</button>
   <div class="stat"><b id="money" class="roll"></b><small>持ち玉</small></div>
-  <div class="stage-hud"><small>STAGE</small><b id="stageNo">1</b><div id="stageDots"></div></div>
+  <div class="stage-hud" id="stageHudBox"><small>STAGE</small><b id="stageNo">1</b><div id="stageDots"></div></div>
   <div class="tut-hud" id="tutHud"><small id="mKicker"></small><b id="mTitle"></b><u id="mProg"></u></div>
   <div class="stat right"><b id="points" class="roll"></b><small id="pointsLabel">スコア</small><div id="gauge"><i></i></div><div id="best"></div></div>
 </header>
@@ -558,6 +558,17 @@ class Roller {
     while (this.cells.length > str.length) { this.cells.shift(); this.el.firstChild.remove(); }
     [...str].forEach((ch, i) => this.roll(this.cells[i], +ch));
     this.value = n;
+    // 桁が変わったときだけ測り直す（毎回測ると重い）
+    if (str.length !== this.digits) { this.digits = str.length; this.fit(); }
+  }
+  // 桁が増えても、まんなかの STAGE とぶつからない大きさまで落とす。
+  // 4桁までは 52px のまま。狭い画面で5桁になったときだけ小さくなる
+  fit() {
+    const c = $(document.body.classList.contains('tutorial') ? 'tutHud' : 'stageHudBox');
+    const half = c ? c.getBoundingClientRect().width / 2 : 25;
+    const room = innerWidth / 2 - half - 32;   // 32＝まんなかとのすきま12＋画面端の余白20
+    const size = room / (Math.max(1, this.digits) * .57);
+    this.el.style.fontSize = Math.max(22, Math.min(52, size)) + 'px';
   }
   roll(cell, d) {
     const cur = ((cell.pos % 10) + 10) % 10;
@@ -646,7 +657,7 @@ function fit() {
   cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
   cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
 }
-function refit() { fit(); if (!E.balls.length) setLayout(E.layout, false); }
+function refit() { fit(); if (moneyRoll) moneyRoll.fit(); if (pointsRoll) pointsRoll.fit(); if (!E.balls.length) setLayout(E.layout, false); }
 addEventListener('resize', refit);
 addEventListener('orientationchange', () => setTimeout(refit, 250));
 // ホーム画面から起動したときなど、最初の画面の高さが後から変わることがある
