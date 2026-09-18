@@ -32,6 +32,10 @@ struct BoardCanvas: View {
         let fever = e.fever
         let s = fit.scale
         let ox = fit.ox
+        // 揺れ
+        let shakeAmt = session.shake
+        let sxOff = shakeAmt > 0 ? (Double.random(in: 0...1) - 0.5) * 14 * shakeAmt * Double(s) : 0
+        let syOff = shakeAmt > 0 ? (Double.random(in: 0...1) - 0.5) * 14 * shakeAmt * Double(s) : 0
         let top = e.slotTop()
         let screenH = fit.screenH
         let slotW = Engine.slotWidth
@@ -41,8 +45,18 @@ struct BoardCanvas: View {
 
         ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(DD.bg(fever: fever)))
 
+        // 節目で背景が一瞬色づく
+        if let m = session.milestoneFx, m.t < 0.35 {
+            var flash = ctx
+            flash.opacity = (1 - m.t / 0.35) * 0.55
+            flash.fill(
+                Path(CGRect(origin: .zero, size: size)),
+                with: .color(GameFx.resolveColor(m.color, t: m.t))
+            )
+        }
+
         func pt(_ x: Double, _ y: Double) -> CGPoint {
-            CGPoint(x: ox + x * s, y: y * s)
+            CGPoint(x: ox + x * s + sxOff, y: y * s + syOff)
         }
 
         func slotLogicalX(_ i: Int) -> Double {
@@ -53,9 +67,7 @@ struct BoardCanvas: View {
             return x
         }
 
-        func ease(_ t: Double) -> Double {
-            1 - pow(1 - min(1, max(0, t)), 3)
-        }
+        let ease = GameFx.ease
 
         // ---- 光の柱（入った受け皿）上へ消えるグラデ ----
         for c in session.catches where c.m != 0 {
@@ -66,7 +78,6 @@ struct BoardCanvas: View {
             let w = (slotW - 4) * s
             let h = 420 * s
             let rect = CGRect(x: origin.x, y: origin.y, width: w, height: h)
-            // Web: createLinearGradient(0, top, 0, top-420) — 下（受け皿）が色、上へ透明
             var layer = ctx
             layer.opacity = alpha
             let grad = Gradient(stops: [
@@ -84,7 +95,7 @@ struct BoardCanvas: View {
         }
 
         // ---- 今回のポイント（背景の大きな数字）----
-        let bgNumAlpha = session.potAlpha
+        let bgNumAlpha = session.potAlpha * (1 - GameFx.milestoneVisible(session.milestoneFx))
         if bgNumAlpha > 0.01, e.pot > 0 {
             let landed = e.shotScore > 0
             let pulse = 1 + session.potPulse * 0.08
@@ -123,16 +134,27 @@ struct BoardCanvas: View {
         // ---- 帯 ----
         drawBanner(ctx: ctx, size: size, s: s, ox: ox)
 
-        // ---- 釘 ----
+        // ---- 釘（波紋 bump + PERFECT 光）----
         for p in e.pegs {
+            var bumpR = 0.0
+            for w in session.waves {
+                let d = hypot(p.x - w.x, p.y - w.y)
+                let front = w.t * 260
+                let k = 1 - abs(d - front) / 26
+                if k > 0, d < 150 {
+                    bumpR += k * (1 - d / 150) * (w.big ? 4 : 2.2)
+                }
+            }
+            let pg = GameFx.perfectGlow(y: p.y, fx: session.perfectFx)
+            let grow = p.pulse * 5 + min(bumpR, 6) + pg * 4.5
             let c = pt(p.x, p.y)
-            let grow = p.pulse * 5
             switch p.kind {
             case .square:
                 let h = (Engine.squareHalf + grow) * s
                 ctx.fill(Path(CGRect(x: c.x - h, y: c.y - h, width: h * 2, height: h * 2)), with: .color(DD.red))
             case .blue:
-                let r = (Engine.blueRadius + grow) * s
+                let holding = e.balls.contains { $0.state == .held && $0.hold === p }
+                let r = (Engine.blueRadius + grow + (holding ? 5 : 0)) * s
                 ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(DD.blue))
             case .tri:
                 let t = (Engine.triRadius + 2 + grow + sin(e.time * 6)) * s
@@ -148,7 +170,9 @@ struct BoardCanvas: View {
                 let r = (Engine.pegRadius + grow + p.lit * 1.5) * s
                 let col: Color
                 let op: Double
-                if p.lit > 0.02 {
+                if pg > 0.02 {
+                    col = DD.red; op = 1
+                } else if p.lit > 0.02 {
                     col = DD.red; op = 0.3 + p.lit * 0.7
                 } else if p.boardHit {
                     col = DD.red; op = 0.4
@@ -183,6 +207,15 @@ struct BoardCanvas: View {
                     lineWidth: 2.5 * k * s
                 )
             }
+            if let sf = session.slotFlash, sf.t < 2, sf.slots.contains(i), sin(sf.t * 18) > 0 {
+                let flashOrigin = pt(x + 2, top + 6)
+                let flashRect = CGRect(
+                    x: flashOrigin.x, y: flashOrigin.y,
+                    width: (slotW - 4) * s,
+                    height: max((screenH + 14 - top - 6) * s, 40)
+                )
+                ctx.stroke(Path(roundedRect: flashRect, cornerRadius: 6 * s), with: .color(DD.red), lineWidth: 3 * s)
+            }
 
             let cx = ox + (x + slotW / 2) * s
             let fontSize = ((info.m >= 5 ? 26.0 : 22.0) + k * 8) * s
@@ -210,6 +243,9 @@ struct BoardCanvas: View {
                 }
             }
         }
+
+        // ---- 数字ドン ----
+        drawMilestone(ctx: ctx, s: s, cy: cy, pt: pt)
 
         // ---- 玉（引いている間は狙いも手前）----
         if session.canShoot, session.level > 0 {
@@ -303,6 +339,64 @@ struct BoardCanvas: View {
                 )
             }
         }
+
+        // ---- ふちの光 ----
+        if let edge = session.edge, edge.t < 0.9 {
+            var layer = ctx
+            layer.opacity = 1 - edge.t / 0.9
+            let lw = max(8, edge.width) * s
+            layer.stroke(
+                Path(CGRect(x: lw / 2, y: lw / 2, width: size.width - lw, height: size.height - lw)),
+                with: .color(GameFx.resolveColor(edge.color, t: edge.t)),
+                lineWidth: lw
+            )
+        }
+    }
+
+    private func drawMilestone(
+        ctx: GraphicsContext, s: CGFloat, cy: Double,
+        pt: (Double, Double) -> CGPoint
+    ) {
+        guard let m = session.milestoneFx, m.t <= 1.1 else { return }
+        let ease = GameFx.ease
+        let inK = min(1, m.t / 0.12)
+        let sc: Double
+        if m.t < 0.12 {
+            sc = 2.4 - 1.4 * ease(inK)
+        } else if m.t < 0.22 {
+            sc = 1 + 0.08 * sin((m.t - 0.12) / 0.1 * .pi)
+        } else {
+            sc = 1
+        }
+        let alpha = m.t > 0.8 ? 1 - (m.t - 0.8) / 0.3 : 1
+        let col = GameFx.resolveColor(m.color, t: m.t)
+        let sizePt = (m.level >= 10 ? 130.0 : 150.0) * s
+        let center = pt(Engine.logicalWidth / 2, cy - 10)
+        var layer = ctx
+        layer.opacity = max(0, alpha)
+        layer.translateBy(x: center.x, y: center.y)
+        layer.scaleBy(x: sc, y: sc)
+        layer.draw(
+            Text("\(m.level * 100)")
+                .font(.system(size: sizePt, weight: .bold))
+                .foregroundColor(Color(hex: 0x1C1716, opacity: 0.55)),
+            at: CGPoint(x: 4 * s, y: 6 * s),
+            anchor: .center
+        )
+        layer.draw(
+            Text("\(m.level * 100)")
+                .font(.system(size: sizePt, weight: .bold))
+                .foregroundColor(col),
+            at: .zero,
+            anchor: .center
+        )
+        layer.draw(
+            Text("POINTS")
+                .font(.system(size: 14 * s, weight: .bold))
+                .foregroundColor(col),
+            at: CGPoint(x: 0, y: sizePt * 0.55),
+            anchor: .center
+        )
     }
 
     private func drawLaunchBall(
@@ -326,7 +420,7 @@ struct BoardCanvas: View {
         guard session.canShoot else { return }
         let L = e.launchPoint
         let c = pt(L.x, L.y)
-        let bannerUp = session.banner != nil
+        let bannerUp = session.bannerUp
 
         if session.level == 0 && !bannerUp {
             let pulse = (Engine.ballRadius + 8 + sin(e.time * 3) * 1.5) * s
@@ -387,23 +481,61 @@ struct BoardCanvas: View {
         }
     }
 
-    private func drawBanner(ctx: GraphicsContext, size: CGSize, s: CGFloat, ox: CGFloat) {
-        guard let b = session.banner else { return }
+    private func drawBanner(ctx: GraphicsContext, size _: CGSize, s: CGFloat, ox: CGFloat) {
+        guard let b = session.banner, b.t <= 1.5 else { return }
+        let ease = GameFx.ease
+        let t = b.t
+        let offLogical: Double
+        if t < 0.25 {
+            offLogical = -Engine.logicalWidth * (1 - ease(t / 0.25))
+        } else if t > 1.2 {
+            offLogical = Engine.logicalWidth * ease((t - 1.2) / 0.3)
+        } else {
+            offLogical = 0
+        }
+        let off = offLogical * s
         let y = fit.bannerY * s
         let h = 56 * s
-        let rect = CGRect(x: 0, y: y, width: size.width, height: h)
+        let rect = CGRect(x: off, y: y, width: Engine.logicalWidth * s, height: h)
         ctx.fill(Path(rect), with: .color(b.color))
         let ink: Color = (b.color == DD.paper || b.color == DD.mustard || b.color == DD.red) ? DD.ink : DD.paper
+        // 見出しサイズを帯幅に収める
+        var wordSize: CGFloat = 40
+        var subSize: CGFloat = 14
+        while wordSize > 20 {
+            // 簡易：文字数から幅を見積もる
+            let est = CGFloat(b.word.count) * wordSize * 0.62
+                + (b.sub.isEmpty ? 0 : CGFloat(b.sub.count) * subSize * 0.55) + 62
+            if est <= Engine.logicalWidth { break }
+            wordSize -= 2
+        }
+        while subSize > 11 {
+            let est = CGFloat(b.word.count) * wordSize * 0.62
+                + CGFloat(b.sub.count) * subSize * 0.55 + 62
+            if est <= Engine.logicalWidth { break }
+            subSize -= 1
+        }
+        let midY = y + h / 2
         ctx.draw(
-            Text(b.word).font(.system(size: 32 * s, weight: .bold)).foregroundColor(ink),
-            at: CGPoint(x: 16 * s + ox, y: y + h / 2),
+            Text(b.word).font(.system(size: wordSize * s, weight: .bold)).foregroundColor(ink),
+            at: CGPoint(x: off + 16 * s + ox, y: midY + 2 * s),
             anchor: .leading
         )
-        ctx.draw(
-            Text(b.sub).font(.system(size: 13 * s, weight: .bold)).foregroundColor(ink),
-            at: CGPoint(x: size.width * 0.42, y: y + h / 2),
-            anchor: .leading
-        )
+        if !b.sub.isEmpty {
+            let wordW = CGFloat(b.word.count) * wordSize * 0.62 * s
+            let sepX = off + 16 * s + ox + wordW + 14 * s
+            var sep = ctx
+            sep.opacity = 0.28
+            sep.fill(
+                Path(CGRect(x: sepX, y: y + 14 * s, width: 1.5 * s, height: h - 28 * s)),
+                with: .color(ink)
+            )
+            ctx.draw(
+                Text(b.sub).font(.system(size: subSize * s, weight: .bold)).foregroundColor(ink),
+                at: CGPoint(x: sepX + 14 * s, y: midY + s),
+                anchor: .leading
+            )
+        }
     }
 
     private func slotColors(m: Int, b: Int, fever: Bool) -> (Color, Color) {

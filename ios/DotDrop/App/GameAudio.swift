@@ -151,6 +151,63 @@ final class GameAudio {
         voice(freq: note(3, fever: false), dur: 0.2, gain: 0.08, delay: 0.08)
         voice(freq: note(5, fever: false), dur: 0.3, gain: 0.08, delay: 0.16)
     }
+
+    /// 100点ごとのファンファーレ（Web playMilestone の簡略版）
+    func playMilestone(level: Int) {
+        let L = level
+        let root = 261.63 * pow(2.0, Double(L >= 6 ? 12 : 0) / 12.0)
+        let chord = [0, 4, 7, 12]
+        let notes = min(9, 3 + L)
+        let step = max(0.042, 0.085 - Double(L) * 0.0045)
+        for i in 0..<notes {
+            let semi = chord[i % chord.count] + 12 * (i / chord.count)
+            let f = root * pow(2.0, Double(semi) / 12.0)
+            voice(freq: f, dur: max(0.07, step * 0.9), gain: 0.075, delay: Double(i) * step)
+        }
+        let end = Double(notes) * step
+        for c in chord {
+            let f = root * pow(2.0, Double(c) / 12.0)
+            voice(freq: f, dur: 0.45 + Double(L) * 0.08, gain: 0.05, delay: end)
+        }
+        if L >= 5 {
+            for (i, off) in [0, 3, 5, 7, 12].enumerated() {
+                let f = root * pow(2.0, Double(12 + chord[0] + 12 - off) / 12.0)
+                voice(freq: f, dur: 0.5, gain: 0.04, delay: end + 0.05 + Double(i) * 0.07)
+            }
+        }
+        if L >= 10 {
+            noise(dur: 0.12, gain: 0.18, freq: 200)
+            noise(dur: 0.18, gain: 0.12, freq: 4000)
+        }
+    }
+
+    func playPerfect() {
+        let C = 261.63
+        for (i, sp) in [0, 4, 7, 12].enumerated() {
+            voice(freq: C * pow(2.0, Double(sp) / 12.0), dur: 0.52, gain: 0.1, delay: Double(i) * 0.09)
+        }
+        for (i, sp) in [12, 16, 19, 24].enumerated() {
+            voice(freq: C * pow(2.0, Double(sp) / 12.0), dur: 0.62, gain: 0.09, delay: 0.52 + Double(i) * 0.1)
+        }
+        noise(dur: 0.3, gain: 0.15, freq: 800)
+        // 歓声っぽい帯
+        noise(dur: 0.8, gain: 0.1, freq: 1200)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.noise(dur: 0.6, gain: 0.08, freq: 900)
+        }
+    }
+
+    func playFever() {
+        for (k, sp) in [0, 4, 7, 12, 16, 19, 24].enumerated() {
+            voice(freq: note(1, fever: false) * pow(2.0, Double(sp) / 12.0), dur: 0.4, gain: 0.07, delay: Double(k) * 0.06)
+        }
+    }
+
+    func playNewRecord() {
+        for (k, s) in [0, 4, 7, 12].enumerated() {
+            voice(freq: note(6, fever: false) * pow(2.0, Double(s) / 12.0), dur: 0.35, gain: 0.07, delay: Double(k) * 0.07)
+        }
+    }
 }
 
 @MainActor

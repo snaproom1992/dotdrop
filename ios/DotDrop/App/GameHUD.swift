@@ -14,13 +14,14 @@ struct GameHUD: View {
             // 持ち玉 ← → スコア（STAGE はここに入れない＝web の flex と同じ）
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("\(session.money)")
+                    Text("\(session.moneyShown)")
                         .font(DD.statNumber)
                         .tracking(-46 * 0.05)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
-                        // CSS .stat b { font-size:46px; line-height:.9 }
                         .frame(height: 46 * 0.9, alignment: .center)
+                        .scaleEffect(session.moneyBump ? 1.08 : 1, anchor: .leading)
+                        .animation(.easeOut(duration: 0.12), value: session.moneyBump)
                     Text("持ち玉")
                         .font(DD.statLabel)
                         .padding(.top, 2)
@@ -28,12 +29,14 @@ struct GameHUD: View {
                 }
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 0) {
-                    Text("\(session.score)")
+                    Text("\(session.scoreShown)")
                         .font(DD.statNumber)
                         .tracking(-46 * 0.05)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                         .frame(height: 46 * 0.9, alignment: .center)
+                        .scaleEffect(session.scoreBump ? 1.08 : 1, anchor: .trailing)
+                        .animation(.easeOut(duration: 0.12), value: session.scoreBump)
                     Text("スコア")
                         .font(DD.statLabel)
                         .padding(.top, 2)
@@ -46,7 +49,7 @@ struct GameHUD: View {
                         gauge
                     }
                     .padding(.top, 6)
-                    .opacity(session.banner != nil ? 0 : 1)
+                    .opacity(session.bannerUp ? 0 : 1)
                 }
             }
             .foregroundStyle(fg)
