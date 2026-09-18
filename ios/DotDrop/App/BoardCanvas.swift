@@ -97,7 +97,7 @@ struct BoardCanvas: View {
             layer.opacity = bgNumAlpha
             layer.draw(
                 Text("\(Int(session.potShow.rounded()))")
-                    .font(.system(size: fontSize, weight: .bold))
+                    .font(DD.bold(fontSize))
                     .foregroundColor(DD.big(fever: fever)),
                 at: pt(Engine.logicalWidth / 2, landed ? cy - 100 : cy),
                 anchor: .center
@@ -109,7 +109,7 @@ struct BoardCanvas: View {
                 shotLayer.opacity = bgNumAlpha * 0.9
                 shotLayer.draw(
                     Text("+\(Int(ss.rounded()))")
-                        .font(.system(size: shotSize, weight: .bold))
+                        .font(DD.bold(shotSize))
                         .foregroundColor(fever ? DD.ink : DD.paper),
                     at: pt(Engine.logicalWidth / 2, cy + 20),
                     anchor: .center
@@ -192,7 +192,7 @@ struct BoardCanvas: View {
             let dotY = pt(0, top + 50 - lift).y
             let fontSize = ((info.m >= 5 ? 26.0 : 22.0) + k * 8) * s
             ctx.draw(
-                Text("×\(info.m)").font(.system(size: fontSize, weight: .bold)).foregroundColor(fg),
+                Text("×\(info.m)").font(DD.bold(fontSize)).foregroundColor(fg),
                 at: CGPoint(x: cx, y: rowY),
                 anchor: .center
             )
@@ -264,7 +264,7 @@ struct BoardCanvas: View {
             layer.opacity = alpha
             layer.draw(
                 Text(fl.text)
-                    .font(.system(size: (fl.big ? 24 : 18) * s, weight: .bold))
+                    .font(DD.bold((fl.big ? 24 : 18) * s))
                     .foregroundColor(fl.color),
                 at: p,
                 anchor: .center
@@ -301,7 +301,7 @@ struct BoardCanvas: View {
             case .score:
                 ctx.draw(
                     Text("+\(fy.value)")
-                        .font(.system(size: (24 - k * 10) * s, weight: .bold))
+                        .font(DD.bold((24 - k * 10) * s))
                         .foregroundColor(fy.color),
                     at: CGPoint(x: x, y: y),
                     anchor: .center
@@ -314,7 +314,7 @@ struct BoardCanvas: View {
             ctx: ctx,
             center: pt(Engine.logicalWidth / 2, cy - 10),
             scale: s,
-            font: { size in .system(size: CGFloat(size), weight: .bold) }
+            font: { size in DD.bold(size) }
         )
 
         // ---- 画面のふちの光（台の揺れの外側）----
@@ -359,14 +359,14 @@ struct BoardCanvas: View {
         if session.level == 0 && session.firstShot && !bannerUp {
             ctx.draw(
                 Text("引っ張ってはなす")
-                    .font(.system(size: 13 * s, weight: .medium))
+                    .font(DD.regular(13 * s))
                     .foregroundColor(DD.fg(fever: fever).opacity(0.7)),
                 at: pt(Engine.logicalWidth / 2, L.y + 48),
                 anchor: .center
             )
             ctx.draw(
                 Text("×は倍率　●は戻る玉　点線は減る玉")
-                    .font(.system(size: 13 * s, weight: .medium))
+                    .font(DD.regular(13 * s))
                     .foregroundColor(DD.fg(fever: fever).opacity(0.7)),
                 at: pt(Engine.logicalWidth / 2, top - 30),
                 anchor: .center
@@ -403,23 +403,68 @@ struct BoardCanvas: View {
         }
     }
 
+    /// 帯。［大きな見出し］［細い区切り線］［説明］を、左から順に詰めて置く。
+    ///
+    /// **説明を画面幅の何割、のような固定位置に置いてはいけない。**見出しが短いと離れ、
+    /// 長いとぶつかる。見出しのすぐ右に区切り線、その右に説明、が本家の並び。
+    /// 入りきらないときは、まず見出しを、それでも足りなければ説明も縮める。
     private func drawBanner(ctx: GraphicsContext, size: CGSize, s: CGFloat, ox: CGFloat) {
         guard let b = session.banner else { return }
+        let t = Date().timeIntervalSince(b.born)
+        guard t <= 1.5 else { return }
+
+        // 左から入って、右へ抜けていく
+        let LW = Double(size.width)
+        let off: Double
+        if t < 0.25 {
+            off = -LW * (1 - ease(t / 0.25))
+        } else if t > 1.2 {
+            off = LW * ease((t - 1.2) / 0.3)
+        } else {
+            off = 0
+        }
+
         let y = fit.bannerY * s
         let h = 56 * s
-        let rect = CGRect(x: 0, y: y, width: size.width, height: h)
-        ctx.fill(Path(rect), with: .color(b.color))
+        let mid = y + h / 2
+        ctx.fill(Path(CGRect(x: off, y: y, width: LW, height: h)), with: .color(b.color))
         let ink: Color = (b.color == DD.paper || b.color == DD.mustard || b.color == DD.red) ? DD.ink : DD.paper
+
+        // 帯に収まる大きさを探す。62 は左の余白16＋区切りの前後14×2＋右の余白
+        func width(_ text: String, _ px: Double) -> Double {
+            guard !text.isEmpty else { return 0 }
+            return ctx.resolve(Text(text).font(DD.bold(px * Double(s))))
+                .measure(in: CGSize(width: .greatestFiniteMagnitude, height: .greatestFiniteMagnitude)).width
+        }
+        var wordSize = 40.0, subSize = 14.0
+        func total() -> Double { width(b.word, wordSize) + width(b.sub, subSize) + 62 * Double(s) }
+        while wordSize > 20, total() > LW { wordSize -= 2 }
+        while subSize > 11, total() > LW { subSize -= 1 }
+
+        let wordW = width(b.word, wordSize)
         ctx.draw(
-            Text(b.word).font(.system(size: 32 * s, weight: .bold)).foregroundColor(ink),
-            at: CGPoint(x: 16 * s + ox, y: y + h / 2),
+            Text(b.word).font(DD.bold(wordSize * Double(s))).foregroundColor(ink),
+            at: CGPoint(x: off + 16 * Double(s), y: mid + 2 * Double(s)),
             anchor: .leading
         )
+        guard !b.sub.isEmpty else { return }
+        // 見出しと説明の間に細い区切りを1本。役割が違うことが形で分かる
+        let x = off + 16 * Double(s) + wordW + 14 * Double(s)
+        var line = ctx
+        line.opacity = 0.28
+        line.fill(
+            Path(CGRect(x: x, y: y + 14 * Double(s), width: 1.5 * Double(s), height: h - 28 * Double(s))),
+            with: .color(ink)
+        )
         ctx.draw(
-            Text(b.sub).font(.system(size: 13 * s, weight: .bold)).foregroundColor(ink),
-            at: CGPoint(x: size.width * 0.42, y: y + h / 2),
+            Text(b.sub).font(DD.bold(subSize * Double(s))).foregroundColor(ink),
+            at: CGPoint(x: x + 14 * Double(s), y: mid + 1 * Double(s)),
             anchor: .leading
         )
+    }
+
+    private func ease(_ t: Double) -> Double {
+        1 - pow(1 - min(1, max(0, t)), 3)
     }
 
     private func slotColors(m: Int, b: Int, fever: Bool) -> (Color, Color) {

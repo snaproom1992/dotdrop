@@ -268,7 +268,7 @@ final class GameSession {
                 color: col, life: 0.5, big: true
             ))
             sendScore(gain, x: ball.x, y: top - 22, color: col)
-            GameAudio.shared.voice(freq: GameAudio.shared.note(4 + m, fever: fever), dur: 0.18, gain: 0.1)
+            GameAudio.shared.voice(freq: GameAudio.shared.note(4 + m, fever: fever), dur: 0.18, gain: 0.1, wave: .square)
             GameAudio.shared.noise(dur: 0.04, gain: 0.12, freq: 3000)
             juice.addHitStop(m >= 5 ? 0.14 : 0.05)
             if m >= 5 {
@@ -285,7 +285,8 @@ final class GameSession {
                 color: DD.fg(fever: fever).opacity(0.45),
                 life: 0.7, big: true
             ))
-            GameAudio.shared.voice(freq: 150, dur: 0.14, gain: 0.08)
+            // ×0 のがっかり。低く丸い音
+            GameAudio.shared.voice(freq: 150, dur: 0.14, gain: 0.08, wave: .sine)
             GameAudio.shared.noise(dur: 0.05, gain: 0.06, freq: 400)
         }
 
@@ -318,9 +319,16 @@ final class GameSession {
                 text: "−\(-v)",
                 color: DD.red, life: 1, big: true
             ))
-            GameAudio.shared.voice(freq: 110, dur: 0.35, gain: 0.12)
+            // 玉が減ったときの「ブー」。**ノコギリ波でないとただの低い音になって、残念さが出ない**
+            GameAudio.shared.voice(freq: 110, dur: 0.35, gain: 0.12, wave: .sawtooth)
             GameAudio.shared.noise(dur: 0.15, gain: 0.12, freq: 250)
             GameHaptics.pattern(2, intervalMs: 90)
+            juice.addShake(0.25)
+            // −3 のような大きい減りは、画面のふちも赤く光らせる
+            if -v >= 3 {
+                juice.addShake(0.45)
+                juice.flashEdge(.solid(DD.red))
+            }
         }
     }
 
@@ -385,6 +393,8 @@ final class GameSession {
             engine.fever = true
             feverLeft = engine.config.feverShots
             showBanner("FEVER", "\(engine.config.feverShots)回、ポイント2倍・玉が減らない", DD.red)
+            GameAudio.shared.playFever()
+            GameHaptics.pattern(4, intervalMs: 80)
         }
     }
 

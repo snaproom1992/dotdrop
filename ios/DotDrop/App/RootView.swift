@@ -29,12 +29,13 @@ struct RootView: View {
             case .playing:
                 ZStack {
                     BoardCanvas(session: session, fit: fit)
-                    GameHUD(session: session, safeTop: safeTop)
+                    GameHUD(session: session, safeTop: safeTop, width: size.width)
                 }
 
             case .result:
                 ResultOverlay(
                     session: session,
+                    width: size.width,
                     onRetry: { session.startFreePlay() },
                     onTitle: { session.openTitle() }
                 )
@@ -43,6 +44,7 @@ struct RootView: View {
             if session.showResetSheet {
                 ResetSheet(
                     session: session,
+                    safeBottom: safeBot,
                     onReset: {
                         session.showResetSheet = false
                         session.startFreePlay()

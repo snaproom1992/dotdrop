@@ -35,7 +35,7 @@ struct TitleView: View {
             }
             Text("DROP")
         }
-        .font(.system(size: 76, weight: .bold))
+        .font(DD.bold(76))
         .foregroundStyle(DD.paper)
         .tracking(-76 * 0.06)
         .lineSpacing(-76 * 0.1)
@@ -53,7 +53,7 @@ struct TitleView: View {
     private var startButton: some View {
         Button(action: onPlay) {
             Text("はじめる")
-                .font(.system(size: 18, weight: .bold))
+                .font(DD.bold(18))
                 .foregroundStyle(DD.paper)
                 .padding(.vertical, 16)
                 .padding(.horizontal, 40)
@@ -66,7 +66,7 @@ struct TitleView: View {
         Button(action: onTutorial) {
             VStack(spacing: 9) {
                 Text("あそびかた")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(DD.bold(16))
                 HStack(spacing: 5) {
                     ForEach(0..<8, id: \.self) { i in
                         Circle()

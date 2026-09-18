@@ -5,6 +5,24 @@ import DotDropEngine
 struct GameHUD: View {
     var session: GameSession
     var safeTop: CGFloat
+    var width: CGFloat
+
+    /// 桁が増えても、まんなかの STAGE とぶつからない大きさまで落とす（Web の `Roller.fit()`）
+    private func statSize(_ value: Int) -> Double {
+        DD.statSize(digits: String(max(0, value)).count, screenWidth: Double(width))
+    }
+
+    /// 数字1つ。**`tracking` ではなく `kerning` を使うこと。**
+    /// `tracking` は最後の文字のうしろにも詰めを入れるので、右端の数字が欠ける
+    private func statNumber(_ value: Int) -> some View {
+        let size = statSize(value)
+        return Text("\(value)")
+            .font(DD.bold(size))
+            .kerning(-size * 0.05)
+            .lineLimit(1)
+            .fixedSize()
+            .frame(height: size * 0.9, alignment: .center)
+    }
 
     var body: some View {
         let fever = session.fever
@@ -14,13 +32,7 @@ struct GameHUD: View {
             // 持ち玉 ← → スコア（STAGE はここに入れない＝web の flex と同じ）
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("\(session.money)")
-                        .font(DD.statNumber)
-                        .tracking(-46 * 0.05)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        // CSS .stat b { font-size:46px; line-height:.9 }
-                        .frame(height: 46 * 0.9, alignment: .center)
+                    statNumber(session.money)
                     Text("持ち玉")
                         .font(DD.statLabel)
                         .padding(.top, 2)
@@ -28,19 +40,14 @@ struct GameHUD: View {
                 }
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 0) {
-                    Text("\(session.score)")
-                        .font(DD.statNumber)
-                        .tracking(-46 * 0.05)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .frame(height: 46 * 0.9, alignment: .center)
+                    statNumber(session.score)
                     Text("スコア")
                         .font(DD.statLabel)
                         .padding(.top, 2)
                         .opacity(0.65)
                     HStack(spacing: 6) {
                         Text(session.fever ? "残り\(session.feverLeft)" : "FEVER")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(DD.bold(9))
                             .tracking(1.08)
                             .opacity(0.5)
                         gauge
@@ -56,11 +63,11 @@ struct GameHUD: View {
             // .stage-hud — absolute center
             VStack(spacing: 0) {
                 Text("STAGE")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(DD.bold(10))
                     .tracking(1.2)
                     .opacity(0.6)
                 Text("\(session.engine.stage + 1)")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(DD.bold(22))
                     .tracking(-0.88)
                     .padding(.top, 1)
                 HStack(spacing: 4) {
@@ -80,7 +87,7 @@ struct GameHUD: View {
                 session.showResetSheet = true
             } label: {
                 Text("リセット")
-                    .font(.system(size: 9.5, weight: .bold))
+                    .font(DD.bold(9.5))
                     .tracking(0.76)
                     .foregroundStyle(fg.opacity(0.55))
                     .padding(.horizontal, 10)
@@ -95,7 +102,7 @@ struct GameHUD: View {
                 Group {
                     if session.beatBest {
                         Text("NEW RECORD")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(DD.bold(11))
                             .tracking(0.66)
                             .foregroundStyle(DD.paper)
                             .padding(.horizontal, 6)
@@ -104,7 +111,7 @@ struct GameHUD: View {
                             .clipShape(RoundedRectangle(cornerRadius: 3))
                     } else if session.personalBest > 0 {
                         Text("自己ベスト \(session.personalBest)")
-                            .font(.system(size: 11))
+                            .font(DD.regular(11))
                             .foregroundStyle(fg.opacity(0.75))
                     }
                 }
