@@ -26,10 +26,20 @@ final class GameSession {
     var beatBest = false
     var tutorialCleared: Set<String> = []
 
+    /// 演出（購読しない。BoardCanvas の TimelineView が描く）
+    @ObservationIgnored var floaters: [GameFx.Floater] = []
+    @ObservationIgnored var flyers: [GameFx.Flyer] = []
+    @ObservationIgnored var catches: [GameFx.CatchBeam] = []
+
     @ObservationIgnored private var lastDate: Date?
     @ObservationIgnored private var triBonus = false
     @ObservationIgnored private var bestAtStart = 0
     @ObservationIgnored private var displayTimer: Timer?
+    @ObservationIgnored private var pendingGameOver = false
+    @ObservationIgnored private var lastFit: BoardFit?
+    @ObservationIgnored private var safeTop: CGFloat = 59
+    @ObservationIgnored private var collectCombo = 0
+    @ObservationIgnored private var lastCollect: CFTimeInterval = 0
 
     enum Screen { case title, playing, result }
 
@@ -55,7 +65,9 @@ final class GameSession {
         return CGFloat(min(1, Double(gauge) / Double(max(1, engine.config.feverAt))))
     }
 
-    func applyFit(_ fit: BoardFit) {
+    func applyFit(_ fit: BoardFit, safeTop: CGFloat? = nil) {
+        lastFit = fit
+        if let safeTop { self.safeTop = safeTop }
         let lh = fit.logicalHeight
         // 帯と同じ：ノッチ分だけ発射位置を下げる（上限 26）。STAGE と玉が被らないようにする
         let notch = fit.bannerY - 116
@@ -76,6 +88,7 @@ final class GameSession {
         busy = false
         showResetSheet = false
         banner = nil
+        clearFx()
         loadTutorialProgress()
         personalBest = storedBest()
     }
@@ -108,6 +121,8 @@ final class GameSession {
         triBonus = false
         gameBestShot = 0
         beatBest = false
+        pendingGameOver = false
+        clearFx()
         bestAtStart = storedBest()
         personalBest = bestAtStart
         screen = .playing
@@ -143,15 +158,20 @@ final class GameSession {
     }
 
     private func wireHooks() {
-        engine.hooks.hit = { [weak self] _, _, n, _, kind, pts in
+        engine.hooks.hit = { [weak self] peg, _, n, _, kind, pts in
             guard let self else { return }
             if !self.engine.fever { self.gauge += pts }
+            if pts > 1 {
+                let col: Color = kind == .blue ? Color(hex: 0x7FA2EC) : (kind == .square ? DD.red : DD.mustard)
+                self.floaters.append(.init(x: peg.x, y: peg.y - 16, text: "+\(pts)", color: col, life: 0.9, big: false))
+            }
             if !self.triBonus {
                 let tris = self.engine.pegs.filter { $0.kind == .tri }
                 if tris.count == self.engine.config.tris, tris.allSatisfy(\.triHit) {
                     self.triBonus = true
-                    self.money += 3
                     self.showBanner("▲▲▲", "3つとも当てて +3玉", DD.mustard)
+                    let mid = self.engine.field()
+                    self.sendBalls(3, x: Engine.logicalWidth / 2, y: (mid.top + mid.bottom) / 2, color: DD.mustard)
                     GameHaptics.pattern(4, intervalMs: 70)
                 }
             }
@@ -163,27 +183,146 @@ final class GameSession {
             case .tri: GameHaptics.pattern(2, intervalMs: 50)
             }
         }
-        engine.hooks.shotEnd = { [weak self] pay in
+        engine.hooks.shotEnd = { [weak self] _ in
             guard let self else { return }
-            self.score += self.engine.shotScore
-            self.money += pay
+            // スコア・戻る玉は flyer が届いてから足す（Web と同じ）
             self.gameBestShot = max(self.gameBestShot, self.engine.shotScore)
-            if !self.beatBest, self.bestAtStart > 0, self.score > self.bestAtStart {
-                self.beatBest = true
-                self.showBanner("NEW RECORD", "自己ベスト\(self.bestAtStart)を超えた", DD.red)
-            }
             self.busy = false
             self.feverStep()
             self.afterShot()
             if self.money < self.engine.config.cost {
-                self.finishGame()
+                self.pendingGameOver = true
             }
         }
         engine.hooks.perfect = { [weak self] bonus in
             self?.showBanner("PERFECT", "ドットをすべて赤くした +\(bonus)", DD.red)
         }
-        engine.hooks.land = { _, _, _ in }
-        engine.hooks.release = { _, _ in }
+        engine.hooks.land = { [weak self] ball, v, _ in
+            self?.onLand(ball: ball, v: v)
+        }
+        engine.hooks.release = { peg, _ in
+            peg.pulse = 1
+            GameAudio.shared.voice(freq: GameAudio.shared.note(12, fever: false), dur: 0.15, gain: 0.08)
+            GameHaptics.buzz(.light, gap: 0)
+        }
+    }
+
+    private func onLand(ball: Ball, v: Int) {
+        let top = engine.slotTop()
+        let m = ball.mult
+        let gain = ball.gain
+        let fever = engine.fever
+        catches.append(.init(slot: ball.slot, m: m))
+
+        if m > 0, ball.pts > 0 {
+            let col = GameFx.multColor(m, fever: fever)
+            floaters.append(.init(
+                x: ball.x, y: top - 22,
+                text: "\(ball.pts)×\(m)",
+                color: col, life: 0.5, big: true
+            ))
+            sendScore(gain, x: ball.x, y: top - 22, color: col)
+            GameAudio.shared.voice(freq: GameAudio.shared.note(4 + m, fever: fever), dur: 0.18, gain: 0.1)
+            GameAudio.shared.noise(dur: 0.04, gain: 0.12, freq: 3000)
+            if m >= 5 {
+                GameHaptics.pattern(3, intervalMs: 60)
+            } else {
+                GameHaptics.buzz(.medium, gap: 0)
+            }
+        } else {
+            floaters.append(.init(
+                x: ball.x, y: top - 22,
+                text: "×0",
+                color: DD.fg(fever: fever).opacity(0.45),
+                life: 0.7, big: true
+            ))
+            GameAudio.shared.voice(freq: 150, dur: 0.14, gain: 0.08)
+            GameAudio.shared.noise(dur: 0.05, gain: 0.06, freq: 400)
+        }
+
+        if v > 0 {
+            floaters.append(.init(
+                x: ball.x, y: top - 50,
+                text: "+\(v)玉",
+                color: DD.fg(fever: fever),
+                life: 0.9, big: false
+            ))
+            sendBalls(v, x: ball.x, y: top, color: DD.ball(fever: fever))
+        } else if v < 0 {
+            let lose = min(-v, money)
+            if lose > 0 {
+                money -= lose
+                let from = moneyTarget()
+                for i in 0..<lose {
+                    flyers.append(.init(
+                        kind: .minus,
+                        x0: from.x, y0: from.y,
+                        t: -Double(i) * 0.08,
+                        color: DD.red,
+                        arc: 0,
+                        tx: ball.x, ty: top + 20
+                    ))
+                }
+            }
+            floaters.append(.init(
+                x: ball.x, y: top - 50,
+                text: "−\(-v)",
+                color: DD.red, life: 1, big: true
+            ))
+            GameAudio.shared.voice(freq: 110, dur: 0.35, gain: 0.12)
+            GameAudio.shared.noise(dur: 0.15, gain: 0.12, freq: 250)
+            GameHaptics.pattern(2, intervalMs: 90)
+        }
+    }
+
+    private func sendBalls(_ n: Int, x: Double, y: Double, color: Color) {
+        for i in 0..<n {
+            flyers.append(.init(
+                kind: .ball,
+                x0: x, y0: y,
+                t: -Double(i) * 0.09,
+                color: color,
+                arc: (Double.random(in: 0...1) - 0.5) * 60
+            ))
+        }
+    }
+
+    private func sendScore(_ value: Int, x: Double, y: Double, color: Color) {
+        guard value > 0 else { return }
+        flyers.append(.init(
+            kind: .score,
+            x0: x, y0: y,
+            t: -0.35,
+            color: color,
+            arc: (Double.random(in: 0...1) - 0.5) * 40,
+            value: value
+        ))
+    }
+
+    private func moneyTarget() -> (x: Double, y: Double) {
+        guard let fit = lastFit else { return (40, 90) }
+        let sx = 20 + 36
+        let sy = safeTop + 38 + 23
+        return (Double((sx - fit.ox) / fit.scale), Double(sy / fit.scale))
+    }
+
+    private func scoreTarget() -> (x: Double, y: Double) {
+        guard let fit = lastFit else { return (320, 90) }
+        let width = fit.ox * 2 + EngineLogical.w * fit.scale
+        let sx = width - 56
+        let sy = safeTop + 38 + 23
+        return (Double((sx - fit.ox) / fit.scale), Double(sy / fit.scale))
+    }
+
+    /// 描画用：持ち玉・スコアの画面座標
+    func moneyTargetScreen() -> CGPoint {
+        guard let fit = lastFit else { return CGPoint(x: 56, y: 120) }
+        return CGPoint(x: 20 + 36, y: safeTop + 38 + 23)
+    }
+    func scoreTargetScreen() -> CGPoint {
+        guard let fit = lastFit else { return CGPoint(x: 320, y: 120) }
+        let width = fit.ox * 2 + EngineLogical.w * fit.scale
+        return CGPoint(x: width - 56, y: safeTop + 38 + 23)
     }
 
     private func feverStep() {
@@ -218,6 +357,7 @@ final class GameSession {
 
     func finishGame() {
         stopDisplayLoop()
+        pendingGameOver = false
         saveBest(score)
         personalBest = storedBest()
         screen = .result
@@ -226,6 +366,12 @@ final class GameSession {
 
     func showBanner(_ word: String, _ sub: String, _ color: Color) {
         banner = Banner(word: word, sub: sub, color: color, born: Date())
+    }
+
+    private func clearFx() {
+        floaters = []
+        flyers = []
+        catches = []
     }
 
     private func startDisplayLoop() {
@@ -277,6 +423,59 @@ final class GameSession {
                 engine.stepPhysics(dt: d)
                 left -= d
                 if !busy { break }
+            }
+            // 軌跡（Web は draw で積む。ここでは物理後に1回）
+            for b in engine.balls where b.state == .fly {
+                b.trail.append((b.x, b.y))
+                if b.trail.count > 8 { b.trail.removeFirst() }
+            }
+        }
+
+        // floaters / catches
+        for i in floaters.indices { floaters[i].t += real }
+        floaters.removeAll { $0.t >= $0.life }
+        for i in catches.indices { catches[i].t += real }
+        catches.removeAll { $0.t >= 1 }
+
+        // flyers（届いたら持ち玉・スコアを足す）
+        for i in flyers.indices {
+            flyers[i].t += real
+            if flyers[i].t >= 0.55, !flyers[i].done {
+                flyers[i].done = true
+                switch flyers[i].kind {
+                case .minus:
+                    GameAudio.shared.noise(dur: 0.05, gain: 0.08, freq: 300)
+                case .ball:
+                    money += 1
+                    let nowT = CACurrentMediaTime()
+                    collectCombo = nowT - lastCollect < 0.25 ? collectCombo + 1 : 0
+                    lastCollect = nowT
+                    GameAudio.shared.voice(
+                        freq: GameAudio.shared.note(6 + min(collectCombo, 8), fever: false) * 2,
+                        dur: 0.09, gain: 0.09
+                    )
+                    GameHaptics.buzz(.light, gap: 0)
+                case .score:
+                    score += flyers[i].value
+                    if !beatBest, bestAtStart > 0, score > bestAtStart {
+                        beatBest = true
+                        showBanner("NEW RECORD", "自己ベスト\(bestAtStart)を超えた", DD.red)
+                    }
+                    GameAudio.shared.voice(
+                        freq: GameAudio.shared.note(10, fever: false) * 2,
+                        dur: 0.06, gain: 0.06
+                    )
+                    GameHaptics.buzz(.light, gap: 0)
+                }
+            }
+        }
+        flyers.removeAll { $0.done }
+
+        if pendingGameOver {
+            if money >= engine.config.cost {
+                pendingGameOver = false
+            } else if flyers.isEmpty, engine.balls.isEmpty {
+                finishGame()
             }
         }
     }

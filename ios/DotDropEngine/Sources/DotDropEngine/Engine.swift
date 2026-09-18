@@ -136,6 +136,8 @@ public final class Ball {
     public var stillT: Double
     public var stuckCount: Int
     public var ghostUntil: Double
+    /// 飛んでいるあいだの軌跡（描画用・最大8）
+    public var trail: [(Double, Double)]
 
     public init(x: Double, y: Double, vx: Double, vy: Double, state: BallState = .fly) {
         self.x = x; self.y = y; self.vx = vx; self.vy = vy; self.state = state
@@ -144,6 +146,7 @@ public final class Ball {
         self.hold = nil; self.holdT = 0; self.lastPeg = nil; self.samePeg = 0
         self.lx = nil; self.ly = nil; self.stillT = 0; self.stuckCount = 0
         self.ghostUntil = 0
+        self.trail = []
     }
 }
 
@@ -520,6 +523,7 @@ public final class Engine {
                         b.state = .held
                         b.hold = p
                         b.holdT = 0
+                        b.trail = []
                         hitPeg(p, b, force: 300)
                         break
                     }

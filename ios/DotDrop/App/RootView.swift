@@ -86,7 +86,10 @@ struct RootView: View {
     }
 
     private func applyCurrentFit() {
-        session.applyFit(BoardFit.compute(viewSize: resolvedSize, safeTop: safeTop, safeBottom: safeBot))
+        session.applyFit(
+            BoardFit.compute(viewSize: resolvedSize, safeTop: safeTop, safeBottom: safeBot),
+            safeTop: safeTop
+        )
     }
 
     private func updateSize(_ size: CGSize) {

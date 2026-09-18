@@ -85,6 +85,24 @@ struct BoardCanvas: View {
             }
         }
 
+        // 受け皿に入った光の柱
+        for c in session.catches where c.m != 0 {
+            var u = (Double(c.slot) * slotW + e.conveyor).truncatingRemainder(dividingBy: convLen)
+            if u < 0 { u += convLen }
+            var x = u
+            if x > Engine.logicalWidth + slotW { x -= convLen }
+            let col = GameFx.multColor(c.m, fever: fever)
+            let ease = 1 - pow(1 - min(1, c.t), 3)
+            let alpha = (1 - ease) * 0.45
+            let origin = pt(x + 2, top - 420)
+            let w = (slotW - 4) * s
+            let h = 420 * s
+            var layer = ctx
+            layer.opacity = alpha
+            // 簡易グラデ：下ほど濃く
+            layer.fill(Path(CGRect(x: origin.x, y: origin.y, width: w, height: h)), with: .color(col))
+        }
+
         // 釘（draw 内の順序・色）
         for p in e.pegs {
             let c = pt(p.x, p.y)
@@ -138,9 +156,79 @@ struct BoardCanvas: View {
                 continue
             }
             guard b.state == .fly else { continue }
+            let BR = Engine.ballRadius
+            // 軌跡
+            let trail = b.trail
+            for (i, tp) in trail.enumerated() {
+                let c = pt(tp.0, tp.1)
+                let frac = Double(i + 1) / Double(max(1, trail.count))
+                let r = BR * frac * s
+                var layer = ctx
+                layer.opacity = frac * 0.25
+                layer.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(ball))
+            }
             let c = pt(b.x, b.y)
-            let r = Engine.ballRadius * s
+            // 外周グロー
+            var glow = ctx
+            glow.opacity = 0.2
+            let gr = (BR + 6) * s
+            glow.fill(Path(ellipseIn: CGRect(x: c.x - gr, y: c.y - gr, width: gr * 2, height: gr * 2)), with: .color(ball))
+            let r = BR * s
             ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(ball))
+        }
+
+        // 吹き出し
+        for fl in session.floaters {
+            let life = fl.life
+            let alpha = max(0, 1 - fl.t / life)
+            let p = pt(fl.x, fl.y - fl.t * 34)
+            var layer = ctx
+            layer.opacity = alpha
+            layer.draw(
+                Text(fl.text)
+                    .font(.system(size: (fl.big ? 24 : 18) * s, weight: .bold))
+                    .foregroundColor(fl.color),
+                at: p,
+                anchor: .center
+            )
+        }
+
+        // 吸い込み（持ち玉・スコアへ）
+        let tgtBall = session.moneyTargetScreen()
+        let tgtScore = session.scoreTargetScreen()
+        for fy in session.flyers {
+            if fy.t < 0 { continue }
+            let tgt: CGPoint
+            switch fy.kind {
+            case .ball: tgt = tgtBall
+            case .minus: tgt = pt(fy.tx, fy.ty)
+            case .score: tgt = tgtScore
+            }
+            let k = pow(min(1, fy.t / 0.55), 2.2)
+            let x0 = ox + fy.x0 * s
+            let y0 = fy.y0 * s
+            let x = x0 + (tgt.x - x0) * k + sin(k * .pi) * fy.arc * s
+            let y = y0 + (tgt.y - y0) * k - sin(k * .pi) * 60 * s
+            switch fy.kind {
+            case .ball:
+                let r = Engine.ballRadius * (1 - k * 0.35) * s
+                ctx.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)), with: .color(fy.color))
+            case .minus:
+                let r = Engine.ballRadius * s
+                ctx.stroke(
+                    Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)),
+                    with: .color(fy.color),
+                    style: StrokeStyle(lineWidth: 2 * s, dash: [3 * s, 2.5 * s])
+                )
+            case .score:
+                ctx.draw(
+                    Text("+\(fy.value)")
+                        .font(.system(size: (24 - k * 10) * s, weight: .bold))
+                        .foregroundColor(fy.color),
+                    at: CGPoint(x: x, y: y),
+                    anchor: .center
+                )
+            }
         }
 
         // 発射前（drawLaunch / drawLaunchBall）
