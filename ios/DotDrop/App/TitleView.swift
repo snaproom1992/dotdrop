@@ -2,7 +2,7 @@ import SwiftUI
 
 /// `#start` overlay（justify-content: safe center）
 struct TitleView: View {
-    @ObservedObject var session: GameSession
+    var session: GameSession
     var onPlay: () -> Void
     var onTutorial: () -> Void
 
@@ -24,13 +24,13 @@ struct TitleView: View {
     }
 
     private var titleBlock: some View {
-        // h1: 76px, letter-spacing -.06em, line-height .9
-        // DOT の O は .38em / 左右 .17em / vertical-align:baseline / top:-.17em
-        // レイアウト用の固定枠と、アニメ用の TimelineView を分ける（AttributeGraph cycle 防止）
+        // h1: 76px / letter-spacing -.06em / line-height .9
+        // O は .38em・左右 .17em。alignmentGuide は使わない（AttributeGraph cycle の原因になる）
+        // HStack 中央揃え ≈ CSS の baseline + top:-.17em の見え方
         VStack(spacing: 0) {
-            HStack(alignment: .firstTextBaseline, spacing: 0) {
+            HStack(alignment: .center, spacing: 0) {
                 Text("D")
-                DropOSlot()
+                DropO()
                 Text("T")
             }
             Text("DROP")
@@ -83,69 +83,47 @@ struct TitleView: View {
     }
 }
 
-/// レイアウトだけ担当（サイズ固定）。アニメは overlay 内の DropO に閉じる。
-private struct DropOSlot: View {
-    private let em: CGFloat = 76
-
-    var body: some View {
-        Color.clear
-            .frame(width: em * 0.38, height: 1)
-            .padding(.horizontal, em * 0.17)
-            .overlay(alignment: .bottom) {
-                DropO()
-                    .offset(y: -em * 0.17) // CSS top: -.17em
-            }
-            .alignmentGuide(.firstTextBaseline) { d in d[VerticalAlignment.bottom] }
-    }
-}
-
-/// CSS dropIn / trail（描画のみ。親レイアウトを動かさない）
+/// CSS dropIn。サイズ固定の Canvas だけ動かす（親レイアウトに影響しない）
 private struct DropO: View {
-    @State private var start = Date()
-    @State private var finished = false
+    @State private var born = Date()
     private let em: CGFloat = 76
 
     var body: some View {
-        Group {
-            if finished {
-                Circle()
-                    .fill(DD.paper)
-                    .frame(width: em * 0.38, height: em * 0.38)
-            } else {
-                TimelineView(.animation(minimumInterval: 1 / 60)) { timeline in
-                    let t = min(1.05, timeline.date.timeIntervalSince(start))
-                    let pose = dropPose(t)
-                    ZStack(alignment: .bottom) {
-                        if pose.trails {
-                            trail(0.095, 0.39, 0.5)
-                            trail(0.072, 0.52, 0.34)
-                            trail(0.053, 0.64, 0.22)
-                        }
-                        Circle()
-                            .fill(DD.paper)
-                            .frame(width: em * 0.38, height: em * 0.38)
-                            .scaleEffect(x: pose.sx, y: pose.sy, anchor: .bottom)
-                            .offset(y: em * pose.ty)
-                    }
-                    .frame(width: em * 0.38, height: em * 0.38, alignment: .bottom)
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
+            let t = min(1.05, timeline.date.timeIntervalSince(born))
+            let pose = dropPose(t)
+            Canvas { ctx, size in
+                let d = min(size.width, size.height)
+                let cx = size.width / 2
+                let cy = size.height / 2 + pose.ty * em
+                if pose.trails {
+                    drawTrail(ctx, cx: cx, cy: cy, d: d, ratio: 0.095 / 0.38, up: 0.39, opacity: 0.5)
+                    drawTrail(ctx, cx: cx, cy: cy, d: d, ratio: 0.072 / 0.38, up: 0.52, opacity: 0.34)
+                    drawTrail(ctx, cx: cx, cy: cy, d: d, ratio: 0.053 / 0.38, up: 0.64, opacity: 0.22)
                 }
+                var xform = CGAffineTransform.identity
+                    .translatedBy(x: cx, y: cy + d / 2)
+                    .scaledBy(x: pose.sx, y: pose.sy)
+                    .translatedBy(x: -cx, y: -(cy + d / 2))
+                let ball = Path(ellipseIn: CGRect(x: cx - d / 2, y: cy - d / 2, width: d, height: d))
+                    .applying(xform)
+                ctx.fill(ball, with: .color(DD.paper))
             }
         }
-        .frame(width: em * 0.38, height: em * 0.38, alignment: .bottom)
-        .onAppear {
-            start = Date()
-            finished = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.05) {
-                finished = true
-            }
-        }
+        .frame(width: em * 0.38, height: em * 0.38)
+        .padding(.horizontal, em * 0.17)
     }
 
-    private func trail(_ size: CGFloat, _ bottom: CGFloat, _ opacity: Double) -> some View {
-        Circle()
-            .fill(DD.paper.opacity(opacity))
-            .frame(width: em * size, height: em * size)
-            .offset(y: -em * bottom)
+    private func drawTrail(
+        _ ctx: GraphicsContext, cx: CGFloat, cy: CGFloat, d: CGFloat,
+        ratio: CGFloat, up: CGFloat, opacity: Double
+    ) {
+        let r = d * ratio / 2
+        let y = cy - up * em
+        ctx.fill(
+            Path(ellipseIn: CGRect(x: cx - r, y: y - r, width: r * 2, height: r * 2)),
+            with: .color(DD.paper.opacity(opacity))
+        )
     }
 
     private func dropPose(_ t: Double) -> (ty: CGFloat, sx: CGFloat, sy: CGFloat, trails: Bool) {

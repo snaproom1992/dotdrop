@@ -1,32 +1,35 @@
 import SwiftUI
 import DotDropEngine
 
+/// フリープレイ進行。`@Observable` で、読んだプロパティだけがビューを更新する。
+@Observable
 @MainActor
-final class GameSession: ObservableObject {
-    let engine = Engine()
+final class GameSession {
+    @ObservationIgnored let engine = Engine()
 
-    @Published var screen: Screen = .title
-    @Published var money = 12
-    @Published var score = 0
-    @Published var boardShots = 0
-    @Published var gauge = 0
-    @Published var feverLeft = 0
-    @Published var busy = false
-    @Published var firstShot = true
-    @Published var level = 0
-    @Published var pullX = 0.0
-    @Published var pullY = 0.0
-    @Published var banner: Banner?
-    @Published var showResetSheet = false
-    @Published var gameBestShot = 0
-    @Published var personalBest = 0
-    @Published var beatBest = false
-    @Published var tutorialCleared: Set<String> = []
+    var screen: Screen = .title
+    var money = 12
+    var score = 0
+    var boardShots = 0
+    var gauge = 0
+    var feverLeft = 0
+    var busy = false
+    var firstShot = true
+    /// ドラッグ中に毎フレーム変わる。ビュー購読の対象にしない
+    @ObservationIgnored var level = 0
+    @ObservationIgnored var pullX = 0.0
+    @ObservationIgnored var pullY = 0.0
+    var banner: Banner?
+    var showResetSheet = false
+    var gameBestShot = 0
+    var personalBest = 0
+    var beatBest = false
+    var tutorialCleared: Set<String> = []
 
-    private var lastDate: Date?
-    private var triBonus = false
-    private var bestAtStart = 0
-    private var displayTimer: Timer?
+    @ObservationIgnored private var lastDate: Date?
+    @ObservationIgnored private var triBonus = false
+    @ObservationIgnored private var bestAtStart = 0
+    @ObservationIgnored private var displayTimer: Timer?
 
     enum Screen { case title, playing, result }
 
@@ -270,7 +273,6 @@ final class GameSession: ObservableObject {
                 if !busy { break }
             }
         }
-        // 盤面の再描画は BoardCanvas の TimelineView が担う（毎フレーム @Published しない）
     }
 
     // MARK: - Storage (localStorage 相当)
@@ -283,7 +285,6 @@ final class GameSession: ObservableObject {
         if s > UserDefaults.standard.integer(forKey: k) {
             UserDefaults.standard.set(s, forKey: k)
         }
-        // ranking stub: keep top score only for now; full ranking next
     }
     private func loadTutorialProgress() {
         if let arr = UserDefaults.standard.array(forKey: "dotdrop-tutorial") as? [String] {

@@ -2,7 +2,7 @@ import SwiftUI
 
 /// `#over.result` に対応
 struct ResultOverlay: View {
-    @ObservedObject var session: GameSession
+    var session: GameSession
     var onRetry: () -> Void
     var onTitle: () -> Void
 
@@ -94,7 +94,7 @@ struct ResultOverlay: View {
 
 /// `#sheet` リセット確認
 struct ResetSheet: View {
-    @ObservedObject var session: GameSession
+    var session: GameSession
     var onReset: () -> Void
     var onTitle: () -> Void
 

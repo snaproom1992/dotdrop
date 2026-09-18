@@ -3,7 +3,7 @@ import DotDropEngine
 
 /// `draw()` の釘・受け皿・玉・狙い。座標は Web と同じ（原点は画面上、ox で横センタ）
 struct BoardCanvas: View {
-    @ObservedObject var session: GameSession
+    var session: GameSession
     var fit: BoardFit
 
     var body: some View {

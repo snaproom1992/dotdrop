@@ -28,7 +28,9 @@ DotDropEngine/       … ENGINE + フィクスチャテスト
 - `RootView` は全画面 `fit()` のため `.ignoresSafeArea()` する。そのままだと
   `GeometryReader.safeAreaInsets` が 0 になり、HUD が Dynamic Island にめり込む。
   → `ScreenSafeArea`（UIWindow の insets）を使い、CSS の `env(safe-area-inset-*)` と同じ値を渡す
-- タイトルの O は CSS どおり `vertical-align: baseline` + `top: -.17em`（`.38em` の玉）
+- タイトルの O は固定サイズの Canvas アニメ。`alignmentGuide` は使わない（AttributeGraph cycle）
+- `GameSession` は `@Observable`。`pullX/Y` と `engine` は `@ObservationIgnored`
+  （ドラッグや物理のたびに RootView 全体が再構築されないようにする）
 
 ## フィーバー（Web と同じ）
 

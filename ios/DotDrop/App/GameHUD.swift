@@ -3,7 +3,7 @@ import DotDropEngine
 
 /// `<header>` — CSS の absolute 配置を再現（STAGE を flex に混ぜない）
 struct GameHUD: View {
-    @ObservedObject var session: GameSession
+    var session: GameSession
     var safeTop: CGFloat
 
     var body: some View {

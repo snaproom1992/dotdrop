@@ -1,101 +1,113 @@
 import SwiftUI
+import UIKit
 import DotDropEngine
 
 /// HTML の overlay / header / canvas の重ね方に対応
 struct RootView: View {
-    @StateObject private var session = GameSession()
+    @State private var session = GameSession()
     @Environment(\.scenePhase) private var scenePhase
-    /// GeometryReader + ignoresSafeArea だと insets が 0 になるので、ウィンドウから読む
-    @State private var safeTop: CGFloat = ScreenSafeArea.top
-    @State private var safeBot: CGFloat = ScreenSafeArea.bottom
+    @State private var safeTop: CGFloat = 59
+    @State private var safeBot: CGFloat = 34
+    @State private var viewSize: CGSize = .zero
 
     var body: some View {
-        // web の innerWidth/innerHeight と同じく、セーフエリア込みの全画面サイズで fit する
-        GeometryReader { geo in
-            let fit = BoardFit.compute(
-                viewSize: geo.size,
-                safeTop: safeTop,
-                safeBottom: safeBot
-            )
+        let size = resolvedSize
+        let fit = BoardFit.compute(viewSize: size, safeTop: safeTop, safeBottom: safeBot)
 
-            ZStack {
-                DD.bg(fever: session.fever && session.screen == .playing)
+        ZStack {
+            // feverLeft を読むことで、フィーバー突入時に背景が更新される
+            DD.bg(fever: session.feverLeft > 0 && session.screen == .playing)
 
-                switch session.screen {
-                case .title:
-                    TitleView(
-                        session: session,
-                        onPlay: { session.startFreePlay() },
-                        onTutorial: {
-                            // 次段で一覧接続
-                        }
-                    )
+            switch session.screen {
+            case .title:
+                TitleView(
+                    session: session,
+                    onPlay: { session.startFreePlay() },
+                    onTutorial: {}
+                )
 
-                case .playing:
-                    ZStack {
-                        BoardCanvas(session: session, fit: fit)
-                        GameHUD(session: session, safeTop: safeTop)
-                    }
-                    .onAppear { session.applyFit(fit) }
-                    .onChange(of: fit.logicalHeight) { _, _ in
-                        session.applyFit(fit)
-                    }
-
-                case .result:
-                    ResultOverlay(
-                        session: session,
-                        onRetry: { session.startFreePlay() },
-                        onTitle: { session.openTitle() }
-                    )
+            case .playing:
+                ZStack {
+                    BoardCanvas(session: session, fit: fit)
+                    GameHUD(session: session, safeTop: safeTop)
                 }
 
-                if session.showResetSheet {
-                    ResetSheet(
-                        session: session,
-                        onReset: {
-                            session.showResetSheet = false
-                            session.startFreePlay()
-                        },
-                        onTitle: {
-                            session.showResetSheet = false
-                            session.openTitle()
-                        }
-                    )
-                    .zIndex(7)
-                }
+            case .result:
+                ResultOverlay(
+                    session: session,
+                    onRetry: { session.startFreePlay() },
+                    onTitle: { session.openTitle() }
+                )
             }
-            .frame(width: geo.size.width, height: geo.size.height)
-            .onAppear {
-                refreshSafeArea()
-                session.applyFit(fit)
-            }
-            .onChange(of: geo.size) { _, _ in
-                refreshSafeArea()
+
+            if session.showResetSheet {
+                ResetSheet(
+                    session: session,
+                    onReset: {
+                        session.showResetSheet = false
+                        session.startFreePlay()
+                    },
+                    onTitle: {
+                        session.showResetSheet = false
+                        session.openTitle()
+                    }
+                )
+                .zIndex(7)
             }
         }
-        .ignoresSafeArea() // 全画面サイズは必要。insets は ScreenSafeArea で別途取得
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background {
+            GeometryReader { geo in
+                Color.clear
+                    .task(id: sizeKey(geo.size)) {
+                        updateSize(geo.size)
+                        refreshSafeArea()
+                        applyCurrentFit()
+                    }
+            }
+        }
+        .ignoresSafeArea()
         .statusBarHidden(true)
         .preferredColorScheme(.dark)
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { refreshSafeArea() }
         }
+        .onChange(of: safeTop) { _, _ in applyCurrentFit() }
+        .onChange(of: safeBot) { _, _ in applyCurrentFit() }
+    }
+
+    private var resolvedSize: CGSize {
+        if viewSize.width > 0, viewSize.height > 0 { return viewSize }
+        return UIScreen.main.bounds.size
+    }
+
+    private func sizeKey(_ size: CGSize) -> Int {
+        Int(size.width.rounded()) &* 10_000 &+ Int(size.height.rounded())
+    }
+
+    private func applyCurrentFit() {
+        session.applyFit(BoardFit.compute(viewSize: resolvedSize, safeTop: safeTop, safeBottom: safeBot))
+    }
+
+    private func updateSize(_ size: CGSize) {
+        guard size.width > 0, size.height > 0 else { return }
+        guard abs(size.width - viewSize.width) > 0.5 || abs(size.height - viewSize.height) > 0.5 else { return }
+        viewSize = size
     }
 
     private func refreshSafeArea() {
-        let apply = {
-            let insets = ScreenSafeArea.insets
-            // 値が変わったときだけ書く（AttributeGraph cycle / 無駄な再レイアウト防止）
-            if insets.top > 0, abs(safeTop - insets.top) > 0.5 {
-                safeTop = insets.top
-            }
-            if insets.bottom > 0, abs(safeBot - insets.bottom) > 0.5 {
-                safeBot = insets.bottom
-            }
+        let insets = ScreenSafeArea.insets
+        if insets.top > 0, abs(safeTop - insets.top) > 0.5 {
+            safeTop = insets.top
         }
-        apply()
-        // Web の fit() と同様、少し遅れて測り直す（ホーム画面起動などで高さが後から変わる）
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: apply)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: apply)
+        if insets.bottom > 0, abs(safeBot - insets.bottom) > 0.5 {
+            safeBot = insets.bottom
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            let again = ScreenSafeArea.insets
+            if again.top > 0, abs(safeTop - again.top) > 0.5 { safeTop = again.top }
+            if again.bottom > 0, abs(safeBot - again.bottom) > 0.5 { safeBot = again.bottom }
+        }
     }
 }
 
