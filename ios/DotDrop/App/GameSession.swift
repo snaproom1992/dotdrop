@@ -30,6 +30,17 @@ final class GameSession {
     var gameBestShot = 0
     var personalBest = 0
     var beatBest = false
+    /// 今回の打った回数。ランキングに残す
+    var shots = 0
+    /// 持ち玉の最高（この1ゲームの中で）
+    @ObservationIgnored var peakMoney = 12
+    /// 結果画面に出すもの
+    var rank = -1
+    var rankingTop: [DDStore.RankEntry] = []
+    var currentEntry: DDStore.RankEntry?
+    var records: [String: Int] = [:]
+    /// この起動で更新した項目（「更新」の札を出す）
+    var newRecordKeys: Set<String> = []
     var tutorialCleared: Set<String> = []
 
     /// 演出（購読しない。BoardCanvas の TimelineView が描く）
@@ -64,6 +75,8 @@ final class GameSession {
     @ObservationIgnored private var collectCombo = 0
     @ObservationIgnored private var lastCollect: CFTimeInterval = 0
     @ObservationIgnored private var lastScoreStep: CFTimeInterval = 0
+    /// 引いている間に鳴らした段。同じ段で鳴りっぱなしにしない
+    @ObservationIgnored private var lastStep = 0
 
     enum Screen { case title, playing, result }
 
@@ -147,6 +160,11 @@ final class GameSession {
         triBonus = false
         gameBestShot = 0
         beatBest = false
+        shots = 0
+        peakMoney = money
+        newRecordKeys = []
+        rank = -1
+        currentEntry = nil
         pendingGameOver = false
         clearFx()
         bestAtStart = storedBest()
@@ -161,6 +179,16 @@ final class GameSession {
         let maxPull = Engine.maxPull
         let levels = Engine.levels
         level = mag < 14 ? 0 : min(levels, Int(ceil(mag / (maxPull / Double(levels)))))
+        // 段が上がるたびに、音と振動で強さを返す。**これが無いと引いている間ずっと無音になる**
+        if level > lastStep {
+            GameAudio.shared.voice(
+                freq: GameAudio.shared.note(level * 2 + 1, fever: engine.fever),
+                dur: 0.08, gain: 0.08,
+                wave: level == levels ? .square : .triangle
+            )
+            GameHaptics.buzz(level == levels ? .heavy : .light, gap: 0)
+        }
+        lastStep = level
         let len = hypot(dx, dy)
         guard len > 0.0001 else { pullX = 0; pullY = 0; return }
         let p = Double(level) / Double(levels) * maxPull
@@ -169,8 +197,9 @@ final class GameSession {
     }
 
     func releasePull() {
-        defer { pullX = 0; pullY = 0; level = 0 }
+        defer { pullX = 0; pullY = 0; level = 0; lastStep = 0 }
         guard canShoot, level > 0 else { return }
+        shots += 1
         let (vx, vy) = engine.launchVelocity(pullX: pullX, pullY: pullY, exact: false)
         engine.launch(vx: vx, vy: vy)
         money -= engine.config.cost
@@ -242,6 +271,9 @@ final class GameSession {
         engine.hooks.shotEnd = { [weak self] _ in
             guard let self else { return }
             self.gameBestShot = max(self.gameBestShot, self.engine.shotScore)
+            self.noteRecord("shotScore", self.engine.shotScore)
+            self.noteRecord("shotBalls", self.shotBallsMax)
+            self.noteRecord("shotHits", self.engine.hitCount)
             self.busy = false
             self.feverStep()
             self.afterShot()
@@ -302,6 +334,7 @@ final class GameSession {
                 color: col, life: 0.5, big: true
             ))
             sendScore(gain, x: ball.x, y: top - 22, color: col)
+            noteRecord("ballGain", gain)
             GameAudio.shared.voice(freq: GameAudio.shared.note(4 + m, fever: fever), dur: 0.18, gain: 0.1, wave: .square)
             GameAudio.shared.noise(dur: 0.04, gain: 0.12, freq: 3000)
             hitStop = max(hitStop, m >= 5 ? 0.14 : 0.05)
@@ -440,6 +473,7 @@ final class GameSession {
             if !changed.isEmpty {
                 slotFlash = .init(slots: changed)
             }
+            noteRecord("stage", engine.stage + 1)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { [weak self] in
                 self?.showBanner("STAGE \( (self?.engine.stage ?? 0) + 1)", "ステージが上がりました", DD.paper)
             }
@@ -451,6 +485,13 @@ final class GameSession {
     func finishGame() {
         stopDisplayLoop()
         pendingGameOver = false
+        noteRecord("gameScore", score)
+        noteRecord("peakMoney", peakMoney)
+        let entry = DDStore.RankEntry(score: score, stage: engine.stage + 1, shots: shots, date: Date())
+        rank = DDStore.addRanking(entry)
+        currentEntry = entry
+        rankingTop = DDStore.ranking()
+        records = DDStore.records()
         saveBest(score)
         personalBest = storedBest()
         screen = .result
@@ -462,6 +503,11 @@ final class GameSession {
         banner = .init(word: word, sub: sub, color: color)
         bannerUp = true
         edge = .init(color: color)
+    }
+
+    /// 記録を更新したら覚えておく。結果画面で「更新」の札を出すため
+    private func noteRecord(_ key: String, _ value: Int) {
+        if DDStore.bump(key, value) { newRecordKeys.insert(key) }
     }
 
     private func bumpMoney() {
@@ -650,6 +696,7 @@ final class GameSession {
                     GameAudio.shared.noise(dur: 0.05, gain: 0.08, freq: 300)
                 case .ball:
                     money += 1
+                    peakMoney = max(peakMoney, money)
                     bumpMoney()
                     let nowC = CACurrentMediaTime()
                     collectCombo = nowC - lastCollect < 0.25 ? collectCombo + 1 : 0

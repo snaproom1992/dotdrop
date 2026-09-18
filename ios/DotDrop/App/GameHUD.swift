@@ -7,20 +7,26 @@ struct GameHUD: View {
     var safeTop: CGFloat
     var width: CGFloat
 
+    /// 数字に使える幅。画面の半分 −（まんなかの STAGE の半分25）− 32
+    private var room: Double { max(60, Double(width) / 2 - 25 - 32) }
+
     /// 桁が増えても、まんなかの STAGE とぶつからない大きさまで落とす（Web の `Roller.fit()`）
     private func statSize(_ value: Int) -> Double {
         DD.statSize(digits: String(max(0, value)).count, screenWidth: Double(width))
     }
 
-    /// 数字1つ。**`tracking` ではなく `kerning` を使うこと。**
-    /// `tracking` は最後の文字のうしろにも詰めを入れるので、右端の数字が欠ける
-    private func statNumber(_ value: Int) -> some View {
+    /// 数字1つ。切れないために3つとも要る。
+    /// - `kerning`（`tracking` ではない）… `tracking` は最後の文字のうしろにも詰めを入れるので右端が欠ける
+    /// - `frame(maxWidth: room)` … まんなかの STAGE へはみ出さない
+    /// - `minimumScaleFactor` … 上の計算で足りなかったときの保険。縮むが、切れはしない
+    private func statNumber(_ value: Int, _ alignment: Alignment) -> some View {
         let size = statSize(value)
         return Text("\(value)")
             .font(DD.bold(size))
             .kerning(-size * 0.05)
             .lineLimit(1)
-            .fixedSize()
+            .minimumScaleFactor(0.5)
+            .frame(maxWidth: room, alignment: alignment)
             .frame(height: size * 0.9, alignment: .center)
     }
 
@@ -32,7 +38,7 @@ struct GameHUD: View {
             // 持ち玉 ← → スコア（STAGE はここに入れない＝web の flex と同じ）
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 0) {
-                    statNumber(session.moneyShown)
+                    statNumber(session.moneyShown, .leading)
                         .scaleEffect(session.moneyBump ? 1.08 : 1, anchor: .leading)
                         .animation(.easeOut(duration: 0.12), value: session.moneyBump)
                     Text("持ち玉")
@@ -42,7 +48,7 @@ struct GameHUD: View {
                 }
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 0) {
-                    statNumber(session.scoreShown)
+                    statNumber(session.scoreShown, .trailing)
                         .scaleEffect(session.scoreBump ? 1.08 : 1, anchor: .trailing)
                         .animation(.easeOut(duration: 0.12), value: session.scoreBump)
                     Text("スコア")
