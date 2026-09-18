@@ -99,11 +99,18 @@ transform:translateX(-50%);animation:trail 1.05s both}
 /* 遊んでいる途中でやめる。持ち玉の数字の真上、HUD の上端のすきまに小さく置く。
    ここだけは桁数が増えても帯の演出（y=116）とも当たらない。
    overlay は z-index:6 なので、タイトルや結果が出ている間は勝手に隠れる */
-#quitBtn{position:absolute;left:14px;top:max(2px,calc(env(safe-area-inset-top) - 1px));
-  display:flex;align-items:center;line-height:0;
-  color:var(--paper);opacity:.45;background:none;border:none;padding:2px 12px;
+/* まんなかの、STAGE の上。左右のどちらかに寄せると「持ち玉／スコアに効くもの」と読まれる。
+   まんなかなら両方から等しく離れるので、どの数字のものでもないと分かる。
+   ノッチ（Dynamic Island）は画面のまんなか上なので、safe-area より上には出さないこと。
+   枠をつけて、数字につくラベルではなくボタンだと分かるようにしている */
+#quitBtn{position:absolute;left:50%;transform:translateX(-50%);top:max(2px,env(safe-area-inset-top));
+  font:inherit;font-weight:700;font-size:9.5px;letter-spacing:.08em;line-height:1;
+  color:var(--paper);opacity:.55;background:none;
+  border:1.2px solid rgba(242,241,238,.45);border-radius:999px;padding:3px 10px;
   pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent}
-#quitBtn:active{opacity:.9}
+#quitBtn:active{opacity:1;background:rgba(242,241,238,.12)}
+/* STAGE との間を少しあける（触れて見えないように） */
+.stage-hud{margin-top:3px}
 /* 下から出る板。下にスワイプ・キャンセル・外側をタップ、の3通りで閉じられる */
 .sheet{position:fixed;inset:0;z-index:7;display:none}
 .sheet.show{display:block}
@@ -118,7 +125,13 @@ transform:translateX(-50%);animation:trail 1.05s both}
 .sheet-card > *{width:100%;max-width:320px}
 /* つまみ。ここを下へ引くと閉じられることを形で示す */
 .grab{width:40px;height:4px;border-radius:2px;background:rgba(242,241,238,.3);margin:0 auto 4px}
-.sheet-card button:first-of-type{margin-top:18px}
+.sheet-card h3{margin:14px 0 0;font-size:17px;font-weight:700;letter-spacing:.01em;text-align:center}
+.sheet-card p{margin:7px 0 0;font-size:12px;opacity:.6;line-height:1.5;text-align:center}
+.sheet-card h3 + p + button{margin-top:20px}
+/* キャンセルは丸で囲わない。ただの文字にして、2つの操作と役割を分ける */
+.sheet-card button.text{background:none;border:none;font-size:14px;font-weight:700;
+  opacity:.6;padding:15px 0;margin-top:4px}
+.sheet-card button.text:active{opacity:1}
 body.tutorial #quitBtn{display:none}   /* あそびかたは打つ回数に限りがあり、必ず終わる */
 .stage-hud{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 18px);transform:translateX(-50%);text-align:center}
 .stage-hud small{display:block;font-size:10px;font-weight:700;letter-spacing:.12em;opacity:.6}
@@ -199,7 +212,7 @@ body.tutorial .stage-hud{display:none}
 <canvas id="c"></canvas>
 <i id="safeProbe" aria-hidden="true"></i>
 <header>
-  <button id="quitBtn" aria-label="リセット"></button>
+  <button id="quitBtn">リセット</button>
   <div class="stat"><b id="money" class="roll"></b><small>持ち玉</small></div>
   <div class="stage-hud" id="stageHudBox"><small>STAGE</small><b id="stageNo">1</b><div id="stageDots"></div></div>
   <div class="tut-hud" id="tutHud"><small id="mKicker"></small><b id="mTitle"></b><u id="mProg"></u></div>
@@ -234,9 +247,11 @@ body.tutorial .stage-hud{display:none}
   <div class="sheet-scrim" id="sheetScrim"></div>
   <div class="sheet-card" id="sheetCard">
     <i class="grab" aria-hidden="true"></i>
+    <h3>リセットしますか？</h3>
+    <p>いまのスコアはランキングに残りません</p>
     <button id="qRetry">リセット</button>
     <button id="qTitle" class="sub">タイトルに戻る</button>
-    <button id="qBack" class="sub">キャンセル</button>
+    <button id="qBack" class="text">キャンセル</button>
   </div>
 </div>
 <div id="over" class="overlay result">
@@ -1113,11 +1128,6 @@ const ARROW = size =>
   `<svg class="arrow" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">` +
   `<path d="M9 4.6 L16.4 12 L9 19.4" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="miter"/></svg>`;
 // できた印のチェック。線の太さを数字に合わせて、角は落とさない
-// リセットの印。すき間のある丸と、向きを示す三角だけで作る（形は丸・四角・三角のルール通り）
-const RESET = size =>
-  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">` +
-  `<path d="M20 12.6 A8.4 8.4 0 1 1 16.6 5.7" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="butt"/>` +
-  `<path d="M11.4 5.6 L19.4 2.2 L18.6 10.8 Z" fill="currentColor"/></svg>`;
 const CHECK = (size, ng) =>
   `<svg class="check${ng ? ' ng' : ''}" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">` +
   `<path d="M3.5 12.4 L9.6 18.5 L20.5 5.6" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="miter"/></svg>`;
@@ -1498,7 +1508,6 @@ $('toTitle').addEventListener('click', () => {
   $('start').classList.add('show');
 });
 // 遊んでいる途中でリセットする。押し間違いがあるので、必ず一度たずねる
-$('quitBtn').innerHTML = RESET(15);
 const sheetEl = $('sheet'), sheetCard = $('sheetCard');
 function openSheet() { sheetEl.classList.add('show'); requestAnimationFrame(() => sheetEl.classList.add('in')); }
 function closeSheet() {
