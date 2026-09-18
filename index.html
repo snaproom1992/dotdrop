@@ -30,13 +30,13 @@ body.fever{background:var(--mustard);color:var(--ink)}
 canvas{position:fixed;inset:0;display:block;background:var(--brown)}
 /* 下のホームバーの帯の高さを測るための目印（見えない） */
 #safeProbe{position:fixed;left:-9px;bottom:0;width:1px;height:0;pointer-events:none;
-padding-bottom:env(safe-area-inset-bottom,0px)}
-header{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:calc(env(safe-area-inset-top) + 18px) 20px 0;pointer-events:none}
+padding-bottom:env(safe-area-inset-bottom,0px);padding-top:env(safe-area-inset-top,0px)}
+header{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:calc(env(safe-area-inset-top) + 30px) 20px 0;pointer-events:none}
 .stat b{display:flex;font-size:52px;line-height:.9;letter-spacing:-.05em;transition:transform .12s}
 .stat.right b{justify-content:flex-end;transform-origin:right center}
 .stat:not(.right) b{transform-origin:left center}
 .stat b.bump{transform:scale(1.08)}
-.stat small{display:block;font-size:12px;margin-top:6px;opacity:.65}
+.stat small{display:block;font-size:12px;margin-top:2px;opacity:.65}
 .stat.right{text-align:right}
 .roll .d{display:block;height:.9em;overflow:hidden;width:.57em;text-align:center}
 .roll .strip{display:block;transition:transform .18s cubic-bezier(.3,1.5,.5,1)}
@@ -109,8 +109,9 @@ transform:translateX(-50%);animation:trail 1.05s both}
   border:1.2px solid rgba(242,241,238,.45);border-radius:999px;padding:3px 10px;
   pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent}
 #quitBtn:active{opacity:1;background:rgba(242,241,238,.12)}
-/* STAGE との間を少しあける（触れて見えないように） */
-.stage-hud{margin-top:3px}
+/* 自己ベストはリセットと同じ行（右端）へ。スコアの下から出すと右の列が縦に伸びて詰まる */
+#best{position:absolute;right:20px;top:calc(env(safe-area-inset-top) + 3px);
+  font-size:11px;opacity:.75;min-height:15px;line-height:15px;text-align:right}
 /* 下から出る板。下にスワイプ・キャンセル・外側をタップ、の3通りで閉じられる */
 .sheet{position:fixed;inset:0;z-index:7;display:none}
 .sheet.show{display:block}
@@ -133,7 +134,7 @@ transform:translateX(-50%);animation:trail 1.05s both}
   opacity:.6;padding:15px 0;margin-top:4px}
 .sheet-card button.text:active{opacity:1}
 body.tutorial #quitBtn{display:none}   /* あそびかたは打つ回数に限りがあり、必ず終わる */
-.stage-hud{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 18px);transform:translateX(-50%);text-align:center}
+.stage-hud{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 30px);transform:translateX(-50%);text-align:center}
 .stage-hud small{display:block;font-size:10px;font-weight:700;letter-spacing:.12em;opacity:.6}
 .stage-hud b{display:block;font-size:30px;line-height:1;letter-spacing:-.04em;margin-top:2px;transition:transform .2s}
 .stage-hud b.bump{transform:scale(1.4)}
@@ -141,7 +142,7 @@ body.tutorial #quitBtn{display:none}   /* あそびかたは打つ回数に限�
 #stageDots i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.2}
 #stageDots i.on{opacity:1;background:#D7141F}
 /* ミッション中の見出し。STAGE の代わりに、いまの条件と達成度を出す */
-.tut-hud{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 18px);transform:translateX(-50%);text-align:center;display:none;width:200px}
+.tut-hud{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 30px);transform:translateX(-50%);text-align:center;display:none;width:200px}
 body.tutorial .tut-hud{display:block}
 body.tutorial .stage-hud{display:none}
 .tut-hud small{display:block;font-size:10px;font-weight:700;letter-spacing:.12em;opacity:.6}
@@ -202,7 +203,6 @@ body.tutorial .stage-hud{display:none}
 .records div{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-top:1px solid rgba(242,241,238,.14)}
 .records b{font-size:22px;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .records em{font-style:normal;font-size:11px;font-weight:700;color:var(--ink);background:var(--mustard);border-radius:3px;padding:1px 5px;margin-right:8px}
-#best{font-size:11px;margin-top:6px;opacity:.75;min-height:16px}
 .newrec{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;color:#F2F1EE;background:#D7141F;border-radius:3px;padding:2px 6px;animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{opacity:.55}}
 @media (prefers-reduced-motion:reduce){#flash.show{animation:none}}
@@ -213,10 +213,11 @@ body.tutorial .stage-hud{display:none}
 <i id="safeProbe" aria-hidden="true"></i>
 <header>
   <button id="quitBtn">リセット</button>
+  <div id="best"></div>
   <div class="stat"><b id="money" class="roll"></b><small>持ち玉</small></div>
   <div class="stage-hud" id="stageHudBox"><small>STAGE</small><b id="stageNo">1</b><div id="stageDots"></div></div>
   <div class="tut-hud" id="tutHud"><small id="mKicker"></small><b id="mTitle"></b><u id="mProg"></u></div>
-  <div class="stat right"><b id="points" class="roll"></b><small id="pointsLabel">スコア</small><div id="gauge"><i></i></div><div id="best"></div></div>
+  <div class="stat right"><b id="points" class="roll"></b><small id="pointsLabel">スコア</small><div id="gauge"><i></i></div></div>
 </header>
 <div id="start" class="overlay show">
   <h1>D<i><b></b><b></b><b></b></i>T<br>DROP</h1>
@@ -677,12 +678,15 @@ loadRecords();
 function fit() {
   // 画面のいちばん下にはホームバーの帯がある。そこに受け皿を置くと、
   // 戻る玉の●や点線の丸が隠れて見えない。その高さを除いた中に台を収める
-  const safeB = parseFloat(getComputedStyle($('safeProbe')).paddingBottom) || 0;
+  const probe = getComputedStyle($('safeProbe'));
+  const safeB = parseFloat(probe.paddingBottom) || 0, safeT = parseFloat(probe.paddingTop) || 0;
   const h = Math.max(400, innerHeight - safeB);
   scale = Math.min(innerWidth / LW, h / 640);
   E.LH = h / scale;
   ox = (innerWidth - LW * scale) / 2;
   screenH = innerHeight / scale;
+  // 帯も HUD と同じだけ下げる。上が詰まって余白が取れなくなっていたため
+  BANNER_Y = 116 + Math.min(safeT / scale, 26);
   // canvas は画面いっぱい。背景は全面に塗るので、帯のところも同じ色になる
   cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
   cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
@@ -1429,7 +1433,11 @@ function drawLaunch(top) {
 }
 // 帯が出ている間かどうか。出ている間は発射前の飾りを消して、上を静かにする
 const bannerUp = () => bannerState && bannerState.t < 1.5;
-const BANNER_Y = 116, BANNER_H = 56, SUB_SIZE = 14;
+// 帯の高さ。もとは画面の上端からの固定だったが、HUD はノッチのぶん下がるので、
+// ノッチのある端末ほど上が詰まっていた。帯も同じだけ下げる。
+// ただし下げすぎると釘（field().top = 200）に重なるので、26 で頭打ちにする
+let BANNER_Y = 116;
+const BANNER_H = 56, SUB_SIZE = 14;
 function drawBanner() {
   const b = bannerState;
   if (!b || b.t > 1.5) return;
