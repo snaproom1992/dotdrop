@@ -142,18 +142,25 @@ struct BoardCanvas: View {
             ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(ball))
         }
 
-        // 発射前
+        // 発射前（drawLaunch / drawLaunchBall）
         if session.canShoot {
             let L = Engine.launchPoint
             let c = pt(L.x, L.y)
-            let r = Engine.ballRadius * s
-            // 点線の弧（drawLaunch）
-            if session.level == 0 {
+            let bannerUp = session.banner != nil
+            let r = (Engine.ballRadius + Double(session.level) / Double(Engine.levels) * 1.2) * s
+
+            if session.level == 0 && !bannerUp {
+                // 脈打つ細い円
+                let pulse = (Engine.ballRadius + 8 + sin(e.time * 3) * 1.5) * s
+                ctx.stroke(
+                    Path(ellipseIn: CGRect(x: c.x - pulse, y: c.y - pulse, width: pulse * 2, height: pulse * 2)),
+                    with: .color(DD.fg(fever: fever).opacity(0.4)),
+                    lineWidth: 1.5 * s
+                )
                 var arc = Path()
                 arc.addArc(center: c, radius: 34 * s, startAngle: .radians(.pi), endAngle: .radians(0), clockwise: false)
                 ctx.stroke(arc, with: .color(DD.fg(fever: fever).opacity(0.35)), style: StrokeStyle(lineWidth: 1.5 * s, dash: [2 * s, 5 * s]))
             }
-            ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(ball))
 
             if session.level > 0 {
                 let (vx, vy) = e.launchVelocity(pullX: session.pullX, pullY: session.pullY, exact: true)
@@ -177,7 +184,7 @@ struct BoardCanvas: View {
                     let col: Color = on ? (session.level == Engine.levels ? DD.mustard : DD.red) : DD.peg(fever: fever)
                     ctx.stroke(arc, with: .color(col), style: StrokeStyle(lineWidth: (on ? 3.5 : 2) * s, lineCap: .round))
                 }
-            } else if session.firstShot {
+            } else if session.firstShot && !bannerUp {
                 ctx.draw(
                     Text("引っ張ってはなす")
                         .font(.system(size: 13 * s, weight: .medium))
@@ -193,6 +200,9 @@ struct BoardCanvas: View {
                     anchor: .center
                 )
             }
+
+            // 玉は帯より手前（常に描く）
+            ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(ball))
         }
 
         // 帯

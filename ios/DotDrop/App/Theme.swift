@@ -10,13 +10,11 @@ enum DD {
     static let blue = Color(hex: 0x2456B8)
     static let pegNormal = Color(hex: 0x54463F)
     static let floorNormal = Color(hex: 0x1E1817)
-    static let font: Font = .system(.body, design: .default)
 
     static func bg(fever: Bool) -> Color { fever ? mustard : brown }
     static func fg(fever: Bool) -> Color { fever ? ink : paper }
     static func peg(fever: Bool) -> Color { fever ? ink.opacity(0.26) : pegNormal }
     static func ball(fever: Bool) -> Color { fever ? ink : paper }
-    static func bigNum(fever: Bool) -> Color { fever ? ink.opacity(0.16) : paper.opacity(0.16) }
 }
 
 extension Color {
@@ -31,8 +29,8 @@ extension Color {
     }
 }
 
-/// Web の `fit()` と同じスケール計算
-struct BoardFit {
+/// Web の `fit()` と同じ。`viewSize` は **画面全体**（innerWidth / innerHeight）であること。
+struct BoardFit: Equatable {
     var scale: CGFloat
     var ox: CGFloat
     var logicalHeight: Double
@@ -41,6 +39,7 @@ struct BoardFit {
 
     static func compute(viewSize: CGSize, safeTop: CGFloat, safeBottom: CGFloat) -> BoardFit {
         let LW = EngineLogical.w
+        // web: h = max(400, innerHeight - safeB)  ※ safeT は引かない
         let h = max(400, viewSize.height - safeBottom)
         let scale = min(viewSize.width / LW, h / 640)
         let lh = Double(h / scale)

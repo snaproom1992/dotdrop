@@ -1,19 +1,23 @@
 import SwiftUI
 import DotDropEngine
 
-/// HTML の overlay 構成に対応するルート
+/// HTML の overlay / header / canvas の重ね方に対応
 struct RootView: View {
     @StateObject private var session = GameSession()
 
     var body: some View {
+        // web の innerWidth/innerHeight と同じく、セーフエリア込みの全画面サイズで fit する
         GeometryReader { geo in
             let safeTop = geo.safeAreaInsets.top
             let safeBot = geo.safeAreaInsets.bottom
-            let fit = BoardFit.compute(viewSize: geo.size, safeTop: safeTop, safeBottom: safeBot)
+            let fit = BoardFit.compute(
+                viewSize: geo.size,
+                safeTop: safeTop,
+                safeBottom: safeBot
+            )
 
             ZStack {
                 DD.bg(fever: session.fever && session.screen == .playing)
-                    .ignoresSafeArea()
 
                 switch session.screen {
                 case .title:
@@ -21,16 +25,13 @@ struct RootView: View {
                         session: session,
                         onPlay: { session.startFreePlay() },
                         onTutorial: {
-                            // あそびかた一覧は次段。いまはフリープレイへ誘導せず一覧プレースホルダ
-                            session.showBanner("あそびかた", "一覧は次の更新で接続します", DD.paper)
-                            // 暫定：まだネイティブ未接続なので何もしない（ボタンは置いてある）
+                            // 次段で一覧接続
                         }
                     )
 
                 case .playing:
-                    ZStack(alignment: .top) {
+                    ZStack {
                         BoardCanvas(session: session, fit: fit)
-                            .ignoresSafeArea()
                         GameHUD(session: session, safeTop: safeTop)
                     }
                     .onAppear { session.applyFit(fit) }
@@ -61,11 +62,13 @@ struct RootView: View {
                     .zIndex(7)
                 }
             }
+            .frame(width: geo.size.width, height: geo.size.height)
             .onAppear {
                 session.applyFit(fit)
                 if session.screen == .title { session.openTitle() }
             }
         }
+        .ignoresSafeArea() // ← これがないと geo.size が縮小し、盤面と HUD がズレる
         .statusBarHidden(true)
         .preferredColorScheme(.dark)
     }

@@ -1,7 +1,7 @@
 import SwiftUI
 import DotDropEngine
 
-/// `<header>` — CSS の配置をそのまま
+/// `<header>` — CSS の absolute 配置を再現（STAGE を flex に混ぜない）
 struct GameHUD: View {
     @ObservedObject var session: GameSession
     var safeTop: CGFloat
@@ -11,30 +11,89 @@ struct GameHUD: View {
         let fg = DD.fg(fever: fever)
 
         ZStack(alignment: .top) {
-            // #quitBtn — まんなか上
+            // 持ち玉 ← → スコア（STAGE はここに入れない＝web の flex と同じ）
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("\(session.money)")
+                        .font(.system(size: 46, weight: .bold))
+                        .tracking(-46 * 0.05)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                    Text("持ち玉")
+                        .font(.system(size: 12, weight: .regular))
+                        .padding(.top, 2)
+                        .opacity(0.65)
+                }
+                Spacer(minLength: 0)
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text("\(session.score)")
+                        .font(.system(size: 46, weight: .bold))
+                        .tracking(-46 * 0.05)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                    Text("スコア")
+                        .font(.system(size: 12, weight: .regular))
+                        .padding(.top, 2)
+                        .opacity(0.65)
+                    HStack(spacing: 6) {
+                        Text(session.fever ? "残り\(session.feverLeft)" : "FEVER")
+                            .font(.system(size: 9, weight: .bold))
+                            .tracking(1.08)
+                            .opacity(0.5)
+                        gauge
+                    }
+                    .padding(.top, 6)
+                    .opacity(session.banner != nil ? 0 : 1)
+                }
+            }
+            .foregroundStyle(fg)
+            .padding(.horizontal, 20)
+            .padding(.top, safeTop + 38)
+
+            // .stage-hud — absolute center
+            VStack(spacing: 0) {
+                Text("STAGE")
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(1.2)
+                    .opacity(0.6)
+                Text("\(session.engine.stage + 1)")
+                    .font(.system(size: 22, weight: .bold))
+                    .tracking(-0.88)
+                    .padding(.top, 1)
+                HStack(spacing: 4) {
+                    ForEach(0..<session.engine.config.shotsPerBoard, id: \.self) { i in
+                        Circle()
+                            .fill(i < session.boardShots ? DD.red : fg.opacity(0.2))
+                            .frame(width: 5, height: 5)
+                    }
+                }
+                .padding(.top, 3)
+            }
+            .foregroundStyle(fg)
+            .padding(.top, safeTop + 38)
+
+            // #quitBtn — absolute center, safer than STAGE
             Button {
                 session.showResetSheet = true
             } label: {
                 Text("リセット")
                     .font(.system(size: 9.5, weight: .bold))
-                    .tracking(9.5 * 0.08)
+                    .tracking(0.76)
                     .foregroundStyle(fg.opacity(0.55))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 3)
-                    .overlay(
-                        Capsule().stroke(fg.opacity(0.45), lineWidth: 1.2)
-                    )
+                    .overlay(Capsule().stroke(fg.opacity(0.45), lineWidth: 1.2))
             }
             .padding(.top, safeTop + 8)
 
-            // #best — 右上
+            // #best — absolute right
             HStack {
                 Spacer()
                 Group {
                     if session.beatBest {
                         Text("NEW RECORD")
                             .font(.system(size: 11, weight: .bold))
-                            .tracking(0.06 * 11)
+                            .tracking(0.66)
                             .foregroundStyle(DD.paper)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
@@ -42,70 +101,16 @@ struct GameHUD: View {
                             .clipShape(RoundedRectangle(cornerRadius: 3))
                     } else if session.personalBest > 0 {
                         Text("自己ベスト \(session.personalBest)")
-                            .font(.system(size: 11, weight: .regular))
+                            .font(.system(size: 11))
                             .foregroundStyle(fg.opacity(0.75))
                     }
                 }
-                .frame(height: 15)
+                .frame(height: 15, alignment: .trailing)
                 .padding(.trailing, 20)
                 .padding(.top, safeTop + 9)
             }
-
-            // 持ち玉 / STAGE / スコア — padding top = safe + 38
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(session.money)")
-                        .font(.system(size: 46, weight: .bold))
-                        .tracking(-46 * 0.05)
-                        .foregroundStyle(fg)
-                    Text("持ち玉")
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundStyle(fg.opacity(0.65))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                VStack(spacing: 1) {
-                    Text("STAGE")
-                        .font(.system(size: 10, weight: .bold))
-                        .tracking(10 * 0.12)
-                        .foregroundStyle(fg.opacity(0.6))
-                    Text("\(session.engine.stage + 1)")
-                        .font(.system(size: 22, weight: .bold))
-                        .tracking(-22 * 0.04)
-                        .foregroundStyle(fg)
-                    HStack(spacing: 4) {
-                        ForEach(0..<session.engine.config.shotsPerBoard, id: \.self) { i in
-                            Circle()
-                                .fill(i < session.boardShots ? DD.red : fg.opacity(0.2))
-                                .frame(width: 5, height: 5)
-                        }
-                    }
-                    .padding(.top, 3)
-                }
-
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("\(session.score)")
-                        .font(.system(size: 46, weight: .bold))
-                        .tracking(-46 * 0.05)
-                        .foregroundStyle(fg)
-                    Text("スコア")
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundStyle(fg.opacity(0.65))
-                    HStack(spacing: 6) {
-                        Text(session.fever ? "残り\(session.feverLeft)" : "FEVER")
-                            .font(.system(size: 9, weight: .bold))
-                            .tracking(9 * 0.12)
-                            .foregroundStyle(fg.opacity(0.5))
-                        gauge
-                    }
-                    .padding(.top, 6)
-                    .opacity(session.banner != nil ? 0 : 1)
-                }
-                .frame(maxWidth: .infinity, alignment: .trailing)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, safeTop + 38)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .allowsHitTesting(true)
     }
 
@@ -116,7 +121,6 @@ struct GameHUD: View {
                 .fill(fever ? DD.ink.opacity(0.18) : DD.paper.opacity(0.16))
                 .frame(width: 58, height: 5)
             if fever {
-                // 3分割の仕切り
                 HStack(spacing: 0) {
                     ForEach(0..<3, id: \.self) { i in
                         Rectangle()
@@ -124,18 +128,17 @@ struct GameHUD: View {
                             .frame(width: 58 / 3, height: 5)
                     }
                 }
-                // 仕切り線
-                HStack {
-                    Spacer().frame(width: 58 / 3 - 1.5)
+                HStack(spacing: 0) {
+                    Color.clear.frame(width: 58 / 3 - 1.5)
                     Rectangle().fill(DD.mustard).frame(width: 3, height: 5)
-                    Spacer().frame(width: 58 / 3 - 3)
+                    Color.clear.frame(width: 58 / 3 - 3)
                     Rectangle().fill(DD.mustard).frame(width: 3, height: 5)
-                    Spacer()
+                    Spacer(minLength: 0)
                 }
             } else {
                 Capsule()
                     .fill(DD.mustard)
-                    .frame(width: 58 * session.feverProgress, height: 5)
+                    .frame(width: max(0, 58 * session.feverProgress), height: 5)
             }
         }
         .frame(width: 58, height: 5)

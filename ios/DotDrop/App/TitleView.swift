@@ -1,18 +1,98 @@
 import SwiftUI
 
-/// `#start` の DOT の O。CSS `.38em` / dropIn / trail に対応
+/// `#start` overlay（justify-content: safe center）
+struct TitleView: View {
+    @ObservedObject var session: GameSession
+    var onPlay: () -> Void
+    var onTutorial: () -> Void
+
+    var body: some View {
+        ZStack {
+            DD.brown
+            VStack(spacing: 0) {
+                titleBlock
+                shapes
+                    .padding(.top, 22)
+                startButton
+                    .padding(.top, 28)
+                tutorialButton
+                    .padding(.top, 14)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var titleBlock: some View {
+        // h1: 76px, letter-spacing -.06em, DOT の O は .38em / 左右 .17em
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                Text("D")
+                DropO()
+                Text("T")
+            }
+            Text("DROP")
+        }
+        .font(.system(size: 76, weight: .bold))
+        .foregroundStyle(DD.paper)
+        .tracking(-76 * 0.06)
+        .multilineTextAlignment(.center)
+    }
+
+    private var shapes: some View {
+        HStack(spacing: 14) {
+            Rectangle().fill(DD.red).frame(width: 22, height: 22)
+            Circle().fill(DD.blue).frame(width: 22, height: 22)
+            Triangle().fill(DD.mustard).frame(width: 26, height: 22)
+        }
+    }
+
+    private var startButton: some View {
+        Button(action: onPlay) {
+            Text("はじめる")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(DD.paper)
+                .padding(.vertical, 16)
+                .padding(.horizontal, 40)
+                .background(DD.red)
+                .clipShape(Capsule())
+        }
+    }
+
+    private var tutorialButton: some View {
+        Button(action: onTutorial) {
+            VStack(spacing: 9) {
+                Text("あそびかた")
+                    .font(.system(size: 16, weight: .bold))
+                HStack(spacing: 5) {
+                    ForEach(0..<8, id: \.self) { i in
+                        Circle()
+                            .fill(i < session.tutorialCleared.count ? DD.red : DD.paper.opacity(0.25))
+                            .frame(width: 6, height: 6)
+                    }
+                }
+            }
+            .foregroundStyle(DD.paper)
+            .padding(.vertical, 15)
+            .padding(.horizontal, 30)
+            .overlay(RoundedRectangle(cornerRadius: 4).stroke(DD.paper, lineWidth: 2))
+        }
+    }
+}
+
+/// CSS dropIn / trail
 struct DropO: View {
     @State private var start = Date()
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 60)) { timeline in
-            let t = timeline.date.timeIntervalSince(start)
-            let pose = dropPose(min(t, 1.05))
+            let t = min(1.05, timeline.date.timeIntervalSince(start))
+            let pose = dropPose(t)
             ZStack {
                 if pose.trails {
-                    trail(size: 0.095, bottom: 0.39, opacity: 0.5)
-                    trail(size: 0.072, bottom: 0.52, opacity: 0.34)
-                    trail(size: 0.053, bottom: 0.64, opacity: 0.22)
+                    trail(0.095, 0.39, 0.5)
+                    trail(0.072, 0.52, 0.34)
+                    trail(0.053, 0.64, 0.22)
                 }
                 Circle()
                     .fill(DD.paper)
@@ -26,7 +106,7 @@ struct DropO: View {
         .onAppear { start = Date() }
     }
 
-    private func trail(size: CGFloat, bottom: CGFloat, opacity: Double) -> some View {
+    private func trail(_ size: CGFloat, _ bottom: CGFloat, _ opacity: Double) -> some View {
         Circle()
             .fill(DD.paper.opacity(opacity))
             .frame(width: 76 * size, height: 76 * size)
@@ -56,73 +136,5 @@ struct Triangle: Shape {
         p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
         p.closeSubpath()
         return p
-    }
-}
-
-/// タイトル画面
-struct TitleView: View {
-    @ObservedObject var session: GameSession
-    var onPlay: () -> Void
-    var onTutorial: () -> Void
-
-    var body: some View {
-        ZStack {
-            DD.brown.ignoresSafeArea()
-            VStack(spacing: 0) {
-                Spacer(minLength: 24)
-                VStack(spacing: 0) {
-                    HStack(spacing: 0) {
-                        Text("D")
-                        DropO()
-                        Text("T")
-                    }
-                    Text("DROP")
-                }
-                .font(.system(size: 76, weight: .bold))
-                .foregroundStyle(DD.paper)
-                .tracking(-4.5)
-
-                HStack(spacing: 14) {
-                    Rectangle().fill(DD.red).frame(width: 22, height: 22)
-                    Circle().fill(DD.blue).frame(width: 22, height: 22)
-                    Triangle().fill(DD.mustard).frame(width: 26, height: 22)
-                }
-                .padding(.top, 22)
-
-                Button(action: onPlay) {
-                    Text("はじめる")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(DD.paper)
-                        .padding(.vertical, 16)
-                        .padding(.horizontal, 40)
-                        .background(DD.red)
-                        .clipShape(Capsule())
-                }
-                .padding(.top, 28)
-
-                Button(action: onTutorial) {
-                    VStack(spacing: 9) {
-                        Text("あそびかた")
-                            .font(.system(size: 16, weight: .bold))
-                        HStack(spacing: 5) {
-                            ForEach(0..<8, id: \.self) { i in
-                                // クリア数に応じて左から点灯（暫定）
-                                let on = i < session.tutorialCleared.count
-                                Circle()
-                                    .fill(on ? DD.red : DD.paper.opacity(0.25))
-                                    .frame(width: 6, height: 6)
-                            }
-                        }
-                    }
-                    .foregroundStyle(DD.paper)
-                    .padding(.vertical, 15)
-                    .padding(.horizontal, 30)
-                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(DD.paper, lineWidth: 2))
-                }
-                .padding(.top, 14)
-
-                Spacer(minLength: 40)
-            }
-        }
     }
 }
