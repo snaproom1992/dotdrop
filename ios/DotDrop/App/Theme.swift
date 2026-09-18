@@ -19,19 +19,32 @@ enum DD {
     /// 背景の大きな点数（THEME.*.big）
     static func big(fever: Bool) -> Color { fever ? ink.opacity(0.16) : paper.opacity(0.16) }
 
-    /// Web の Helvetica Neue 700 / 46px。SF Pro だと同じ pt でも細く小さく見える
-    static let statNumber: Font = {
-        if UIFont(name: "HelveticaNeue-Bold", size: 46) != nil {
-            return .custom("HelveticaNeue-Bold", size: 46)
+    /// Web の Helvetica Neue 700。SF Pro だと同じ pt でも細く小さく見える。
+    ///
+    /// **`fixedSize:` で作ること。**`.custom(_:size:)` は端末の文字サイズ設定で
+    /// 勝手に大きくなるので、大きめに設定している人の画面で数字が枠から溢れて切れていた。
+    static func bold(_ size: Double) -> Font {
+        if UIFont(name: "HelveticaNeue-Bold", size: CGFloat(size)) != nil {
+            return .custom("HelveticaNeue-Bold", fixedSize: CGFloat(size))
         }
-        return .system(size: 46, weight: .bold)
-    }()
-    static let statLabel: Font = {
-        if UIFont(name: "HelveticaNeue", size: 12) != nil {
-            return .custom("HelveticaNeue", size: 12)
+        return .system(size: CGFloat(size), weight: .bold)
+    }
+    static func regular(_ size: Double) -> Font {
+        if UIFont(name: "HelveticaNeue", size: CGFloat(size)) != nil {
+            return .custom("HelveticaNeue", fixedSize: CGFloat(size))
         }
-        return .system(size: 12, weight: .regular)
-    }()
+        return .system(size: CGFloat(size))
+    }
+
+    static let statNumber: Font = bold(46)
+    static let statLabel: Font = regular(12)
+
+    /// 持ち玉・スコアの数字の大きさ。Web の `Roller.fit()` と同じ計算。
+    /// 使える幅＝画面の半分 −（まんなかの STAGE の半分25）− 32。1桁の幅は .57em
+    static func statSize(digits: Int, screenWidth: Double) -> Double {
+        let room = screenWidth / 2 - 25 - 32
+        return min(46, max(22, room / (Double(max(1, digits)) * 0.57)))
+    }
 }
 
 extension Color {

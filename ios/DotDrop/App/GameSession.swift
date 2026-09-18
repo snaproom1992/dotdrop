@@ -302,7 +302,7 @@ final class GameSession {
                 color: col, life: 0.5, big: true
             ))
             sendScore(gain, x: ball.x, y: top - 22, color: col)
-            GameAudio.shared.voice(freq: GameAudio.shared.note(4 + m, fever: fever), dur: 0.18, gain: 0.1)
+            GameAudio.shared.voice(freq: GameAudio.shared.note(4 + m, fever: fever), dur: 0.18, gain: 0.1, wave: .square)
             GameAudio.shared.noise(dur: 0.04, gain: 0.12, freq: 3000)
             hitStop = max(hitStop, m >= 5 ? 0.14 : 0.05)
             if m >= 5 {
@@ -319,7 +319,8 @@ final class GameSession {
                 color: DD.fg(fever: fever).opacity(0.45),
                 life: 0.7, big: true
             ))
-            GameAudio.shared.voice(freq: 150, dur: 0.14, gain: 0.08)
+            // ×0 のがっかり。低く丸い音
+            GameAudio.shared.voice(freq: 150, dur: 0.14, gain: 0.08, wave: .sine)
             GameAudio.shared.noise(dur: 0.05, gain: 0.06, freq: 400)
         }
 
@@ -358,7 +359,8 @@ final class GameSession {
                 shake = max(shake, 0.45)
             }
             shake = max(shake, 0.25)
-            GameAudio.shared.voice(freq: 110, dur: 0.35, gain: 0.12)
+            // 玉が減ったときの「ブー」。**ノコギリ波でないと、ただの低い音になって残念さが出ない**
+            GameAudio.shared.voice(freq: 110, dur: 0.35, gain: 0.12, wave: .sawtooth)
             GameAudio.shared.noise(dur: 0.15, gain: 0.12, freq: 250)
             GameHaptics.pattern(2, intervalMs: 90)
         }
