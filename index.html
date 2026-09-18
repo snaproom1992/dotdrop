@@ -96,6 +96,15 @@ transform:translateX(-50%);animation:trail 1.05s both}
 .ranking small{font-size:11px;opacity:.7}
 .ranking .empty{display:block;opacity:.55;font-size:13px;border:none}
 #start .ranking{margin-top:22px}
+/* 遊んでいる途中でやめる。持ち玉の数字の真上、HUD の上端のすきまに小さく置く。
+   ここだけは桁数が増えても帯の演出（y=116）とも当たらない。
+   overlay は z-index:6 なので、タイトルや結果が出ている間は勝手に隠れる */
+#quitBtn{position:absolute;left:16px;top:max(0px,calc(env(safe-area-inset-top) - 2px));
+  font:inherit;font-weight:700;font-size:10px;letter-spacing:.1em;line-height:1;
+  color:var(--paper);opacity:.45;background:none;border:none;padding:4px 12px;
+  pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#quitBtn:active{opacity:.9}
+body.tutorial #quitBtn{display:none}   /* あそびかたは打つ回数に限りがあり、必ず終わる */
 .stage-hud{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 18px);transform:translateX(-50%);text-align:center}
 .stage-hud small{display:block;font-size:10px;font-weight:700;letter-spacing:.12em;opacity:.6}
 .stage-hud b{display:block;font-size:30px;line-height:1;letter-spacing:-.04em;margin-top:2px;transition:transform .2s}
@@ -138,6 +147,9 @@ body.tutorial .stage-hud{display:none}
 .tlist button.done b{opacity:.5}
 .result{justify-content:flex-start;padding:calc(env(safe-area-inset-top) + 40px) 24px calc(env(safe-area-inset-bottom) + 40px)}
 .result > *{width:100%;max-width:320px}
+/* たずねるだけの短い画面なので、結果画面とちがって上下まんなかに置く */
+#quitAsk{justify-content:safe center}
+#quitAsk .kicker{margin-bottom:6px}
 .res-top{display:flex;gap:8px;justify-content:center;align-items:center;min-height:26px}
 .pill{font-size:12px;font-weight:700;border:1.5px solid rgba(242,241,238,.35);border-radius:999px;padding:3px 10px}
 .rankbadge{display:none;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--ink);background:var(--mustard);border-radius:3px;padding:3px 8px}
@@ -175,6 +187,7 @@ body.tutorial .stage-hud{display:none}
 <canvas id="c"></canvas>
 <i id="safeProbe" aria-hidden="true"></i>
 <header>
+  <button id="quitBtn">やめる</button>
   <div class="stat"><b id="money" class="roll"></b><small>持ち玉</small></div>
   <div class="stage-hud"><small>STAGE</small><b id="stageNo">1</b><div id="stageDots"></div></div>
   <div class="tut-hud" id="tutHud"><small id="mKicker"></small><b id="mTitle"></b><u id="mProg"></u></div>
@@ -204,6 +217,12 @@ body.tutorial .stage-hud{display:none}
   <button id="mRetry">もう一度</button>
   <button id="mPlay">ゲームをはじめる</button>
   <button id="mQuit" class="sub">一覧</button>
+</div>
+<div id="quitAsk" class="overlay result">
+  <small class="kicker">やめますか</small>
+  <button id="qRetry">もう一度</button>
+  <button id="qTitle" class="sub">タイトルへ</button>
+  <button id="qBack" class="sub">つづける</button>
 </div>
 <div id="over" class="overlay result">
   <div class="res-top"><span id="newRank" class="rankbadge"></span></div>
@@ -1442,6 +1461,17 @@ $('retry').addEventListener('click', () => { unlockAudio(); reset(FREE); });
 // タイトルへ戻る道。これがないと、遊び終わったあと「あそびかた」に行けない
 $('toTitle').addEventListener('click', () => {
   unlockAudio();
+  running = false;
+  reset(FREE);
+  tutDots();
+  $('start').classList.add('show');
+});
+// 遊んでいる途中でやめる。押し間違いがあるので、必ず一度たずねる
+$('quitBtn').addEventListener('click', () => { unlockAudio(); $('quitAsk').classList.add('show'); });
+$('qBack').addEventListener('click', () => { $('quitAsk').classList.remove('show'); });
+$('qRetry').addEventListener('click', () => { unlockAudio(); $('quitAsk').classList.remove('show'); reset(mode); });
+$('qTitle').addEventListener('click', () => {
+  $('quitAsk').classList.remove('show');
   running = false;
   reset(FREE);
   tutDots();
