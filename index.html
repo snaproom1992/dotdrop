@@ -122,6 +122,9 @@ transform:translateX(-50%);animation:trail 1.05s both}
   border:1.2px solid rgba(242,241,238,.45);border-radius:999px;padding:3px 10px;
   pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent}
 #quitBtn:active{opacity:1;background:rgba(242,241,238,.12)}
+/* フィーバー中は背景がマスタードになるので、クリームのままだと埋もれる */
+body.fever #quitBtn{color:var(--ink);border-color:rgba(28,23,22,.45)}
+body.fever #quitBtn:active{background:rgba(28,23,22,.12)}
 /* 自己ベストはリセットと同じ行（右端）へ。スコアの下から出すと右の列が縦に伸びて詰まる */
 #best{position:absolute;right:20px;top:calc(env(safe-area-inset-top) + 9px);
   font-size:11px;opacity:.75;min-height:15px;line-height:15px;text-align:right}
@@ -131,7 +134,9 @@ transform:translateX(-50%);animation:trail 1.05s both}
 .sheet-scrim{position:absolute;inset:0;background:rgba(28,23,22,.74);
   opacity:0;transition:opacity .22s}
 .sheet.in .sheet-scrim{opacity:1}
-.sheet-card{position:absolute;left:0;right:0;bottom:0;background:var(--brown);
+/* 板の背景はいつもこげ茶なので、文字色も固定する。
+   body.fever が全体の文字色をこげ茶にするので、そのままだと板の中が読めなくなる */
+.sheet-card{position:absolute;left:0;right:0;bottom:0;background:var(--brown);color:var(--paper);
   border-radius:20px 20px 0 0;padding:10px 24px calc(env(safe-area-inset-bottom) + 26px);
   display:flex;flex-direction:column;align-items:center;touch-action:none;
   transform:translateY(100%);transition:transform .24s cubic-bezier(.2,.8,.3,1)}
