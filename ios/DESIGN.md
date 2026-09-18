@@ -41,6 +41,18 @@ DotDropEngine/       … ENGINE + フィクスチャテスト
 - `FEVER_AT = 120` で、打ち終わり（`shotEnd`）に突入、`FEVER_SHOTS = 3`
 - ▲ 連鎖で1回の放出でも 120 を超えやすい（仕様どおり。早すぎる感じが出やすい）
 
+## 署名（初回だけ）
+
+実機／シミュレータで走らせるには Development Team が必要です。どちらか一方でOK。
+
+1. **かんたん**: Xcode → ターゲット DotDrop → Signing & Capabilities → Team を選ぶ  
+2. **ファイルで固定**（推奨・Team ID を git に載せない）:
+   ```bash
+   cp ios/DotDrop/Config/Signing.xcconfig.example ios/DotDrop/Config/Signing.xcconfig
+   # Signing.xcconfig の YOUR_TEAM_ID を自分の Team ID に書き換え
+   ```
+   Team ID は [developer.apple.com/account](https://developer.apple.com/account) の Membership にあります。
+
 ## 未接続（次）
 
 - あそびかた（STEPS 全接続）

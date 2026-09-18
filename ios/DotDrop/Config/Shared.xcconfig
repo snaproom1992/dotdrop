@@ -1,0 +1,4 @@
+// 署名以外の共通設定。Signing.xcconfig があれば Team ID を読み込む。
+#include? "Signing.xcconfig"
+
+CODE_SIGN_STYLE = Automatic

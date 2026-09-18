@@ -1,0 +1,8 @@
+# ローカルだけの署名設定（Team ID）。example をコピーして使う
+ios/DotDrop/Config/Signing.xcconfig
+
+# macOS / Xcode
+.DS_Store
+xcuserdata/
+*.xcuserstate
+DerivedData/
