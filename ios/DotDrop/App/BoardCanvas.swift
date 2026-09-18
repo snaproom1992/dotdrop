@@ -2,6 +2,7 @@ import SwiftUI
 import DotDropEngine
 
 /// `draw()` の釘・受け皿・玉・狙い。座標は Web と同じ（原点は画面上、ox で横センタ）
+/// 描画順も Web に合わせる：光の柱 → 背景数字 → 発射前 → 帯 → 釘 → 受け皿 → 玉 → 吹き出し → 吸い込み
 struct BoardCanvas: View {
     var session: GameSession
     var fit: BoardFit
@@ -33,77 +34,96 @@ struct BoardCanvas: View {
         let ox = fit.ox
         let top = e.slotTop()
         let screenH = fit.screenH
+        let slotW = Engine.slotWidth
+        let convLen = e.conveyorLength
+        let f = e.field()
+        let cy = (f.top + f.bottom) / 2
 
-        // 背景（全面）
         ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(DD.bg(fever: fever)))
 
         func pt(_ x: Double, _ y: Double) -> CGPoint {
             CGPoint(x: ox + x * s, y: y * s)
         }
 
-        // 受け皿
-        let slotW = Engine.slotWidth
-        let convLen = e.conveyorLength
-        for i in 0..<e.config.slotM.count {
+        func slotLogicalX(_ i: Int) -> Double {
             var u = (Double(i) * slotW + e.conveyor).truncatingRemainder(dividingBy: convLen)
             if u < 0 { u += convLen }
             var x = u
             if x > Engine.logicalWidth + slotW { x -= convLen }
-            if x < -slotW || x > Engine.logicalWidth { continue }
-            let info = e.slotInfo(i)
-            let (fill, fg) = slotColors(m: info.m, b: info.b, fever: fever)
-            let origin = pt(x + 2, top + 6)
-            let w = (slotW - 4) * s
-            let h = max((screenH + 14 - top - 6) * s, 40)
-            let rect = CGRect(x: origin.x, y: origin.y, width: w, height: h)
-            ctx.fill(Path(roundedRect: rect, cornerRadius: 6 * s), with: .color(fill))
-
-            let cx = ox + (x + slotW / 2) * s
-            let fontSize = (info.m >= 5 ? 26.0 : 22.0) * s
-            ctx.draw(
-                Text("×\(info.m)").font(.system(size: fontSize, weight: .bold)).foregroundColor(fg),
-                at: CGPoint(x: cx, y: (top + 28) * s),
-                anchor: .center
-            )
-            if info.b > 0 {
-                for j in 0..<info.b {
-                    let oxj = (Double(j) - Double(info.b - 1) / 2) * 11
-                    let c = CGPoint(x: cx + oxj * s, y: (top + 50) * s)
-                    let r = 3.5 * s
-                    ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(fg))
-                }
-            } else if info.b < 0 {
-                let n = -info.b
-                let stroke = fever ? DD.ink : DD.red
-                for j in 0..<n {
-                    let oxj = (Double(j) - Double(n - 1) / 2) * 14
-                    let c = CGPoint(x: cx + oxj * s, y: (top + 50) * s)
-                    let r = 5 * s
-                    let path = Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
-                    ctx.stroke(path, with: .color(stroke), style: StrokeStyle(lineWidth: 1.6 * s, dash: [2.2 * s, 2 * s]))
-                }
-            }
+            return x
         }
 
-        // 受け皿に入った光の柱
+        func ease(_ t: Double) -> Double {
+            1 - pow(1 - min(1, max(0, t)), 3)
+        }
+
+        // ---- 光の柱（入った受け皿）上へ消えるグラデ ----
         for c in session.catches where c.m != 0 {
-            var u = (Double(c.slot) * slotW + e.conveyor).truncatingRemainder(dividingBy: convLen)
-            if u < 0 { u += convLen }
-            var x = u
-            if x > Engine.logicalWidth + slotW { x -= convLen }
+            let x = slotLogicalX(c.slot)
             let col = GameFx.multColor(c.m, fever: fever)
-            let ease = 1 - pow(1 - min(1, c.t), 3)
-            let alpha = (1 - ease) * 0.45
+            let alpha = (1 - ease(c.t)) * (session.shotBallsMax > 3 ? 0.25 : 0.5)
             let origin = pt(x + 2, top - 420)
             let w = (slotW - 4) * s
             let h = 420 * s
+            let rect = CGRect(x: origin.x, y: origin.y, width: w, height: h)
+            // Web: createLinearGradient(0, top, 0, top-420) — 下（受け皿）が色、上へ透明
             var layer = ctx
             layer.opacity = alpha
-            // 簡易グラデ：下ほど濃く
-            layer.fill(Path(CGRect(x: origin.x, y: origin.y, width: w, height: h)), with: .color(col))
+            let grad = Gradient(stops: [
+                .init(color: col, location: 0),
+                .init(color: col.opacity(0), location: 1)
+            ])
+            layer.fill(
+                Path(rect),
+                with: .linearGradient(
+                    grad,
+                    startPoint: CGPoint(x: rect.midX, y: rect.maxY),
+                    endPoint: CGPoint(x: rect.midX, y: rect.minY)
+                )
+            )
         }
 
-        // 釘（draw 内の順序・色）
+        // ---- 今回のポイント（背景の大きな数字）----
+        let bgNumAlpha = session.potAlpha
+        if bgNumAlpha > 0.01, e.pot > 0 {
+            let landed = e.shotScore > 0
+            let pulse = 1 + session.potPulse * 0.08
+            let base: Double = e.pot >= 100 ? 150 : 210
+            let fontSize = base * (landed ? 0.5 : pulse) * s
+            var layer = ctx
+            layer.opacity = bgNumAlpha
+            layer.draw(
+                Text("\(Int(session.potShow.rounded()))")
+                    .font(.system(size: fontSize, weight: .bold))
+                    .foregroundColor(DD.big(fever: fever)),
+                at: pt(Engine.logicalWidth / 2, landed ? cy - 100 : cy),
+                anchor: .center
+            )
+            if landed {
+                let ss = session.shotShow
+                let shotSize = (ss >= 1000 ? 110.0 : 150.0) * s
+                var shotLayer = ctx
+                shotLayer.opacity = bgNumAlpha * 0.9
+                shotLayer.draw(
+                    Text("+\(Int(ss.rounded()))")
+                        .font(.system(size: shotSize, weight: .bold))
+                        .foregroundColor(fever ? DD.ink : DD.paper),
+                    at: pt(Engine.logicalWidth / 2, cy + 20),
+                    anchor: .center
+                )
+            }
+        }
+
+        // ---- 発射前の飾りと、待っている玉（帯より奥）----
+        drawLaunch(ctx: ctx, e: e, fever: fever, s: s, top: top, pt: pt)
+        if session.canShoot, session.level == 0 {
+            drawLaunchBall(ctx: ctx, e: e, fever: fever, s: s, pt: pt)
+        }
+
+        // ---- 帯 ----
+        drawBanner(ctx: ctx, size: size, s: s, ox: ox)
+
+        // ---- 釘 ----
         for p in e.pegs {
             let c = pt(p.x, p.y)
             let grow = p.pulse * 5
@@ -141,7 +161,62 @@ struct BoardCanvas: View {
             }
         }
 
-        // 玉
+        // ---- 受け皿 ----
+        for i in 0..<e.config.slotM.count {
+            let x = slotLogicalX(i)
+            if x < -slotW || x > Engine.logicalWidth { continue }
+            let info = e.slotInfo(i)
+            let (fill, fg) = slotColors(m: info.m, b: info.b, fever: fever)
+            let catchBeam = session.catches.last(where: { $0.slot == i })
+            let k = catchBeam.map { 1 - ease($0.t / 0.5) } ?? 0
+            let lift = (catchBeam != nil && catchBeam!.m > 0) ? 8 * k : 0
+
+            let origin = pt(x + 2, top + 6 - lift)
+            let w = (slotW - 4) * s
+            let h = max((screenH + 14 - top - 6 + lift) * s, 40)
+            let rect = CGRect(x: origin.x, y: origin.y, width: w, height: h)
+            ctx.fill(Path(roundedRect: rect, cornerRadius: 6 * s), with: .color(fill))
+            if catchBeam != nil, catchBeam!.m > 0, k > 0.05 {
+                ctx.stroke(
+                    Path(roundedRect: rect, cornerRadius: 6 * s),
+                    with: .color(DD.ball(fever: fever)),
+                    lineWidth: 2.5 * k * s
+                )
+            }
+
+            let cx = ox + (x + slotW / 2) * s
+            let fontSize = ((info.m >= 5 ? 26.0 : 22.0) + k * 8) * s
+            ctx.draw(
+                Text("×\(info.m)").font(.system(size: fontSize, weight: .bold)).foregroundColor(fg),
+                at: CGPoint(x: cx, y: (top + 28 - lift) * s),
+                anchor: .center
+            )
+            if info.b > 0 {
+                for j in 0..<info.b {
+                    let oxj = (Double(j) - Double(info.b - 1) / 2) * 11
+                    let c = CGPoint(x: cx + oxj * s, y: (top + 50 - lift) * s)
+                    let r = 3.5 * s
+                    ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(fg))
+                }
+            } else if info.b < 0 {
+                let n = -info.b
+                let stroke = fever ? DD.ink : DD.red
+                for j in 0..<n {
+                    let oxj = (Double(j) - Double(n - 1) / 2) * 14
+                    let c = CGPoint(x: cx + oxj * s, y: (top + 50 - lift) * s)
+                    let r = 5 * s
+                    let path = Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
+                    ctx.stroke(path, with: .color(stroke), style: StrokeStyle(lineWidth: 1.6 * s, dash: [2.2 * s, 2 * s]))
+                }
+            }
+        }
+
+        // ---- 玉（引いている間は狙いも手前）----
+        if session.canShoot, session.level > 0 {
+            drawAim(ctx: ctx, e: e, fever: fever, s: s, pt: pt)
+            drawLaunchBall(ctx: ctx, e: e, fever: fever, s: s, pt: pt)
+        }
+
         let ball = DD.ball(fever: fever)
         for b in e.balls {
             if b.state == .held {
@@ -157,7 +232,6 @@ struct BoardCanvas: View {
             }
             guard b.state == .fly else { continue }
             let BR = Engine.ballRadius
-            // 軌跡
             let trail = b.trail
             for (i, tp) in trail.enumerated() {
                 let c = pt(tp.0, tp.1)
@@ -168,7 +242,6 @@ struct BoardCanvas: View {
                 layer.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(ball))
             }
             let c = pt(b.x, b.y)
-            // 外周グロー
             var glow = ctx
             glow.opacity = 0.2
             let gr = (BR + 6) * s
@@ -177,7 +250,7 @@ struct BoardCanvas: View {
             ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(ball))
         }
 
-        // 吹き出し
+        // ---- 吹き出し ----
         for fl in session.floaters {
             let life = fl.life
             let alpha = max(0, 1 - fl.t / life)
@@ -193,7 +266,7 @@ struct BoardCanvas: View {
             )
         }
 
-        // 吸い込み（持ち玉・スコアへ）
+        // ---- 吸い込み ----
         let tgtBall = session.moneyTargetScreen()
         let tgtScore = session.scoreTargetScreen()
         for fy in session.flyers {
@@ -230,89 +303,107 @@ struct BoardCanvas: View {
                 )
             }
         }
+    }
 
-        // 発射前（drawLaunch / drawLaunchBall）
-        if session.canShoot {
-            let L = e.launchPoint
-            let c = pt(L.x, L.y)
-            let bannerUp = session.banner != nil
-            let r = (Engine.ballRadius + Double(session.level) / Double(Engine.levels) * 1.2) * s
+    private func drawLaunchBall(
+        ctx: GraphicsContext, e: Engine, fever: Bool, s: CGFloat,
+        pt: (Double, Double) -> CGPoint
+    ) {
+        guard session.canShoot else { return }
+        let L = e.launchPoint
+        let c = pt(L.x, L.y)
+        let r = (Engine.ballRadius + Double(session.level) / Double(Engine.levels) * 1.2) * s
+        ctx.fill(
+            Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
+            with: .color(DD.ball(fever: fever))
+        )
+    }
 
-            if session.level == 0 && !bannerUp {
-                // 脈打つ細い円
-                let pulse = (Engine.ballRadius + 8 + sin(e.time * 3) * 1.5) * s
-                ctx.stroke(
-                    Path(ellipseIn: CGRect(x: c.x - pulse, y: c.y - pulse, width: pulse * 2, height: pulse * 2)),
-                    with: .color(DD.fg(fever: fever).opacity(0.4)),
-                    lineWidth: 1.5 * s
-                )
-                var arc = Path()
-                arc.addArc(center: c, radius: 34 * s, startAngle: .radians(.pi), endAngle: .radians(0), clockwise: false)
-                ctx.stroke(arc, with: .color(DD.fg(fever: fever).opacity(0.35)), style: StrokeStyle(lineWidth: 1.5 * s, dash: [2 * s, 5 * s]))
-            }
+    private func drawLaunch(
+        ctx: GraphicsContext, e: Engine, fever: Bool, s: CGFloat, top: Double,
+        pt: (Double, Double) -> CGPoint
+    ) {
+        guard session.canShoot else { return }
+        let L = e.launchPoint
+        let c = pt(L.x, L.y)
+        let bannerUp = session.banner != nil
 
-            if session.level > 0 {
-                let (vx, vy) = e.launchVelocity(pullX: session.pullX, pullY: session.pullY, exact: true)
-                for i in 1...10 {
-                    let t = Double(i) * 0.035
-                    let x = L.x + vx * t
-                    let y = L.y + vy * t + Engine.gravity * t * t / 2
-                    let p = pt(x, y)
-                    let rr = 1.8 * s
-                    var layer = ctx
-                    layer.opacity = (1 - Double(i) / 11) * 0.7
-                    layer.fill(Path(ellipseIn: CGRect(x: p.x - rr, y: p.y - rr, width: rr * 2, height: rr * 2)), with: .color(DD.fg(fever: fever)))
-                }
-                let base = atan2(-vy, -vx)
-                let spread = 0.42
-                for i in 0..<Engine.levels {
-                    let rad = (17.0 + Double(i) * 8) * s
-                    var arc = Path()
-                    arc.addArc(center: c, radius: rad, startAngle: .radians(base - spread), endAngle: .radians(base + spread), clockwise: false)
-                    let on = i < session.level
-                    let col: Color = on ? (session.level == Engine.levels ? DD.mustard : DD.red) : DD.peg(fever: fever)
-                    ctx.stroke(arc, with: .color(col), style: StrokeStyle(lineWidth: (on ? 3.5 : 2) * s, lineCap: .round))
-                }
-            } else if session.firstShot && !bannerUp {
-                ctx.draw(
-                    Text("引っ張ってはなす")
-                        .font(.system(size: 13 * s, weight: .medium))
-                        .foregroundColor(DD.fg(fever: fever).opacity(0.7)),
-                    at: pt(Engine.logicalWidth / 2, L.y + 48),
-                    anchor: .center
-                )
-                ctx.draw(
-                    Text("×は倍率　●は戻る玉　点線は減る玉")
-                        .font(.system(size: 13 * s, weight: .medium))
-                        .foregroundColor(DD.fg(fever: fever).opacity(0.7)),
-                    at: pt(Engine.logicalWidth / 2, top - 30),
-                    anchor: .center
-                )
-            }
-
-            // 玉は帯より手前（常に描く）
-            ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(ball))
+        if session.level == 0 && !bannerUp {
+            let pulse = (Engine.ballRadius + 8 + sin(e.time * 3) * 1.5) * s
+            ctx.stroke(
+                Path(ellipseIn: CGRect(x: c.x - pulse, y: c.y - pulse, width: pulse * 2, height: pulse * 2)),
+                with: .color(DD.fg(fever: fever).opacity(0.4)),
+                lineWidth: 1.5 * s
+            )
+            var arc = Path()
+            arc.addArc(center: c, radius: 34 * s, startAngle: .radians(.pi), endAngle: .radians(0), clockwise: false)
+            ctx.stroke(arc, with: .color(DD.fg(fever: fever).opacity(0.35)), style: StrokeStyle(lineWidth: 1.5 * s, dash: [2 * s, 5 * s]))
         }
 
-        // 帯
-        if let b = session.banner {
-            let y = fit.bannerY * s
-            let h = 56 * s
-            let rect = CGRect(x: 0, y: y, width: size.width, height: h)
-            ctx.fill(Path(rect), with: .color(b.color))
-            let ink: Color = (b.color == DD.paper || b.color == DD.mustard || b.color == DD.red) ? DD.ink : DD.paper
+        if session.level == 0 && session.firstShot && !bannerUp {
             ctx.draw(
-                Text(b.word).font(.system(size: 32 * s, weight: .bold)).foregroundColor(ink),
-                at: CGPoint(x: 16 * s + ox, y: y + h / 2),
-                anchor: .leading
+                Text("引っ張ってはなす")
+                    .font(.system(size: 13 * s, weight: .medium))
+                    .foregroundColor(DD.fg(fever: fever).opacity(0.7)),
+                at: pt(Engine.logicalWidth / 2, L.y + 48),
+                anchor: .center
             )
-            // 区切り＋説明は簡略だが位置は帯内
             ctx.draw(
-                Text(b.sub).font(.system(size: 13 * s, weight: .bold)).foregroundColor(ink),
-                at: CGPoint(x: size.width * 0.42, y: y + h / 2),
-                anchor: .leading
+                Text("×は倍率　●は戻る玉　点線は減る玉")
+                    .font(.system(size: 13 * s, weight: .medium))
+                    .foregroundColor(DD.fg(fever: fever).opacity(0.7)),
+                at: pt(Engine.logicalWidth / 2, top - 30),
+                anchor: .center
             )
         }
+    }
+
+    private func drawAim(
+        ctx: GraphicsContext, e: Engine, fever: Bool, s: CGFloat,
+        pt: (Double, Double) -> CGPoint
+    ) {
+        let L = e.launchPoint
+        let c = pt(L.x, L.y)
+        let (vx, vy) = e.launchVelocity(pullX: session.pullX, pullY: session.pullY, exact: true)
+        for i in 1...10 {
+            let t = Double(i) * 0.035
+            let x = L.x + vx * t
+            let y = L.y + vy * t + Engine.gravity * t * t / 2
+            let p = pt(x, y)
+            let rr = 1.8 * s
+            var layer = ctx
+            layer.opacity = (1 - Double(i) / 11) * 0.7
+            layer.fill(Path(ellipseIn: CGRect(x: p.x - rr, y: p.y - rr, width: rr * 2, height: rr * 2)), with: .color(DD.fg(fever: fever)))
+        }
+        let base = atan2(-vy, -vx)
+        let spread = 0.42
+        for i in 0..<Engine.levels {
+            let rad = (17.0 + Double(i) * 8) * s
+            var arc = Path()
+            arc.addArc(center: c, radius: rad, startAngle: .radians(base - spread), endAngle: .radians(base + spread), clockwise: false)
+            let on = i < session.level
+            let col: Color = on ? (session.level == Engine.levels ? DD.mustard : DD.red) : DD.peg(fever: fever)
+            ctx.stroke(arc, with: .color(col), style: StrokeStyle(lineWidth: (on ? 3.5 : 2) * s, lineCap: .round))
+        }
+    }
+
+    private func drawBanner(ctx: GraphicsContext, size: CGSize, s: CGFloat, ox: CGFloat) {
+        guard let b = session.banner else { return }
+        let y = fit.bannerY * s
+        let h = 56 * s
+        let rect = CGRect(x: 0, y: y, width: size.width, height: h)
+        ctx.fill(Path(rect), with: .color(b.color))
+        let ink: Color = (b.color == DD.paper || b.color == DD.mustard || b.color == DD.red) ? DD.ink : DD.paper
+        ctx.draw(
+            Text(b.word).font(.system(size: 32 * s, weight: .bold)).foregroundColor(ink),
+            at: CGPoint(x: 16 * s + ox, y: y + h / 2),
+            anchor: .leading
+        )
+        ctx.draw(
+            Text(b.sub).font(.system(size: 13 * s, weight: .bold)).foregroundColor(ink),
+            at: CGPoint(x: size.width * 0.42, y: y + h / 2),
+            anchor: .leading
+        )
     }
 
     private func slotColors(m: Int, b: Int, fever: Bool) -> (Color, Color) {

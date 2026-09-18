@@ -30,6 +30,12 @@ final class GameSession {
     @ObservationIgnored var floaters: [GameFx.Floater] = []
     @ObservationIgnored var flyers: [GameFx.Flyer] = []
     @ObservationIgnored var catches: [GameFx.CatchBeam] = []
+    /// 背景の大きな点数（Web の potShow / potAlpha / potPulse）
+    @ObservationIgnored var potShow: Double = 0
+    @ObservationIgnored var potAlpha: Double = 0
+    @ObservationIgnored var potPulse: Double = 0
+    @ObservationIgnored var shotShow: Double = 0
+    @ObservationIgnored var shotBallsMax: Int = 1
 
     @ObservationIgnored private var lastDate: Date?
     @ObservationIgnored private var triBonus = false
@@ -69,14 +75,20 @@ final class GameSession {
         lastFit = fit
         if let safeTop { self.safeTop = safeTop }
         let lh = fit.logicalHeight
-        // 帯と同じ：ノッチ分だけ発射位置を下げる（上限 26）。STAGE と玉が被らないようにする
+        // ノッチ分は発射玉だけ下げる（STAGE と被らないように）。
+        // 釘の上端まで下げると行数が減るので、余った高さ（tallExtra）だけを両方に足す。
         let notch = fit.bannerY - 116
-        let launchY = Engine.baseLaunchY + notch
+        let designLH = 200 + Engine.maxPegSpan + 135 // 釘9行のときの LH
+        let tallExtra = max(0, lh - designLH)
+        let launchY = Engine.baseLaunchY + notch + tallExtra * 0.5
+        let fieldTop = 200 + tallExtra * 0.5
         let heightChanged = abs(engine.logicalHeight - lh) > 0.5
         let launchChanged = abs(engine.launchY - launchY) > 0.5
-        guard heightChanged || launchChanged else { return }
+        let fieldChanged = abs(engine.fieldTop - fieldTop) > 0.5
+        guard heightChanged || launchChanged || fieldChanged else { return }
         engine.logicalHeight = lh
         engine.launchY = launchY
+        engine.fieldTop = fieldTop
         if screen == .playing, engine.balls.isEmpty {
             engine.setLayout(engine.layout, animate: false)
         }
@@ -106,6 +118,10 @@ final class GameSession {
         engine.pot = 0
         engine.conveyor = 0
         engine.time = 0
+        // 台を組む前に LH / 発射 / 釘上端を現在の画面に合わせる
+        if let fit = lastFit {
+            applyFit(fit, safeTop: safeTop)
+        }
         engine.setLayout(0, animate: false)
         money = engine.config.startBalls
         score = 0
@@ -151,6 +167,9 @@ final class GameSession {
         busy = true
         firstShot = false
         triBonus = false
+        shotBallsMax = 1
+        shotShow = 0
+        potShow = 0
         lastDate = nil
         wireHooks()
         GameAudio.shared.playShoot()
@@ -160,6 +179,7 @@ final class GameSession {
     private func wireHooks() {
         engine.hooks.hit = { [weak self] peg, _, n, _, kind, pts in
             guard let self else { return }
+            self.potPulse = 1
             if !self.engine.fever { self.gauge += pts }
             if pts > 1 {
                 let col: Color = kind == .blue ? Color(hex: 0x7FA2EC) : (kind == .square ? DD.red : DD.mustard)
@@ -372,6 +392,11 @@ final class GameSession {
         floaters = []
         flyers = []
         catches = []
+        potShow = 0
+        potAlpha = 0
+        potPulse = 0
+        shotShow = 0
+        shotBallsMax = 1
     }
 
     private func startDisplayLoop() {
@@ -431,11 +456,21 @@ final class GameSession {
             }
         }
 
-        // floaters / catches
+        // floaters / catches / pot
         for i in floaters.indices { floaters[i].t += real }
         floaters.removeAll { $0.t >= $0.life }
         for i in catches.indices { catches[i].t += real }
         catches.removeAll { $0.t >= 1 }
+        potShow += (Double(engine.pot) - potShow) * min(1, real * 18)
+        potPulse = max(0, potPulse - real * 6)
+        let targetAlpha: Double = engine.balls.isEmpty ? 0 : 1
+        potAlpha += (targetAlpha - potAlpha) * min(1, real * 3)
+        if engine.shotScore > 0 {
+            shotShow += (Double(engine.shotScore) - shotShow) * min(1, real * 8)
+        }
+        if busy {
+            shotBallsMax = max(shotBallsMax, engine.balls.count)
+        }
 
         // flyers（届いたら持ち玉・スコアを足す）
         for i in flyers.indices {

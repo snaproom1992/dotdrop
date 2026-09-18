@@ -34,6 +34,8 @@
 		AA0000000000000000000019 /* ResultOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultOverlay.swift; sourceTree = "<group>"; };
 		AA000000000000000000001A /* GameAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameAudio.swift; sourceTree = "<group>"; };
 		AA000000000000000000001B /* GameFx.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameFx.swift; sourceTree = "<group>"; };
+		AA000000000000000000001C /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Shared.xcconfig; path = Config/Shared.xcconfig; sourceTree = "<group>"; };
+		AA000000000000000000001D /* Signing.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Signing.xcconfig.example; path = Config/Signing.xcconfig.example; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,6 +54,7 @@
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000041 /* App */,
+				AA0000000000000000000044 /* Config */,
 				AA0000000000000000000042 /* Resources */,
 				AA0000000000000000000043 /* Products */,
 			);
@@ -80,6 +83,15 @@
 				AA0000000000000000000012 /* Assets.xcassets */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000044 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				AA000000000000000000001C /* Shared.xcconfig */,
+				AA000000000000000000001D /* Signing.xcconfig.example */,
+			);
+			name = Config;
 			sourceTree = "<group>";
 		};
 		AA0000000000000000000043 /* Products */ = {
@@ -227,11 +239,11 @@
 		};
 		AA0000000000000000000082 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA000000000000000000001C /* Shared.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "DOT DROP";
@@ -256,11 +268,11 @@
 		};
 		AA0000000000000000000083 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA000000000000000000001C /* Shared.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "DOT DROP";

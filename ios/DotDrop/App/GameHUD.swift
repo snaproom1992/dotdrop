@@ -19,8 +19,10 @@ struct GameHUD: View {
                         .tracking(-46 * 0.05)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
+                        .frame(height: 41, alignment: .bottomLeading) // CSS line-height:.9
                     Text("持ち玉")
                         .font(.system(size: 12, weight: .regular))
+                        .lineSpacing(0)
                         .padding(.top, 2)
                         .opacity(0.65)
                 }
@@ -31,6 +33,7 @@ struct GameHUD: View {
                         .tracking(-46 * 0.05)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
+                        .frame(height: 41, alignment: .bottomTrailing)
                     Text("スコア")
                         .font(.system(size: 12, weight: .regular))
                         .padding(.top, 2)

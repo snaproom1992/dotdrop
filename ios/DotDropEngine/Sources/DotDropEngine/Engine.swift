@@ -187,8 +187,12 @@ public final class Engine {
     public static let levels = 5
 
     public var logicalHeight: Double = 700
-    /// 発射位置 Y（論理座標）。`applyFit` でノッチ分だけ下げる
+    /// 発射位置 Y（論理座標）。`applyFit` でノッチ／画面の高さぶん下げる
     public var launchY: Double = baseLaunchY
+    /// 釘フィールド上端。発射位置と同じだけ下げる（間隔 60 を保つ）
+    public var fieldTop: Double = 200
+    /// 千鳥格子でおよそ 9 行（オリジナルの Safari 見た目）。これ以上は足さない
+    public static let maxPegSpan: Double = 42 * 8
     public var launchPoint: (x: Double, y: Double) { (Self.logicalWidth / 2, launchY) }
     public var pegs: [Peg] = []
     public var balls: [Ball] = []
@@ -249,7 +253,11 @@ public final class Engine {
     public func slotTop() -> Double { logicalHeight - 84 }
 
     public func field() -> (top: Double, bottom: Double) {
-        (200, logicalHeight - 135)
+        // ネイティブは Safari より画面が高いので、そのままだと釘の行が増えすぎる。
+        // 受け皿の位置（slotTop）は logicalHeight のまま下端に置き、釘だけ行数を抑える。
+        let natural = logicalHeight - 135
+        let capped = fieldTop + Self.maxPegSpan
+        return (fieldTop, min(natural, capped))
     }
 
     public func slotAt(_ x: Double, t: Double = 0) -> Int {

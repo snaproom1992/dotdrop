@@ -16,6 +16,8 @@ enum DD {
     static func fg(fever: Bool) -> Color { fever ? ink : paper }
     static func peg(fever: Bool) -> Color { fever ? ink.opacity(0.26) : pegNormal }
     static func ball(fever: Bool) -> Color { fever ? ink : paper }
+    /// 背景の大きな点数（THEME.*.big）
+    static func big(fever: Bool) -> Color { fever ? ink.opacity(0.16) : paper.opacity(0.16) }
 }
 
 extension Color {
