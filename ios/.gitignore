@@ -1,0 +1,5 @@
+# XcodeGen が作るもの・ローカル生成物
+DotDrop/DotDrop.xcodeproj/
+**/xcuserdata/
+**/DerivedData/
+.DS_Store

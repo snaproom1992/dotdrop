@@ -1,0 +1,176 @@
+{
+  "version": 1,
+  "note": "Generated from index.html ENGINE by ios/tools/dump-fixtures.js. Math.random was replaced with seeded(playSeed) during each shot.",
+  "generatedAt": "2026-09-18T07:53:26.969Z",
+  "maxPull": 130,
+  "levels": 5,
+  "seededSample42": [
+    0.6011037519201636,
+    0.44829055899754167,
+    0.8524657934904099,
+    0.6697340414393693,
+    0.17481389874592423,
+    0.5265925421845168,
+    0.2732279943302274,
+    0.6247446539346129
+  ],
+  "shots": [
+    {
+      "id": "s1-layout0-up-lv3",
+      "boardSeed": 1,
+      "layout": 0,
+      "stage": 0,
+      "fever": false,
+      "angleDeg": 90,
+      "level": 3,
+      "playSeed": 1001,
+      "exact": true,
+      "step": 0.002777777777777778,
+      "maxTime": 40,
+      "launch": {
+        "vx": -1.528359205335897e-14,
+        "vy": -249.60000000000002
+      },
+      "expected": {
+        "hitCount": 85,
+        "shotPay": 9,
+        "shotScore": 138,
+        "kinds": {
+          "tri": 6,
+          "square": 7,
+          "dot": 67,
+          "blue": 5
+        },
+        "stuck": false
+      },
+      "meta": {
+        "duration": 7.5556
+      }
+    },
+    {
+      "id": "s1-layout0-left-lv5",
+      "boardSeed": 1,
+      "layout": 0,
+      "stage": 0,
+      "fever": false,
+      "angleDeg": 50,
+      "level": 5,
+      "playSeed": 1002,
+      "exact": true,
+      "step": 0.002777777777777778,
+      "maxTime": 40,
+      "launch": {
+        "vx": -267.39964562960034,
+        "vy": -318.6744883374949
+      },
+      "expected": {
+        "hitCount": 22,
+        "shotPay": 0,
+        "shotScore": 9,
+        "kinds": {
+          "dot": 18,
+          "square": 2,
+          "tri": 1,
+          "blue": 1
+        },
+        "stuck": false
+      },
+      "meta": {
+        "duration": 4.6361
+      }
+    },
+    {
+      "id": "s1-layout1-up-lv4",
+      "boardSeed": 7,
+      "layout": 1,
+      "stage": 0,
+      "fever": false,
+      "angleDeg": 90,
+      "level": 4,
+      "playSeed": 1003,
+      "exact": true,
+      "step": 0.002777777777777778,
+      "maxTime": 40,
+      "launch": {
+        "vx": -2.0378122737811956e-14,
+        "vy": -332.8
+      },
+      "expected": {
+        "hitCount": 12,
+        "shotPay": 0,
+        "shotScore": 0,
+        "kinds": {
+          "blue": 1,
+          "dot": 10,
+          "square": 1
+        },
+        "stuck": false
+      },
+      "meta": {
+        "duration": 4.5806
+      }
+    },
+    {
+      "id": "s3-layout0-up-lv3",
+      "boardSeed": 3,
+      "layout": 0,
+      "stage": 2,
+      "fever": false,
+      "angleDeg": 90,
+      "level": 3,
+      "playSeed": 1004,
+      "exact": true,
+      "step": 0.002777777777777778,
+      "maxTime": 40,
+      "launch": {
+        "vx": -1.528359205335897e-14,
+        "vy": -249.60000000000002
+      },
+      "expected": {
+        "hitCount": 13,
+        "shotPay": 0,
+        "shotScore": 0,
+        "kinds": {
+          "dot": 11,
+          "blue": 2
+        },
+        "stuck": false
+      },
+      "meta": {
+        "duration": 4.3278
+      }
+    },
+    {
+      "id": "fever-layout0-up-lv3",
+      "boardSeed": 1,
+      "layout": 0,
+      "stage": 0,
+      "fever": true,
+      "angleDeg": 90,
+      "level": 3,
+      "playSeed": 1005,
+      "exact": true,
+      "step": 0.002777777777777778,
+      "maxTime": 40,
+      "launch": {
+        "vx": -1.528359205335897e-14,
+        "vy": -249.60000000000002
+      },
+      "expected": {
+        "hitCount": 203,
+        "shotPay": 18,
+        "shotScore": 796,
+        "kinds": {
+          "tri": 14,
+          "square": 14,
+          "dot": 166,
+          "blue": 9
+        },
+        "stuck": false
+      },
+      "meta": {
+        "duration": 11.3694
+      }
+    }
+  ]
+}
