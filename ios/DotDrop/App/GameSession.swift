@@ -27,6 +27,7 @@ final class GameSession: ObservableObject {
     private var lastDate: Date?
     private var triBonus = false
     private var bestAtStart = 0
+    private var displayTimer: Timer?
 
     enum Screen { case title, playing, result }
 
@@ -57,6 +58,7 @@ final class GameSession: ObservableObject {
     }
 
     func openTitle() {
+        stopDisplayLoop()
         screen = .title
         busy = false
         showResetSheet = false
@@ -93,6 +95,7 @@ final class GameSession: ObservableObject {
         personalBest = bestAtStart
         screen = .playing
         wireHooks()
+        startDisplayLoop()
         tick &+= 1
     }
 
@@ -190,6 +193,7 @@ final class GameSession: ObservableObject {
     }
 
     func finishGame() {
+        stopDisplayLoop()
         saveBest(score)
         personalBest = storedBest()
         screen = .result
@@ -198,6 +202,24 @@ final class GameSession: ObservableObject {
 
     func showBanner(_ word: String, _ sub: String, _ color: Color) {
         banner = Banner(word: word, sub: sub, color: color, born: Date())
+    }
+
+    private func startDisplayLoop() {
+        stopDisplayLoop()
+        lastDate = Date()
+        let timer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.tickFrame(now: Date())
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        displayTimer = timer
+    }
+
+    private func stopDisplayLoop() {
+        displayTimer?.invalidate()
+        displayTimer = nil
+        lastDate = nil
     }
 
     func tickFrame(now: Date) {
@@ -223,15 +245,18 @@ final class GameSession: ObservableObject {
             engine.time += real
             engine.conveyor += Engine.conveyorSpeed * real
         }
-        guard busy else { return }
-        var left = real
-        let step = Engine.physicsSubstep
-        while left > 0 {
-            let d = min(step, left)
-            engine.stepPhysics(dt: d)
-            left -= d
-            if !busy { break }
+        if busy {
+            var left = real
+            let step = Engine.physicsSubstep
+            while left > 0 {
+                let d = min(step, left)
+                engine.stepPhysics(dt: d)
+                left -= d
+                if !busy { break }
+            }
         }
+        // TimelineView の再描画用（状態が変わらなくても受け皿は流れる）
+        tick &+= 1
     }
 
     // MARK: - Storage (localStorage 相当)
