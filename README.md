@@ -8,3 +8,7 @@ Swift への移植を `ios/` で進めています。
 
 - 設計: [`ios/DESIGN.md`](ios/DESIGN.md)
 - Mac での開き方: [`ios/README.md`](ios/README.md)
+
+```bash
+open ios/DotDrop/DotDrop.xcodeproj
+```

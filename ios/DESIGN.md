@@ -127,7 +127,7 @@ Web と同じ。
 このクラウドでは Xcode ビルドはできない。あなたの Mac で:
 
 1. このリポジトリを pull
-2. `ios/README.md` の手順で Xcode プロジェクトを生成／開く
+2. `open ios/DotDrop/DotDrop.xcodeproj` で開く（手順は `ios/README.md`）
 3. シミュレータまたは実機で確認
 4. 触感のフィードバックを返す（今まで通り）
 

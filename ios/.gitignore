@@ -1,5 +1,5 @@
-# XcodeGen が作るもの・ローカル生成物
-DotDrop/DotDrop.xcodeproj/
+# ローカル生成物のみ無視（.xcodeproj 本体はリポジトリに含める）
 **/xcuserdata/
 **/DerivedData/
+*.xcuserstate
 .DS_Store
