@@ -1,63 +1,36 @@
 # DOT DROP iOS
 
-ネイティブ（Swift）移植用のフォルダです。設計は [DESIGN.md](./DESIGN.md) を見てください。
+**完全再現**：アプリは `index.html` をそのまま WKWebView で動かします。  
+見た目・配置・物理・音・あそびかたは、リポジトリ直下の Web 版と同一コードです。
 
-## 必要なもの（あなたの Mac）
-
-- Xcode 15 以降（おすすめ）
-- Apple Developer アカウント（実機・提出用。すでに所持）
-
-XcodeGen は不要です。`.xcodeproj` をリポジトリに入れています。
-
-## 開き方（これだけ）
+## 開き方
 
 ```bash
-cd ~/dotdrop   # clone した場所
+cd ~/dotdrop
 git pull
 open ios/DotDrop/DotDrop.xcodeproj
 ```
 
-Xcode で Team を選んで ▶ Run。  
-タイトルの ▶ から、**引っ張ってはなす**簡易プレイに入れます。
+Xcode で Team を選んで ▶ Run。
 
-## テスト（Mac）
+## Web 版を直したあと
 
-Xcode で `DotDropEngine` パッケージのテストを実行するか:
-
-```bash
-cd ios/DotDropEngine
-swift test
-```
-
-`shots.json`（JS ENGINE の正解）と hitCount / shotPay / shotScore、および釘配置が一致することを見ます。
-
-フィクスチャの再生成（数字や ENGINE を変えたら）:
+`index.html` などを変えたら、アプリ同梱分を同期してからビルド：
 
 ```bash
-node ios/tools/dump-fixtures.js
+bash ios/tools/sync-www.sh
 ```
 
 ## 構成
 
 | パス | 内容 |
 |------|------|
-| `DotDrop/DotDrop.xcodeproj` | Xcode で開くプロジェクト |
-| `DotDrop/App` | アプリ画面（SwiftUI） |
-| `DotDropEngine/` | 物理・ルールの Swift Package |
-| `tools/dump-fixtures.js` | Web の ENGINE から正解 JSON を出す |
+| `DotDrop/Resources/www/` | 同梱された `index.html` 一式（本番プレイ） |
+| `DotDrop/App/WebGameView.swift` | WKWebView の箱だけ |
+| `DotDropEngine/` | JS ENGINE との突き合わせ用（テスト）。アプリ本体の描画には使わない |
 
-## 物理フィクスチャの出し方
+## 方針
 
-リポジトリルートで:
-
-```bash
-node ios/tools/dump-fixtures.js
-```
-
-## バランス確認
-
-玉の増減に関わる数字を変えたら、今まで通り:
-
-```bash
-node balance.js
-```
+- ゲームの中身は `index.html` が正本
+- iOS 側は App Store 用の箱（アイコン・向き・フルスクリーン）に徹する
+- 「Swift で別実装して近づける」はやめ、渡されたコードをそのまま載せる

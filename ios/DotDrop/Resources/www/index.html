@@ -1,0 +1,1950 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#2A2322">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>DOT DROP</title>
+<meta name="description" content="玉を打って点を集めるスマートボール。ブラウザですぐ遊べます。">
+<!-- ホーム画面に追加したときのアイコン -->
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<!-- リンクを送ったときに出るカード -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DOT DROP">
+<meta property="og:title" content="DOT DROP">
+<meta property="og:description" content="玉を打って点を集めるスマートボール。">
+<meta property="og:url" content="https://snaproom1992.github.io/dotdrop/">
+<meta property="og:image" content="https://snaproom1992.github.io/dotdrop/ogp.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+:root{--red:#D7141F;--brown:#2A2322;--mustard:#EAA83A;--paper:#F2F1EE;--ink:#1C1716}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{background:var(--brown);color:var(--paper);font-family:"Helvetica Neue",Helvetica,Arial,"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:background-color .5s,color .5s}
+body.fever{background:var(--mustard);color:var(--ink)}
+canvas{position:fixed;inset:0;display:block;background:var(--brown)}
+/* 下のホームバーの帯の高さを測るための目印（見えない） */
+#safeProbe{position:fixed;left:-9px;bottom:0;width:1px;height:0;pointer-events:none;
+padding-bottom:env(safe-area-inset-bottom,0px);padding-top:env(safe-area-inset-top,0px)}
+header{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:calc(env(safe-area-inset-top) + 38px) 20px 0;pointer-events:none}
+.stat b{display:flex;font-size:46px;line-height:.9;letter-spacing:-.05em;transition:transform .12s}
+.stat.right b{justify-content:flex-end;transform-origin:right center}
+.stat:not(.right) b{transform-origin:left center}
+.stat b.bump{transform:scale(1.08)}
+.stat small{display:block;font-size:12px;line-height:1.15;margin-top:2px;opacity:.65}
+.stat.right{text-align:right}
+.roll .d{display:block;height:.9em;overflow:hidden;width:.57em;text-align:center}
+.roll .strip{display:block;transition:transform .18s cubic-bezier(.3,1.5,.5,1)}
+.roll .strip span{display:block;height:.9em}
+/* フィーバーのゲージ。まんなかには置けない（ノッチのある端末で、発射前の玉の飾りと
+   場所を取り合って必ずどれかが乗る）。スコアの下のまま、色をマスタードにして
+   ステージの丸（赤）と分け、さらに FEVER と書いて何のゲージか分かるようにする。
+   色は body.fever で自動的に反転する（フィーバー中は背景がマスタードになるため） */
+.fever-row{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:6px;transition:opacity .18s}
+body.banner-up .fever-row{opacity:0}
+.fever-row small{font-size:9px;font-weight:700;letter-spacing:.12em;opacity:.5;line-height:1}
+#gauge{position:relative;width:58px;height:5px;background:rgba(242,241,238,.16);border-radius:3px;overflow:hidden}
+/* フィーバー中だけ、ゲージを3つに割ってあと何回かを見せる（FEVER_SHOTS と同じ数） */
+#gauge s{position:absolute;top:0;bottom:0;width:3px;background:var(--mustard);display:none}
+body.fever #gauge s{display:block}
+#gauge s:nth-of-type(1){left:calc(100% / 3 - 1.5px)}
+#gauge s:nth-of-type(2){left:calc(200% / 3 - 1.5px)}
+body.fever #gauge{background:rgba(28,23,22,.18)}
+body.fever #gauge i{background:#1C1716}   /* フィーバー中は背景がマスタードなので、色を入れ替える */
+#gauge i{display:block;height:100%;width:0;background:#EAA83A;transition:width .25s}
+.overlay{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:safe center;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:var(--brown);color:var(--paper);z-index:6;text-align:center;padding:24px}
+.overlay.show{display:flex}
+.overlay h1{font-size:76px;letter-spacing:-.06em;line-height:.9}
+/* DOT の O は玉。画面の外から落ちてきて、つぶれて弾んで収まる。
+   玉と軌跡の大きさ・間隔は、アイコン（icon-*.png）と同じ比率にそろえている */
+.overlay h1 i{display:inline-block;width:.38em;height:.38em;margin:0 .17em;border-radius:50%;
+background:currentColor;vertical-align:baseline;position:relative;top:-.17em;
+transform-origin:50% 100%;animation:dropIn 1.05s both}
+/* 落ちている間だけ出る軌跡。着地でしぼんで消える */
+.overlay h1 i b{position:absolute;left:50%;border-radius:50%;background:currentColor;
+transform:translateX(-50%);animation:trail 1.05s both}
+.overlay h1 i b:nth-child(1){width:.095em;height:.095em;bottom:.39em;opacity:.5}
+.overlay h1 i b:nth-child(2){width:.072em;height:.072em;bottom:.52em;opacity:.34}
+.overlay h1 i b:nth-child(3){width:.053em;height:.053em;bottom:.64em;opacity:.22}
+@keyframes trail{
+  0%,27%{transform:translateX(-50%) scale(1)}
+  36%,100%{transform:translateX(-50%) scale(0)}}
+/* 落ちるところは加速、跳ねるところは減速。着地のたびに少しつぶれる */
+@keyframes dropIn{
+  0%  {transform:translateY(-4.4em);animation-timing-function:cubic-bezier(.45,0,.9,.4)}
+  30% {transform:translateY(0) scale(1,1)}
+  34% {transform:translateY(0) scale(1.24,.72)}
+  38% {transform:translateY(0) scale(.93,1.12);animation-timing-function:cubic-bezier(.15,.7,.4,1)}
+  55% {transform:translateY(-.85em) scale(1,1);animation-timing-function:cubic-bezier(.45,0,.9,.4)}
+  68% {transform:translateY(0) scale(1.16,.82)}
+  71% {transform:translateY(0) scale(.96,1.07);animation-timing-function:cubic-bezier(.15,.7,.4,1)}
+  82% {transform:translateY(-.3em) scale(1,1);animation-timing-function:cubic-bezier(.45,0,.9,.4)}
+  91% {transform:translateY(0) scale(1.08,.92)}
+  96% {transform:translateY(0) scale(.99,1.02)}
+  100%{transform:translateY(0) scale(1,1)}}
+@media (prefers-reduced-motion:reduce){.overlay h1 i{animation:none}.overlay h1 i b{display:none}}
+.overlay p{margin-top:14px;font-size:15px;opacity:.75;line-height:1.7}
+.overlay button,.sheet-card button{margin-top:28px;font:inherit;font-weight:700;font-size:18px;color:var(--paper);background:var(--red);border:none;border-radius:999px;padding:16px 40px;cursor:pointer}
+.overlay button:focus-visible,.sheet-card button:focus-visible{outline:3px solid var(--paper);outline-offset:3px}
+.overlay button.sub,.sheet-card button.sub{margin-top:14px;background:none;border:1.5px solid rgba(242,241,238,.35);font-size:13px;padding:10px 18px}
+#tutBtn{margin-top:14px;display:flex;flex-direction:column;align-items:center;gap:9px;background:none;border:2px solid var(--paper);border-radius:4px;font-size:16px;padding:15px 30px}
+#tutBtn i{display:flex;gap:5px}
+#tutBtn i b{width:6px;height:6px;border-radius:50%;background:var(--paper);opacity:.25}
+#tutBtn i b.on{opacity:1;background:var(--red)}
+.kicker{font-size:13px;font-weight:700;opacity:.7;letter-spacing:.04em}
+.bigscore{font-size:clamp(88px,30vw,150px);font-weight:700;letter-spacing:-.06em;line-height:.9;margin-top:6px;font-variant-numeric:tabular-nums}
+.overlay h2{font-size:12px;font-weight:700;opacity:.6;margin-top:30px;width:100%;max-width:300px;text-align:left;letter-spacing:.04em}
+.newrank{margin-top:14px;font-size:15px;font-weight:700;color:var(--ink);background:var(--mustard);border-radius:4px;padding:4px 10px;display:none}
+.newrank.show{display:inline-block}
+.ranking{width:100%;max-width:300px;margin-top:8px;font-size:14px;text-align:left}
+.ranking div{display:grid;grid-template-columns:28px 1fr auto;align-items:baseline;gap:8px;padding:7px 0;border-top:1px solid rgba(242,241,238,.14)}
+.ranking div.me{color:var(--ink);background:var(--mustard);border-radius:4px;padding:7px 6px;border-top-color:transparent}
+.ranking i{font-style:normal;font-weight:700;opacity:.7}
+.ranking b{font-size:20px;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.ranking small{font-size:11px;opacity:.7}
+.ranking .empty{display:block;opacity:.55;font-size:13px;border:none}
+#start .ranking{margin-top:22px}
+/* 遊んでいる途中でやめる。持ち玉の数字の真上、HUD の上端のすきまに小さく置く。
+   ここだけは桁数が増えても帯の演出（y=116）とも当たらない。
+   overlay は z-index:6 なので、タイトルや結果が出ている間は勝手に隠れる */
+/* まんなかの、STAGE の上。左右のどちらかに寄せると「持ち玉／スコアに効くもの」と読まれる。
+   まんなかなら両方から等しく離れるので、どの数字のものでもないと分かる。
+   ノッチ（Dynamic Island）は画面のまんなか上なので、safe-area より上には出さないこと。
+   枠をつけて、数字につくラベルではなくボタンだと分かるようにしている */
+#quitBtn{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 8px);
+  font:inherit;font-weight:700;font-size:9.5px;letter-spacing:.08em;line-height:1;
+  color:var(--paper);opacity:.55;background:none;
+  border:1.2px solid rgba(242,241,238,.45);border-radius:999px;padding:3px 10px;
+  pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#quitBtn:active{opacity:1;background:rgba(242,241,238,.12)}
+/* フィーバー中は背景がマスタードになるので、クリームのままだと埋もれる */
+body.fever #quitBtn{color:var(--ink);border-color:rgba(28,23,22,.45)}
+body.fever #quitBtn:active{background:rgba(28,23,22,.12)}
+/* 自己ベストはリセットと同じ行（右端）へ。スコアの下から出すと右の列が縦に伸びて詰まる */
+#best{position:absolute;right:20px;top:calc(env(safe-area-inset-top) + 9px);
+  font-size:11px;opacity:.75;min-height:15px;line-height:15px;text-align:right}
+/* 下から出る板。下にスワイプ・キャンセル・外側をタップ、の3通りで閉じられる */
+.sheet{position:fixed;inset:0;z-index:7;display:none}
+.sheet.show{display:block}
+.sheet-scrim{position:absolute;inset:0;background:rgba(28,23,22,.74);
+  opacity:0;transition:opacity .22s}
+.sheet.in .sheet-scrim{opacity:1}
+/* 板の背景はいつもこげ茶なので、文字色も固定する。
+   body.fever が全体の文字色をこげ茶にするので、そのままだと板の中が読めなくなる */
+.sheet-card{position:absolute;left:0;right:0;bottom:0;background:var(--brown);color:var(--paper);
+  border-radius:20px 20px 0 0;padding:10px 24px calc(env(safe-area-inset-bottom) + 26px);
+  display:flex;flex-direction:column;align-items:center;touch-action:none;
+  transform:translateY(100%);transition:transform .24s cubic-bezier(.2,.8,.3,1)}
+.sheet.in .sheet-card{transform:translateY(0)}
+.sheet-card > *{width:100%;max-width:320px}
+/* つまみ。ここを下へ引くと閉じられることを形で示す */
+.grab{width:40px;height:4px;border-radius:2px;background:rgba(242,241,238,.3);margin:0 auto 4px}
+.sheet-card h3{margin:14px 0 0;font-size:17px;font-weight:700;letter-spacing:.01em;text-align:center}
+.sheet-card p{margin:7px 0 0;font-size:12px;opacity:.6;line-height:1.5;text-align:center}
+.sheet-card h3 + p + button{margin-top:20px}
+/* キャンセルは丸で囲わない。ただの文字にして、2つの操作と役割を分ける */
+.sheet-card button.text{background:none;border:none;font-size:14px;font-weight:700;
+  opacity:.6;padding:15px 0;margin-top:4px}
+.sheet-card button.text:active{opacity:1}
+body.tutorial #quitBtn{display:none}   /* あそびかたは打つ回数に限りがあり、必ず終わる */
+.stage-hud{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 38px);transform:translateX(-50%);text-align:center}
+.stage-hud small{display:block;font-size:10px;font-weight:700;letter-spacing:.12em;opacity:.6}
+/* 上に余白を足したぶん、STAGE の数字を小さくして列を詰める。
+   詰めないと、下の丸が発射前の玉の飾りに乗る */
+.stage-hud b{display:block;font-size:22px;line-height:1;letter-spacing:-.04em;margin-top:1px;transition:transform .2s}
+.stage-hud b.bump{transform:scale(1.4)}
+#stageDots{display:flex;gap:4px;justify-content:center;margin-top:3px}
+#stageDots i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.2}
+#stageDots i.on{opacity:1;background:#D7141F}
+/* ミッション中の見出し。STAGE の代わりに、いまの条件と達成度を出す */
+.tut-hud{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 38px);transform:translateX(-50%);text-align:center;display:none;width:200px}
+body.tutorial .tut-hud{display:block}
+body.tutorial .stage-hud{display:none}
+.tut-hud small{display:block;font-size:10px;font-weight:700;letter-spacing:.12em;opacity:.6}
+.tut-hud b{display:block;font-size:17px;line-height:1.2;letter-spacing:.01em;margin-top:4px}
+.tut-hud b i{font-style:normal}
+.tut-hud u{display:block;font-size:26px;font-weight:700;text-decoration:none;letter-spacing:-.03em;margin-top:2px;font-variant-numeric:tabular-nums;transition:transform .2s}
+.tut-hud u.bump{transform:scale(1.4)}
+.tut-hud u.done{color:#D7141F;font-size:14px;line-height:26px}
+/* どこまで来たかを8つの丸で。ステージの丸と同じ見た目 */
+#mDots{display:flex;gap:7px;justify-content:center;margin-top:22px}
+#mDots i{width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.2}
+#mDots i.on{opacity:1;background:var(--red)}
+/* できた印はチェック。太さを数字と揃えて、線だけで描く */
+.check{display:block;margin:0 auto;color:var(--red)}
+.check.ng{color:rgba(242,241,238,.3)}
+#mResMark{min-height:76px;display:flex;align-items:center;justify-content:center}
+#mover{justify-content:safe center}
+#mover .kicker{margin-top:10px}
+#mover .kicker.lead{margin-top:30px;opacity:.55;max-width:310px;text-align:left;padding-left:2px}
+/* つぎのやること。一覧の行と同じ形なので、続きだと分かる。この行を押すと進む */
+#mNextRow{display:grid;grid-template-columns:26px 1fr 24px;align-items:center;gap:10px;width:100%;max-width:310px;margin-top:6px;padding:17px 2px;background:none;border:none;border-radius:0;border-top:1px solid rgba(242,241,238,.14);border-bottom:1px solid rgba(242,241,238,.14);color:var(--paper);font:inherit;font-size:17px;font-weight:700;text-align:left;cursor:pointer}
+#mNextRow b{font-size:19px;letter-spacing:-.03em;opacity:.45;font-variant-numeric:tabular-nums}
+#mNextRow i{font-style:normal}
+.arrow{display:block;margin-left:auto;color:var(--red)}
+/* あそび方の一覧。やることの左に番号、できたら右にチェック */
+.tlist{width:100%;max-width:310px;margin-top:10px}
+.tlist button{display:grid;grid-template-columns:26px 1fr 24px;align-items:center;gap:10px;width:100%;margin:0;padding:15px 0;background:none;border:none;border-radius:0;border-top:1px solid rgba(242,241,238,.14);color:var(--paper);font:inherit;font-size:16px;font-weight:700;text-align:left;cursor:pointer}
+.tlist button b{font-size:19px;letter-spacing:-.03em;opacity:.45;font-variant-numeric:tabular-nums}
+.tlist button i{font-style:normal}
+.tlist button.done span{opacity:.5}
+.tlist button.done b{opacity:.5}
+.result{justify-content:flex-start;padding:calc(env(safe-area-inset-top) + 40px) 24px calc(env(safe-area-inset-bottom) + 40px)}
+.result > *{width:100%;max-width:320px}
+.res-top{display:flex;gap:8px;justify-content:center;align-items:center;min-height:26px}
+.pill{font-size:12px;font-weight:700;border:1.5px solid rgba(242,241,238,.35);border-radius:999px;padding:3px 10px}
+.rankbadge{display:none;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--ink);background:var(--mustard);border-radius:3px;padding:3px 8px}
+.rankbadge.show{display:inline-block}
+.rankbadge.top{background:var(--red);color:var(--paper)}
+.result .res-top{min-height:22px}
+.result .kicker{margin-top:26px;display:block}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);margin-top:22px;border-top:1.5px solid rgba(242,241,238,.2)}
+.stats div{padding:12px 4px 0;text-align:center}
+.stats div + div{border-left:1.5px solid rgba(242,241,238,.2)}
+.stats b{display:block;font-size:30px;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+.stats small{display:block;font-size:11px;opacity:.6;margin-top:6px}
+.result #retry{margin:30px auto 0;display:block}
+.res-sec{margin-top:36px;text-align:left}
+.res-sec h2{margin:0 0 6px;max-width:none}
+.recgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.recgrid div{background:rgba(242,241,238,.06);border-radius:6px;padding:10px 12px;position:relative}
+.recgrid b{display:block;font-size:22px;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.recgrid small{display:block;font-size:11px;opacity:.65;margin-top:4px;line-height:1.35}
+.recgrid div.new{background:rgba(234,168,58,.18)}
+.recgrid div.new::after{content:"更新";position:absolute;top:8px;right:8px;font-size:10px;font-weight:700;color:var(--ink);background:var(--mustard);border-radius:3px;padding:1px 5px}
+.shapes{display:flex;gap:14px;justify-content:center;margin-top:22px;align-items:center}
+.shapes i{display:block;width:22px;height:22px}
+.records{margin-top:26px;width:100%;max-width:300px;text-align:left;font-size:14px}
+.records div{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-top:1px solid rgba(242,241,238,.14)}
+.records b{font-size:22px;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.records em{font-style:normal;font-size:11px;font-weight:700;color:var(--ink);background:var(--mustard);border-radius:3px;padding:1px 5px;margin-right:8px}
+.newrec{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;color:#F2F1EE;background:#D7141F;border-radius:3px;padding:2px 6px;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){#flash.show{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<i id="safeProbe" aria-hidden="true"></i>
+<header>
+  <button id="quitBtn">リセット</button>
+  <div id="best"></div>
+  <div class="stat"><b id="money" class="roll"></b><small>持ち玉</small></div>
+  <div class="stage-hud" id="stageHudBox"><small>STAGE</small><b id="stageNo">1</b><div id="stageDots"></div></div>
+  <div class="tut-hud" id="tutHud"><small id="mKicker"></small><b id="mTitle"></b><u id="mProg"></u></div>
+  <div class="stat right"><b id="points" class="roll"></b><small id="pointsLabel">スコア</small><div class="fever-row"><small id="feverLabel">FEVER</small><div id="gauge"><i></i><s></s><s></s></div></div></div>
+</header>
+<div id="start" class="overlay show">
+  <h1>D<i><b></b><b></b><b></b></i>T<br>DROP</h1>
+  <div class="shapes" aria-hidden="true">
+    <i style="background:#D7141F"></i>
+    <i style="background:#2456B8;border-radius:50%"></i>
+    <i style="width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-bottom:22px solid #EAA83A"></i>
+  </div>
+  <button id="startBtn">はじめる</button>
+  <button id="tutBtn"><span>あそびかた</span><i id="tutDots"></i></button>
+</div>
+<div id="tlist" class="overlay result">
+  <small class="kicker">あそびかた</small>
+  <div class="tlist" id="tlistRows"></div>
+  <button id="tlistBack" class="sub">もどる</button>
+</div>
+<div id="mover" class="overlay result">
+  <div id="mResMark"></div>
+  <small class="kicker" id="mResText">できました</small>
+  <div id="mDots"></div>
+  <small class="kicker lead" id="mNextLabel">NEXT</small>
+  <button id="mNextRow"></button>
+  <button id="mRetry">もう一度</button>
+  <button id="mPlay">ゲームをはじめる</button>
+  <button id="mQuit" class="sub">一覧</button>
+</div>
+<div id="sheet" class="sheet">
+  <div class="sheet-scrim" id="sheetScrim"></div>
+  <div class="sheet-card" id="sheetCard">
+    <i class="grab" aria-hidden="true"></i>
+    <h3>リセットしますか？</h3>
+    <p>いまのスコアはランキングに残りません</p>
+    <button id="qRetry">リセット</button>
+    <button id="qTitle" class="sub">タイトルに戻る</button>
+    <button id="qBack" class="text">キャンセル</button>
+  </div>
+</div>
+<div id="over" class="overlay result">
+  <div class="res-top"><span id="newRank" class="rankbadge"></span></div>
+  <small class="kicker">総合スコア</small>
+  <div id="overScore" class="bigscore">0</div>
+  <div class="stats">
+    <div><b id="stStage">1</b><small>ステージ</small></div>
+    <div><b id="stBest">0</b><small>1回の最高</small></div>
+  </div>
+  <button id="retry">もう一度</button>
+  <button id="toTitle" class="sub">タイトルへ</button>
+  <section class="res-sec"><h2>ランキング</h2><div class="ranking" id="overRanking"></div></section>
+  <section class="res-sec"><h2>これまでの記録</h2><div class="recgrid" id="overRecords"></div></section>
+</div>
+<script>
+// ================= 物理とルール =================
+/*ENGINE*/
+const LW = 360, BR = 7, PR = 4.5, GRAV = 1100, CONV_SPEED = 26;
+// 床一面に敷き詰めた受け皿。倍率（m）は固定、戻る玉（b）はステージが進むほど厳しくなる
+const SLOT_M0 = [0, 1, 3, 0, 0, 1, 5, 0, 0, 1, 3, 0, 0, 1, 3, 0];
+const STAGE_B0 = [
+  //0  1  2  3   4  5  6  7   8  9 10 11 12 13 14  15
+  [ 0, 1, 2, 0, -1, 0, 3, 0, -1, 0, 1, 0, 0, 0, 2, -1],   // ステージ1：気持ちよく増える
+  [ 0, 0, 1, 0, -1, 0, 3, 0, -1, 0, 1, 0, 0, 0, 1, -1],   // ステージ2
+  [ 0, 0, 1, 0,  0, 0, 3, 0, -3, 0, 1, 0, 0, 0, 1, -1],   // ステージ3：−3が登場
+  [-1, 0, 0, 0, -1, 0, 3, 0, -3, 0, 1, 0, 0, 0, 1, -1],   // ステージ4
+  [-1, 0, 0, 0, -1, 0, 2, 0, -3, 0, 0, -1, 0, 0, 1, -1],  // ステージ5〜6
+  [-1, 0, 0, 0, -1, 0, 2, 0, -3, 0, 0, -1, 0, 0, 1, -1],
+  //     ここから下は ×5（6番）の左だけが変わる。7番（−3 の手前）は必ず空けておく
+  [-1, 0, 0, 0, 0, -1, 2, 0, -3, 0, 0, -1, 0, 0, 1, -1],  // ステージ7〜9：×5 の左が1玉減る
+  [-1, 0, 0, 0, 0, -1, 2, 0, -3, 0, 0, -1, 0, 0, 1, -1],
+  [-1, 0, 0, 0, 0, -1, 2, 0, -3, 0, 0, -1, 0, 0, 1, -1],
+  [-1, 0, 0, 0, 0, -2, 2, 0, -3, 0, 0, -1, 0, 0, 0, -1],  // ステージ10〜12：2玉に深くなり、×3 の戻る玉もなくなる
+  [-1, 0, 0, 0, 0, -2, 2, 0, -3, 0, 0, -1, 0, 0, 0, -1],
+  [-1, 0, 0, 0, 0, -2, 2, 0, -3, 0, 0, -1, 0, 0, 0, -1],
+  [-1, 0, 0, 0, 0, -2, 2, 0, -3, 0, 0, -1, -1, 0, 0, -1], // ステージ13〜：離れたところに1枚ふえる
+];
+const SLOT_W = 60, CONV_LEN = SLOT_M0.length * SLOT_W;
+const LAYOUTS = 4, SQ_H = 7, BLUE_R = 9, TRI_R = 8;
+
+// ここから下の数字は、モード（フリープレイ／ミッション）ごとに差し替えられる。
+// 何も渡さなければ、これまでと同じフリープレイの数字になる
+const DEFAULTS = {SLOT_M: SLOT_M0, STAGE_B: STAGE_B0, START: 12, COST: 1, MAX_BALLS: 27,
+  SQUARES: 3, BLUES: 2, TRIS: 3, SHOTS_PER_BOARD: 6, FEVER_AT: 120, FEVER_SHOTS: 3, PERFECT: 500};
+let SLOT_M, STAGE_B, START, COST, MAX_BALLS, SQUARES, BLUES, TRIS, SHOTS_PER_BOARD, FEVER_AT, FEVER_SHOTS, PERFECT;
+function applyConf(c) {
+  ({SLOT_M, STAGE_B, START, COST, MAX_BALLS, SQUARES, BLUES, TRIS, SHOTS_PER_BOARD, FEVER_AT, FEVER_SHOTS, PERFECT} =
+    {...DEFAULTS, ...(c || {})});
+}
+applyConf();
+
+// 乱数は2本に分ける。
+//   台の種（boardRand）… 種を決めれば毎回まったく同じ台が出る。ミッションで使う
+//   打つときのブレ      … いつもの Math.random のまま。はなす瞬間のブレは毎回ちがうほうがいい
+function seeded(a) {
+  return () => {
+    a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+let rng = null;
+const boardRand = () => rng ? rng() : Math.random();
+// 台を組み立てる前に呼ぶ。種があれば、同じ台・同じ▲の位置になる
+const seedBoard = () => { rng = E.boardSeed == null ? null : seeded(E.boardSeed | 0); };
+const E = {LH: 700, pegs: [], balls: [], pot: 0, shotPay: 0, hitCount: 0, conveyor: 0, layout: 0, fever: false, time: 0, stage: 0,
+  boardSeed: null, convHold: false, hooks: {hit() {}, land() {}, shotEnd() {}, release() {}, perfect() {}}};
+
+const slotTop = () => E.LH - 84;
+const field = () => ({top: 200, bottom: E.LH - 135});
+function slotAt(x, t = 0) {
+  const u = ((x - E.conveyor - CONV_SPEED * t) % CONV_LEN + CONV_LEN) % CONV_LEN;
+  return Math.floor(u / SLOT_W);
+}
+// フィーバー中は×0が×1になり、玉が減る受け皿もなくなる（ポイントも2倍）
+// フィーバー中は×0が×1になり、玉が減る受け皿もなくなる（ポイントも2倍）
+const stageB = (stage = E.stage) => STAGE_B[Math.min(stage || 0, STAGE_B.length - 1)];
+const slotInfo = i => {
+  const m = SLOT_M[i], b = stageB()[i];
+  return E.fever ? {m: Math.max(1, m), b: Math.max(0, b)} : {m, b};
+};
+function makeLayout(kind) {
+  const f = field(), pts = [];
+  if (kind === 0) {            // 千鳥格子
+    for (let r = 0, y = f.top; y <= f.bottom; y += 42, r++)
+      for (let x = 34 + (r % 2 ? 22 : 0); x <= LW - 30; x += 44) pts.push([x, y]);
+  } else if (kind === 1) {     // 同心円
+    const cx = LW / 2, cy = (f.top + f.bottom) / 2;
+    pts.push([cx, cy]);
+    for (let ring = 1; ring <= 7; ring++) {
+      const rad = ring * 40, n = ring * 5;
+      for (let k = 0; k < n; k++) {
+        const a = k / n * Math.PI * 2 + ring * .4;
+        const x = cx + Math.cos(a) * rad, y = cy + Math.sin(a) * rad;
+        if (x > 30 && x < LW - 30 && y > f.top - 6 && y < f.bottom + 6) pts.push([x, y]);
+      }
+    }
+  } else if (kind === 2) {     // 波
+    for (let r = 0, y = f.top; y <= f.bottom; y += 52, r++)
+      for (let c = 0; c < 8; c++) pts.push([34 + c * 42 + Math.sin(r * .8 + c * .7) * 18, y]);
+  } else {                     // ランダム
+    let tries = 0;
+    while (tries++ < 4000) {
+      const x = 30 + boardRand() * (LW - 60), y = f.top + boardRand() * (f.bottom - f.top);
+      if (pts.every(([px, py]) => Math.hypot(px - x, py - y) > 36)) pts.push([x, y]);
+    }
+  }
+  // 壁との間に玉が挟まらないよう、端から十分離す
+  return pts.map(([x, y]) => [Math.max(30, Math.min(LW - 30, x)), y])
+    .filter(([x, y], i, arr) => arr.findIndex(([ax, ay]) => Math.hypot(ax - x, ay - y) < 20) === i);
+}
+
+function setLayout(kind, animate) {
+  seedBoard();
+  const pts = makeLayout(kind), old = E.pegs;
+  E.layout = kind;
+  E.pegs = pts.map(([x, y], i) => {
+    const o = animate && old.length ? old[i % old.length] : null;
+    return {x: o ? o.x : x, y: o ? o.y : y, fx: o ? o.x : x, fy: o ? o.y : y, tx: x, ty: y, m: o ? 0 : 1, lit: 0, pulse: 0, kind: 'dot', cool: 0, boardHit: false};
+  });
+  E.perfect = false;   // この台でまだ全部に当てていない
+  // 形ごとに役割：■はね返す ●(青)つかまえる ▲分裂
+  // シャッフルは Fisher–Yates（sort+乱数比較だとエンジンごとに台が変わるため）
+  const idx = shuffle(E.pegs.map((_, i) => i), boardRand);
+  idx.slice(0, SQUARES).forEach(i => E.pegs[i].kind = 'square');
+  idx.slice(SQUARES, SQUARES + BLUES).forEach(i => E.pegs[i].kind = 'blue');
+  pickGold();
+}
+function shuffle(arr, rand) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  }
+  return arr;
+}
+function pickGold() {
+  seedBoard();
+  E.pegs.forEach(p => { p.triHit = false; if (p.kind === 'tri') p.kind = 'dot'; });
+  const dots = shuffle(E.pegs.filter(p => p.kind === 'dot'), boardRand);
+  dots.slice(0, TRIS).forEach(p => p.kind = 'tri');
+}
+
+const newBall = (x, y, vx, vy) => ({x, y, vx, vy, state: 'fly', age: 0, trail: [], slot: -1, landT: 0, holdCool: 0, pts: 0, pay: 0});
+const LAUNCH = {x: LW / 2, y: 140};
+// パチンコのように引いた方向の反対へ飛ばす。わずかにブレるのでまったく同じ軌道にはならない
+function launchVelocity(pullX, pullY, exact = false) {
+  const k = 3.2, jitter = exact ? 1 : 1 + (Math.random() - .5) * .08, ang = exact ? 0 : (Math.random() - .5) * .07;
+  // 打ち出しは水平より上だけ（上向きに引いても水平で打つ）
+  let vx = -pullX * k * jitter, vy = -Math.max(0, pullY) * k * jitter;
+  const c = Math.cos(ang), s = Math.sin(ang);
+  return [vx * c - vy * s, Math.min(0, vx * s + vy * c)];
+}
+function launch(vx, vy) {
+  E.pot = 0; E.shotPay = 0; E.hitCount = 0; E.shotScore = 0;
+  E.balls = [newBall(LAUNCH.x, LAUNCH.y, vx, vy)];
+}
+const POINTS = {dot: 1, square: 3, blue: 2, tri: 1};
+function hitPeg(p, b, force) {
+  E.hitCount++;
+  const kind = p.kind, pts = POINTS[kind] * (E.fever ? 2 : 1);
+  E.pot += pts; b.pts += pts;
+  p.lit = 1; p.pulse = 1; p.boardHit = true;   // この台で当てたしるし（消えない）
+  let split = 0;
+  if (kind === 'tri') {
+    p.triHit = true;
+    // ▲ は消えずに残るので、分裂した玉がまた当たるとさらに増える
+    p.cool = E.time + .35;
+    for (const dir of [-1, 1]) {
+      if (E.balls.length >= MAX_BALLS) break;
+      const nb = newBall(b.x + dir * 4, b.y, dir * (160 + Math.random() * 80), -140 - Math.random() * 60);
+      E.balls.push(nb); split++;
+    }
+  }
+  E.split = split;
+  E.hooks.hit(p, b, E.hitCount, force, kind, pts);
+}
+
+function stepPhysics(dt) {
+  E.time += dt;
+  if (!E.convHold) E.conveyor += CONV_SPEED * dt;
+  const n = E.balls.length;
+  for (let i = 0; i < n; i++) {
+    const b = E.balls[i];
+    if (b.state === 'land') { b.landT += dt; if (!E.convHold) b.x += CONV_SPEED * dt; continue; }
+    if (b.state === 'held') {
+      const p = b.hold;
+      b.holdT += dt; b.x = p.x; b.y = p.y;
+      if (b.holdT > .5) {
+        const ang = (Math.random() - .5) * 2.2, sp = 300;
+        b.vx = Math.sin(ang) * sp; b.vy = Math.cos(ang) * sp;
+        b.x = p.x + Math.sin(ang) * (BLUE_R + BR + 1); b.y = p.y + Math.cos(ang) * (BLUE_R + BR + 1);
+        b.state = 'fly'; b.holdCool = E.time + .6;
+        E.hooks.release(p, b);
+      }
+      continue;
+    }
+    b.age += dt;
+    b.vy += GRAV * dt;
+    b.x += b.vx * dt; b.y += b.vy * dt;
+    if (b.y < 40 && b.vy < 0) { b.y = 40; b.vy = -b.vy * .4; }
+    // 壁は強めに跳ね返し、必ず内側へ戻る速さを持たせる（端に吸い込まれて落ちるのを防ぐ）
+    if (b.x < BR) { b.x = BR; b.vx = Math.max(Math.abs(b.vx) * .8, 150); }
+    if (b.x > LW - BR) { b.x = LW - BR; b.vx = -Math.max(Math.abs(b.vx) * .8, 150); }
+    for (const p of (b.ghostUntil > E.time ? [] : E.pegs)) {
+      const reach = BR + 10, dx0 = b.x - p.x, dy0 = b.y - p.y;
+      if (dx0 > reach || dx0 < -reach || dy0 > reach || dy0 < -reach) continue;
+      if (p.kind === 'square') {
+        // ■ 強くはね返す
+        const cx = Math.max(p.x - SQ_H, Math.min(b.x, p.x + SQ_H)), cy = Math.max(p.y - SQ_H, Math.min(b.y, p.y + SQ_H));
+        let dx = b.x - cx, dy = b.y - cy, d = Math.hypot(dx, dy);
+        if (d >= BR) continue;
+        if (d < .001) { dx = 0; dy = -1; d = 1; }
+        const nx = dx / d, ny = dy / d;
+        b.x = cx + nx * BR; b.y = cy + ny * BR;
+        const vn = b.vx * nx + b.vy * ny;
+        if (vn < 0) {
+          b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny;
+          const sp = Math.hypot(b.vx, b.vy);
+          if (sp < 560) { b.vx *= 560 / sp; b.vy *= 560 / sp; }
+          b.vx += (Math.random() - .5) * 120;
+          // 同じ四角で跳ね続けないように横へ逃がす
+          b.samePeg = b.lastPeg === p ? (b.samePeg || 0) + 1 : 0; b.lastPeg = p;
+          if (b.samePeg > 2) { b.vx = (b.x < p.x ? -1 : 1) * 260; b.samePeg = 0; }
+          if (E.time > p.cool) { p.cool = E.time + .12; hitPeg(p, b, -vn); }
+        }
+        continue;
+      }
+      const m = BR + (p.kind === 'blue' ? BLUE_R : p.kind === 'tri' ? TRI_R : PR);
+      const d = Math.hypot(dx0, dy0);
+      if (d < m && d > .001) {
+        if (p.kind === 'blue' && E.time > b.holdCool) {
+          // ● 青はつかまえて、少し止めてから放す
+          b.state = 'held'; b.hold = p; b.holdT = 0; b.trail = [];
+          hitPeg(p, b, 300);
+          break;
+        }
+        const nx = dx0 / d, ny = dy0 / d;
+        b.x = p.x + nx * m; b.y = p.y + ny * m;
+        const vn = b.vx * nx + b.vy * ny;
+        if (vn < 0) {
+          b.vx -= 1.55 * vn * nx; b.vy -= 1.55 * vn * ny;
+          b.vx += (Math.random() - .5) * 50;
+          if (E.time > p.cool) { p.cool = E.time + .12; hitPeg(p, b, -vn); }
+        }
+      }
+    }
+    if (b.state === 'held') continue;
+    // 挟まり対策：ほとんど動いていなければ中央へ押し出し、それでもだめなら当たり判定を切る
+    const moved = Math.hypot(b.x - (b.lx ?? b.x), b.y - (b.ly ?? b.y));
+    b.lx = b.x; b.ly = b.y;
+    if (moved < 40 * dt) b.stillT = (b.stillT || 0) + dt; else b.stillT = 0;
+    if (b.stillT > .3) {
+      const dir = b.x < LW / 2 ? 1 : -1;
+      b.vx = dir * (120 + Math.random() * 80); b.vy = 160; b.x += dir * 3;
+      b.stuckCount = (b.stuckCount || 0) + 1; b.stillT = 0;
+      if (b.stuckCount >= 3) b.ghostUntil = E.time + .25;
+    }
+    const sp = Math.hypot(b.vx, b.vy);
+    if (sp > 1000) { b.vx *= 1000 / sp; b.vy *= 1000 / sp; }
+    if (b.age > 8) b.vy += 3000 * dt;
+    if (b.y > slotTop()) {
+      b.state = 'land'; b.y = slotTop(); b.slot = slotAt(b.x);
+      const info = slotInfo(b.slot), v = info.b, pay = v;
+      b.mult = info.m; b.gain = b.pts * info.m; E.shotScore = (E.shotScore || 0) + b.gain;
+      b.pay = pay;
+      E.shotPay += pay;
+      E.hooks.land(b, v, pay);
+    }
+  }
+  if (E.balls.length && E.balls.every(b => b.state === 'land' && b.landT > .5)) {
+    E.balls = [];
+    // 台の釘を1つ残らず当てた（＝全部赤くなった）。1つの台につき1回だけ
+    if (PERFECT > 0 && !E.perfect && E.pegs.length && E.pegs.every(p => p.boardHit)) {
+      E.perfect = true;
+      E.shotScore = (E.shotScore || 0) + PERFECT;
+      E.hooks.perfect(PERFECT);
+    }
+    E.hooks.shotEnd(E.shotPay);
+  }
+}
+/*END*/
+// ================= 表示と操作 =================
+const $ = id => document.getElementById(id);
+const cv = $('c'), ctx = cv.getContext('2d');
+const dpr = Math.min(2, devicePixelRatio || 1);
+let scale = 1, ox = 0, screenH = 700;   // screenH：ホームバーの帯も含めた、画面の下端
+
+let money, score, scoreShown, gauge, feverLeft, shots, peak, boardShots, firstShot = true;
+let pullX = 0, pullY = 0, pulling = false, startX = 0, startY = 0, keyCharge = false, keyStart = 0, keyAim = 0;
+const MAX_PULL = 130;
+let shotShow = 0, timeScale = 1, slowPulse = 0, hitStop = 0, shake = 0, potShow = 0, potAlpha = 0, potPulse = 0;
+let waves = [], floaters = [], flyers = [], catches = [], fallen = [], shotBallsMax = 1, triBonus = false, edge = null;
+let gameBestShot = 0, milestoneFx = null, bestAtStart = 0, beatBest = false;
+let perfectFx = null;   // 台をぜんぶ赤くしたときの光の波
+// 上から下へ光が走り、そのあと全部がゆっくり脈打つ。画面を覆わず、釘そのものを光らせる
+function perfectGlow(p) {
+  if (!perfectFx) return 0;
+  const t = perfectFx.t;
+  if (t > 1.9) return 0;
+  const wave = Math.max(0, 1 - Math.abs(p.y - (t * 820 - 60)) / 95);
+  const pulse = t > .85 ? Math.max(0, 1 - (t - .85) / 1.05) * (.4 + Math.sin(t * 20) * .3) : 0;
+  return Math.max(0, Math.min(1, wave + pulse));
+}
+let running = false, rec = {}, sessionNew = new Set(), ranking = [], slotFlash = null;
+let bg = [42, 35, 34];
+
+const FONT = '"Helvetica Neue",Helvetica,Arial,"Hiragino Sans",sans-serif';
+const THEME = {
+  normal: {bg: [42, 35, 34], peg: '#54463F', big: 'rgba(242,241,238,.16)', ball: '#F2F1EE', text: '#F2F1EE', dim: 'rgba(242,241,238,.4)', floor: '#1E1817'},
+  fever:  {bg: [234, 168, 58], peg: 'rgba(28,23,22,.26)', big: 'rgba(28,23,22,.16)', ball: '#1C1716', text: '#1C1716', dim: 'rgba(28,23,22,.45)', floor: '#C48A2C'},
+};
+const pal = () => E.fever ? THEME.fever : THEME.normal;
+// カンディンスキーの対応：黄＝三角、赤＝四角、青＝円
+const SHAPE = {square: () => '#D7141F', blue: () => '#2456B8', tri: () => E.fever ? '#F2F1EE' : '#EAA83A', dot: () => pal().text};
+const slotColors = (m, bb = 0) => {
+  if (bb < 0) return E.fever ? ['#C48A2C', 'rgba(28,23,22,.45)'] : ['#140F0E', 'rgba(242,241,238,.35)'];
+  if (m >= 5) return ['#D7141F', '#F2F1EE'];
+  if (m === 3) return E.fever ? ['#1C1716', '#EAA83A'] : ['#EAA83A', '#1C1716'];
+  if (m === 1) return E.fever ? ['#C48A2C', '#1C1716'] : ['#4A3D39', '#F2F1EE'];
+  return E.fever ? ['#C48A2C', 'rgba(28,23,22,.45)'] : ['#1E1817', 'rgba(242,241,238,.35)'];
+};
+const multColor = m => m >= 5 ? '#D7141F' : m === 3 ? (E.fever ? '#1C1716' : '#EAA83A') : m === 1 ? pal().text : pal().dim;
+
+// ---------- 回転する数字 ----------
+class Roller {
+  constructor(el) { this.el = el; this.cells = []; this.value = null; }
+  set(n) {
+    const str = String(Math.max(0, n));
+    while (this.cells.length < str.length) {
+      const d = document.createElement('span'); d.className = 'd';
+      const strip = document.createElement('span'); strip.className = 'strip';
+      strip.innerHTML = Array.from({length: 30}, (_, i) => `<span>${i % 10}</span>`).join('');
+      d.appendChild(strip); this.el.prepend(d);
+      const cell = {strip, pos: 10};
+      strip.style.transition = 'none'; strip.style.transform = 'translateY(-10em)';
+      strip.style.transform = `translateY(${-10 * .9}em)`;
+      strip.addEventListener('transitionend', () => this.normalize(cell));
+      this.cells.unshift(cell);
+    }
+    while (this.cells.length > str.length) { this.cells.shift(); this.el.firstChild.remove(); }
+    [...str].forEach((ch, i) => this.roll(this.cells[i], +ch));
+    this.value = n;
+    // 桁が変わったときだけ測り直す（毎回測ると重い）
+    if (str.length !== this.digits) { this.digits = str.length; this.fit(); }
+  }
+  // 桁が増えても、まんなかの STAGE とぶつからない大きさまで落とす。
+  // 4桁までは 52px のまま。狭い画面で5桁になったときだけ小さくなる
+  fit() {
+    const c = $(document.body.classList.contains('tutorial') ? 'tutHud' : 'stageHudBox');
+    const half = c ? c.getBoundingClientRect().width / 2 : 25;
+    const room = innerWidth / 2 - half - 32;   // 32＝まんなかとのすきま12＋画面端の余白20
+    const size = room / (Math.max(1, this.digits) * .57);
+    this.el.style.fontSize = Math.max(22, Math.min(46, size)) + 'px';
+  }
+  roll(cell, d) {
+    const cur = ((cell.pos % 10) + 10) % 10;
+    if (cur === d) return;
+    this.normalize(cell);
+    const fwd = (d - cur + 10) % 10, back = (cur - d + 10) % 10;
+    cell.pos += fwd <= back ? fwd : -back;
+    cell.strip.style.transition = '';
+    cell.strip.style.transform = `translateY(${-cell.pos * .9}em)`;
+  }
+  normalize(cell) {
+    const n = ((cell.pos % 10) + 10) % 10 + 10;
+    if (n === cell.pos) return;
+    cell.pos = n;
+    cell.strip.style.transition = 'none';
+    cell.strip.style.transform = `translateY(${-n * .9}em)`;
+    void cell.strip.offsetWidth;
+  }
+}
+const moneyRoll = new Roller($('money')), pointsRoll = new Roller($('points'));
+
+// ---------- 記録（端末に保存） ----------
+// ブラウザの localStorage に保存する（使えない環境では保存せずに続行）
+const store = {
+  get(key) { try { const v = localStorage.getItem(key); return v == null ? null : {value: v}; } catch (e) { return null; } },
+  set(key, value) { try { localStorage.setItem(key, value); } catch (e) {} },
+};
+const REC_KEYS = [
+  ['shotScore', '1回の最高スコア'],
+  ['shotBalls', '1回で増えた玉の最大数'],
+  ['shotHits', '1回の最多ヒット'],
+  ['ballGain', '1球の最高獲得スコア'],
+  ['gameScore', '1ゲームの最高スコア'],
+  ['peakMoney', '持ち玉の最高記録'],
+  ['stage', '到達したステージ'],
+];
+async function loadRecords() {
+  try { const r = store.get('dotdrop-records'); if (r) rec = JSON.parse(r.value); } catch (e) {}
+  try { const r = store.get('dotdrop-ranking'); if (r) ranking = JSON.parse(r.value); } catch (e) {}
+  renderRecords('startRecords', false);
+}
+// ---------- ランキング（上位10件を端末に保存） ----------
+function addRanking(entry) {
+  ranking.push(entry);
+  ranking.sort((a, b) => b.score - a.score);
+  ranking = ranking.slice(0, 10);
+  store.set('dotdrop-ranking', JSON.stringify(ranking));
+  return ranking.indexOf(entry);
+}
+function renderRanking(id, current, limit = 10) {
+  const el = $(id);
+  if (!el) return;
+  if (!ranking.length) { el.innerHTML = '<span class="empty">まだ記録がありません</span>'; return; }
+  el.innerHTML = ranking.slice(0, limit).map((r, i) => {
+    const d = new Date(r.date);
+    return `<div class="${r === current ? 'me' : ''}"><i>${i + 1}</i><span><b>${r.score}</b></span><small>ステージ${r.stage}・${d.getMonth() + 1}/${d.getDate()}</small></div>`;
+  }).join('');
+}
+function saveRecords() { store.set('dotdrop-records', JSON.stringify(rec)); }
+function bumpRecord(key, value) {
+  if (value > (rec[key] || 0)) {
+    const had = rec[key] || 0;
+    rec[key] = value; sessionNew.add(key); saveRecords();
+    return had > 0;
+  }
+  return false;
+}
+function renderRecords(id, markNew) {
+  if (!$(id)) { bestHud(); return; }
+  $(id).innerHTML = REC_KEYS.filter(([k]) => rec[k]).map(([k, label]) =>
+    `<div class="${markNew && sessionNew.has(k) ? 'new' : ''}"><b>${rec[k]}</b><small>${label}</small></div>`).join('');
+  bestHud();
+}
+loadRecords();
+
+function fit() {
+  // 画面のいちばん下にはホームバーの帯がある。そこに受け皿を置くと、
+  // 戻る玉の●や点線の丸が隠れて見えない。その高さを除いた中に台を収める
+  const probe = getComputedStyle($('safeProbe'));
+  const safeB = parseFloat(probe.paddingBottom) || 0, safeT = parseFloat(probe.paddingTop) || 0;
+  const h = Math.max(400, innerHeight - safeB);
+  scale = Math.min(innerWidth / LW, h / 640);
+  E.LH = h / scale;
+  ox = (innerWidth - LW * scale) / 2;
+  screenH = innerHeight / scale;
+  // 帯も HUD と同じだけ下げる。上が詰まって余白が取れなくなっていたため
+  BANNER_Y = 116 + Math.min(safeT / scale, 26);
+  // canvas は画面いっぱい。背景は全面に塗るので、帯のところも同じ色になる
+  cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
+  cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
+}
+function refit() { fit(); if (moneyRoll) moneyRoll.fit(); if (pointsRoll) pointsRoll.fit(); if (!E.balls.length) setLayout(E.layout, false); }
+addEventListener('resize', refit);
+addEventListener('orientationchange', () => setTimeout(refit, 250));
+// ホーム画面から起動したときなど、最初の画面の高さが後から変わることがある
+if (window.visualViewport) visualViewport.addEventListener('resize', refit);
+setTimeout(refit, 300);
+
+function reset(next) {
+  mode = next || mode;
+  applyConf(mode.conf());
+  score = 0; scoreShown = 0; gauge = 0; feverLeft = 0; shots = 0; boardShots = 0;
+  E.fever = false; E.stage = 0; E.balls = []; E.pot = 0; slotFlash = null; flyers = []; catches = []; fallen = []; sessionNew = new Set();
+  money = START; peak = START;
+  gameBestShot = 0; milestoneFx = null; perfectFx = null; bestAtStart = personalBest(); beatBest = false;
+  document.body.classList.toggle('tutorial', mode === TUTORIAL);
+  mode.start();
+  bestHud();
+  moneyRoll.set(money); pointsRoll.set(0);
+  stageHud(false);
+  hud();
+  $('over').classList.remove('show'); $('mover').classList.remove('show');
+}
+// 自己ベスト（1ゲームの総合スコア）をスコアの下に。抜いたら NEW RECORD
+function personalBest() { return Math.max(rec.gameScore || 0, ranking.length ? ranking[0].score : 0); }
+function bestHud() {
+  const el = $('best');
+  if (!el) return;
+  if (beatBest) { el.innerHTML = '<span class="newrec">NEW RECORD</span>'; return; }
+  const b = running ? bestAtStart : personalBest();
+  el.textContent = b ? `自己ベスト ${b}` : '';
+}
+function stageHud(up) {
+  $('stageNo').textContent = E.stage + 1;
+  $('stageDots').innerHTML = Array.from({length: SHOTS_PER_BOARD}, (_, i) => `<i class="${i < boardShots ? 'on' : ''}"></i>`).join('');
+  if (up) bump('stageNo');
+}
+function hud() {
+  document.body.classList.toggle('fever', E.fever);
+  // フィーバー中の回数は FEVER のところに出す。スコアのラベルは「スコア」のまま
+  $('feverLabel').textContent = E.fever ? `残り${feverLeft}` : 'FEVER';
+  $('gauge').firstChild.style.width = (E.fever ? feverLeft / FEVER_SHOTS : Math.min(1, gauge / FEVER_AT)) * 100 + '%';
+}
+function bump(id) { const el = $(id); el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); setTimeout(() => el.classList.remove('bump'), 110); }
+
+// ---------- 振動 ----------
+const hapticLabel = (() => {
+  const l = document.createElement('label');
+  l.style.cssText = 'position:fixed;left:-100px;top:0;opacity:0;pointer-events:none';
+  l.setAttribute('aria-hidden', 'true');
+  const i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); i.tabIndex = -1;
+  l.appendChild(i); document.body.appendChild(l);
+  return l;
+})();
+let lastBuzz = 0;
+function buzz(ms = 8, gap = 45) {
+  const now = performance.now();
+  if (now - lastBuzz < gap) return;
+  lastBuzz = now;
+  if (navigator.vibrate) navigator.vibrate(ms); else hapticLabel.click();
+}
+function buzzPattern(times, interval) { for (let i = 0; i < times; i++) setTimeout(() => buzz(18, 0), i * interval); }
+
+// ---------- 音 ----------
+// イヤホンを挿す・抜く・Bluetooth につなぐと、iPhone は音の出口を切り替える。
+// そのとき AudioContext が止まったままになったり、出口の周波数が変わって
+// 今の AudioContext からは音が出なくなったりする。
+// 止まったら作り直せるようにしておく（作り直しは画面に触れたときだけ）
+let ac, master, sfxBus, fanBus, unlocked = false, needRebuild = false;
+function audioInit() {
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+  if (ac && needRebuild) {
+    needRebuild = false;
+    try { ac.close(); } catch (e) {}
+    ac = null; unlocked = false;
+  }
+  if (!ac) {
+    try {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      const comp = ac.createDynamicsCompressor();
+      master = ac.createGain(); master.gain.value = .9;
+      master.connect(comp).connect(ac.destination);
+      // 効果音と節目の音を別の経路に分ける。節目の音だけ残響をかけ、鳴っている間は効果音を下げる
+      sfxBus = ac.createGain(); sfxBus.connect(master);
+      fanBus = ac.createGain(); fanBus.gain.value = 1; fanBus.connect(master);
+      const conv = ac.createConvolver(), len = ac.sampleRate * 2.2, ir = ac.createBuffer(2, len, ac.sampleRate);
+      for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+      conv.buffer = ir;
+      const wet = ac.createGain(); wet.gain.value = .32;
+      fanBus.connect(conv).connect(wet).connect(master);
+      ac.onstatechange = () => {
+        // interrupted は iPhone だけの状態。出口が変わったときなどに入る
+        if (!ac) return;
+        if (ac.state === 'interrupted' || ac.state === 'closed') needRebuild = true;
+        else if (ac.state === 'suspended') { try { ac.resume(); } catch (e) {} }
+      };
+    } catch (e) { return; }
+  }
+  if (ac.state !== 'running') { try { ac.resume(); } catch (e) {} }
+  if (!unlocked) {
+    const src = ac.createBufferSource(); src.buffer = ac.createBuffer(1, 1, 22050);
+    src.connect(ac.destination); src.start(0); unlocked = true;
+  }
+}
+const silent = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=');
+function unlockAudio() {
+  audioInit();
+  silent.play().catch(() => {});
+}
+['touchstart', 'touchend', 'pointerdown', 'pointerup', 'click', 'keydown'].forEach(ev => addEventListener(ev, unlockAudio, {passive: true, capture: true}));
+document.addEventListener('visibilitychange', () => { if (!document.hidden && ac && ac.state !== 'running') ac.resume(); });
+// 音の出口が変わったら作り直す（拾えるブラウザだけ）
+try { navigator.mediaDevices.addEventListener('devicechange', () => { needRebuild = true; unlockAudio(); }); } catch (e) {}
+
+let voices = 0;
+function voice(freq, dur, gain = .1, type = 'triangle', delay = 0) {
+  if (!ac || voices > 90) return;
+  if (ac.state !== 'running') {
+    if (ac.state === 'interrupted' || ac.state === 'closed') needRebuild = true;
+    try { ac.resume(); } catch (e) {}
+    return;
+  }
+  const t = ac.currentTime + delay;
+  [[1, gain], [2, gain * .35], [4.01, gain * .12]].forEach(([mul, g]) => {
+    const o = ac.createOscillator(), v = ac.createGain();
+    o.type = mul === 1 ? type : 'sine'; o.frequency.value = freq * mul;
+    v.gain.setValueAtTime(0, t); v.gain.linearRampToValueAtTime(g, t + .004);
+    v.gain.exponentialRampToValueAtTime(.0001, t + dur * (mul > 1 ? .4 : 1));
+    o.connect(v).connect(sfxBus); o.start(t); o.stop(t + dur + .02);
+    voices++; o.onended = () => voices--;
+  });
+}
+function noise(dur, gain = .15, freq = 900) {
+  if (!ac || ac.state !== 'running') return;
+  const len = Math.floor(ac.sampleRate * dur), buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  src.buffer = buf; f.type = 'bandpass'; f.frequency.value = freq; g.gain.value = gain;
+  src.connect(f).connect(g).connect(sfxBus); src.start();
+}
+const PENTA = [0, 2, 4, 7, 9];
+function note(n) {
+  const i = Math.min(Math.max(n, 1) - 1, 14);
+  return 392 * Math.pow(2, (12 * Math.floor(i / 5) + PENTA[i % 5] + (E.fever ? 5 : 0)) / 12);
+}
+let lastDot = 0, collectCombo = 0, lastCollect = 0;
+
+// ---------- 1回の放出で100点ごとの節目の音 ----------
+// 100〜500はハ長調（I→IV→V→vi→V7）で盛り上げ、600で全音上のニ長調へ転調して
+// さらに持ち上げ、900のA7から1000でニ長調の主和音に解決する。
+// 段階が上がるほど音数・速さ・層（低音→きらめき→うねり→太鼓）が増える。
+const MILESTONES = [
+  {root: 0, chord: [0, 4, 7]},       // 100 C
+  {root: 5, chord: [0, 4, 7]},       // 200 F
+  {root: 7, chord: [0, 4, 7]},       // 300 G
+  {root: 9, chord: [0, 3, 7]},       // 400 Am
+  {root: 7, chord: [0, 4, 7, 10]},   // 500 G7
+  {root: 2, chord: [0, 4, 7]},       // 600 D（転調）
+  {root: 7, chord: [0, 4, 7, 9]},    // 700 G6
+  {root: 11, chord: [0, 3, 7]},      // 800 Bm
+  {root: 9, chord: [0, 4, 7, 10]},   // 900 A7
+  {root: 14, chord: [0, 4, 7, 14]},  // 1000 D（1オクターブ上で解決）
+];
+const hz = semi => 261.63 * Math.pow(2, semi / 12);
+function sweep(dur, gain, from, to, delay = 0) {
+  if (!ac || ac.state !== 'running') return;
+  const t = ac.currentTime + delay, len = Math.floor(ac.sampleRate * dur);
+  const buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  src.buffer = buf; f.type = 'bandpass'; f.Q.value = 3;
+  f.frequency.setValueAtTime(from, t); f.frequency.exponentialRampToValueAtTime(to, t + dur);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + dur * .85); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  src.connect(f).connect(g).connect(fanBus); src.start(t); src.stop(t + dur);
+}
+function kick(delay = 0, gain = .35) {
+  if (!ac || ac.state !== 'running') return;
+  const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+  o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(45, t + .22);
+  g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(.0001, t + .3);
+  o.connect(g).connect(fanBus); o.start(t); o.stop(t + .32);
+}
+// ---------- 節目専用の楽器 ----------
+// ブラス：少しずらした2本のノコギリ波を、フィルターを開きながら鳴らす（金管っぽい「パーッ」）
+function brass(freq, dur, gain = .1, delay = 0) {
+  if (!ac || ac.state !== 'running') return;
+  const t = ac.currentTime + delay;
+  const f = ac.createBiquadFilter(), v = ac.createGain();
+  f.type = 'lowpass'; f.Q.value = 2;
+  f.frequency.setValueAtTime(350, t);
+  f.frequency.exponentialRampToValueAtTime(Math.min(6000, freq * 7), t + .06);
+  f.frequency.exponentialRampToValueAtTime(Math.min(3000, freq * 3.5), t + dur);
+  v.gain.setValueAtTime(.0001, t);
+  v.gain.exponentialRampToValueAtTime(gain, t + .03);
+  v.gain.setValueAtTime(gain, t + Math.max(.04, dur - .08));
+  v.gain.exponentialRampToValueAtTime(.0001, t + dur + .12);
+  // ビブラート
+  const lfo = ac.createOscillator(), depth = ac.createGain();
+  lfo.frequency.value = 5.5; depth.gain.setValueAtTime(0, t); depth.gain.linearRampToValueAtTime(freq * .006, t + Math.min(.3, dur));
+  lfo.connect(depth);
+  [-7, 7].forEach(cents => {
+    const o = ac.createOscillator();
+    o.type = 'sawtooth'; o.frequency.value = freq; o.detune.value = cents;
+    depth.connect(o.frequency);
+    o.connect(f); o.start(t); o.stop(t + dur + .15);
+  });
+  const sub = ac.createOscillator(), sg = ac.createGain();
+  sub.type = 'square'; sub.frequency.value = freq / 2; sg.gain.value = .25;
+  sub.connect(sg).connect(f); sub.start(t); sub.stop(t + dur + .15);
+  lfo.start(t); lfo.stop(t + dur + .15);
+  f.connect(v).connect(fanBus);
+}
+// ベル：FM合成の金属的な「キーン」。きらめき用
+function bell(freq, dur, gain = .05, delay = 0) {
+  if (!ac || ac.state !== 'running') return;
+  const t = ac.currentTime + delay;
+  const car = ac.createOscillator(), mod = ac.createOscillator(), mg = ac.createGain(), v = ac.createGain();
+  car.frequency.value = freq; mod.frequency.value = freq * 3.5;
+  mg.gain.setValueAtTime(freq * 2.2, t); mg.gain.exponentialRampToValueAtTime(freq * .05, t + dur);
+  mod.connect(mg).connect(car.frequency);
+  v.gain.setValueAtTime(gain, t); v.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  car.connect(v).connect(fanBus);
+  car.start(t); mod.start(t); car.stop(t + dur); mod.stop(t + dur);
+}
+// 歓声：大勢の「わー」と拍手を重ねる。どちらもノイズから作る
+// 「わー」＝声の帯（500〜1500Hz）のノイズを、ばらばらの速さで揺らして人数を出す
+// 拍手  ＝ごく短いノイズの粒を1秒に数百発ばらまく。粒が重なって「パチパチ」になる
+function cheer(dur = 2.6, gain = .2) {
+  if (!ac || ac.state !== 'running') return;
+  const t = ac.currentTime, sr = ac.sampleRate, len = Math.floor(sr * dur);
+
+  // ---- 「わー」----
+  const vb = ac.createBuffer(2, len, sr);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = vb.getChannelData(ch);
+    let lp = 0;
+    // 速さの違う揺れを8本重ねる＝8人ぶんの声の波。数が増えるほど「大勢」に聞こえる
+    const w = Array.from({length: 8}, () => ({f: 2.5 + Math.random() * 11, p: Math.random() * 6.283, a: .1 + Math.random() * .2}));
+    for (let i = 0; i < len; i++) {
+      lp += (Math.random() * 2 - 1 - lp) * .42;
+      const sec = i / sr;
+      let wob = 1;
+      for (const o of w) wob += Math.sin(sec * o.f * 6.283 + o.p) * o.a;
+      d[i] = lp * wob;
+    }
+  }
+  const vs = ac.createBufferSource(), vf = ac.createBiquadFilter(), vo = ac.createBiquadFilter(), vg = ac.createGain();
+  vs.buffer = vb;
+  vf.type = 'bandpass'; vf.Q.value = .6;
+  vf.frequency.setValueAtTime(600, t);
+  vf.frequency.exponentialRampToValueAtTime(1500, t + .4);
+  vf.frequency.exponentialRampToValueAtTime(900, t + dur);
+  vo.type = 'peaking'; vo.frequency.value = 1050; vo.Q.value = 1.1; vo.gain.value = 7;  // 「あ」に寄せる
+  vg.gain.setValueAtTime(.0001, t);
+  vg.gain.exponentialRampToValueAtTime(gain, t + .28);
+  vg.gain.setValueAtTime(gain, t + dur * .4);
+  vg.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  vs.connect(vf).connect(vo).connect(vg).connect(fanBus);
+  vs.start(t); vs.stop(t + dur);
+
+  // ---- 拍手 ----
+  const ab = ac.createBuffer(2, len, sr);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = ab.getChannelData(ch);
+    const shots = Math.floor(dur * 420);
+    for (let k = 0; k < shots; k++) {
+      const at = Math.random() * dur;
+      // はじめはまばら、すぐ密に、終わりに向かって減る
+      const dens = at < .18 ? at / .18 : at > dur * .55 ? Math.max(.12, 1 - (at - dur * .55) / (dur * .45)) : 1;
+      if (Math.random() > dens) continue;
+      const st = Math.floor(at * sr), n = Math.floor(sr * (.005 + Math.random() * .009)), amp = .2 + Math.random() * .8;
+      for (let i = 0; i < n && st + i < len; i++) d[st + i] += (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.6) * amp;
+    }
+  }
+  const as = ac.createBufferSource(), ah = ac.createBiquadFilter(), al = ac.createBiquadFilter(), ag = ac.createGain();
+  as.buffer = ab;
+  ah.type = 'highpass'; ah.frequency.value = 900;
+  al.type = 'lowpass'; al.frequency.value = 7000;
+  ag.gain.setValueAtTime(.0001, t);
+  ag.gain.exponentialRampToValueAtTime(gain * .85, t + .22);
+  ag.gain.setValueAtTime(gain * .85, t + dur * .55);
+  ag.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  as.connect(ah).connect(al).connect(ag).connect(fanBus);
+  as.start(t); as.stop(t + dur);
+}
+// 台をぜんぶ赤くしたときのファンファーレ。節目の音よりも長く、層を厚くする
+function fanfarePerfect() {
+  duck(2.6);
+  const C = 261.63, n = sp => C * Math.pow(2, sp / 12);
+  [[0, 0], [4, .09], [7, .18], [12, .27]].forEach(([sp, d]) => brass(n(sp), .52, .11, d));
+  [[12, .52], [16, .62], [19, .74], [24, .86]].forEach(([sp, d]) => brass(n(sp), .62, .1, d));
+  [24, 19, 12].forEach((sp, i) => brass(n(sp), 1.5, .11 - i * .02, 1.08));
+  [12, 17, 22, 26, 29, 33, 36, 40].forEach((sp, i) => bell(n(sp), .95, .05, i * .13));
+  [0, .27, .54, .86, 1.08].forEach(d => kick(d, .42));
+  sweep(.55, .22, 380, 5200, 1.0);
+}
+// 節目の音が鳴っている間、ほかの効果音を小さくする
+function duck(dur) {
+  if (!sfxBus) return;
+  const t = ac.currentTime;
+  sfxBus.gain.cancelScheduledValues(t);
+  sfxBus.gain.setTargetAtTime(.18, t, .015);
+  sfxBus.gain.setTargetAtTime(1, t + dur, .2);
+}
+function playMilestone(level) {
+  const m = MILESTONES[level - 1], L = level;
+  const octave = L >= 6 ? 12 : 0;
+  const notes = Math.min(9, 3 + L);                 // 100は3音、1000は9音
+  const step = Math.max(.042, .085 - L * .0045);    // 段階が上がるほど速く
+  const base = m.root + octave;
+  // 1. 駆け上がるアルペジオ（ブラス）
+  let last = 0;
+  for (let i = 0; i < notes; i++) {
+    const semi = base + m.chord[i % m.chord.length] + 12 * Math.floor(i / m.chord.length);
+    last = semi;
+    brass(hz(semi), Math.max(.07, step * .9), .075, i * step);
+  }
+  const end = notes * step;
+  // 2. 最後に和音を長く伸ばす（ブラスの合奏）
+  const hold = .45 + L * .08;
+  m.chord.forEach(c => brass(hz(base + c), hold, .05, end));
+  brass(hz(last), hold, .06, end);
+  duck(end + hold + .2);
+  // 3. 300〜：低音で支える
+  if (L >= 3) brass(hz(base - 12), hold + .1, .06, end);
+  // 4. 500〜：高いきらめきが降ってくる
+  if (L >= 5) for (let i = 0; i < 5; i++) bell(hz(last + 12 - [0, 3, 5, 7, 12][i]), .9, .045, end + .05 + i * .07);
+  // 5. 700〜：うねりが盛り上がってから着地
+  if (L >= 7) sweep(end + .05, .12, 400, 5000);
+  // 6. 900〜：同じ和音をもう一段、倍速で重ねる
+  if (L >= 9) for (let i = 0; i < 6; i++) bell(hz(base + m.chord[i % m.chord.length] + 24), .5, .035, end + .1 + i * step * .6);
+  // 7. 1000：太鼓とシンバルで締める
+  if (L >= 10) {
+    [0, .12, .24].forEach(d => kick(d, .3));
+    kick(end, .45); sweep(.9, .18, 6000, 2500, end);
+    [0, 4, 7, 12, 16, 19, 24].forEach((c, i) => bell(hz(base + c + 12), 1.8, .035, end + .02 + i * .03));
+    brass(hz(base - 12), 1.4, .07, end);
+  }
+}
+let shotMilestone = 0;
+// 節目の色：100〜400は赤、600〜900は青、500と1000は赤・黄・青が高速で入れ替わる
+const CYCLE = ['#D7141F', '#EAA83A', '#2456B8'];
+const isCycle = L => L === 5 || L === 10;
+const milestoneColor = L => isCycle(L) ? 'cycle' : L >= 6 ? '#2456B8' : '#D7141F';
+const cycleColor = t => CYCLE[Math.floor(t * 12) % 3];
+const resolveColor = (c, t) => c === 'cycle' ? cycleColor(t) : c;
+// 数字ドンが出ている強さ（0〜1）。背景の数字はこの分だけ消す
+function milestoneVisible() {
+  const m = milestoneFx;
+  if (!m || m.t > 1.1) return 0;
+  return m.t < .08 ? m.t / .08 : m.t > .8 ? Math.max(0, 1 - (m.t - .8) / .3) : 1;
+}
+function drawMilestone() {
+  const m = milestoneFx;
+  if (!m || m.t > 1.1) return;
+  const f = field(), cy = (f.top + f.bottom) / 2 - 10;
+  // ドン：大きく入ってから少し縮む
+  const inK = Math.min(1, m.t / .12);
+  const sc = m.t < .12 ? 2.4 - 1.4 * ease(inK) : m.t < .22 ? 1 + .08 * Math.sin((m.t - .12) / .1 * Math.PI) : 1;
+  const alpha = m.t > .8 ? 1 - (m.t - .8) / .3 : 1;
+  const col = resolveColor(m.color, m.t);
+  ctx.save();
+  ctx.translate(LW / 2, cy); ctx.scale(sc, sc);
+  ctx.globalAlpha = Math.max(0, alpha);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const size = m.level >= 10 ? 130 : 150;
+  ctx.font = `700 ${size}px ${FONT}`;
+  // 影でくっきり
+  ctx.fillStyle = 'rgba(28,23,22,.55)'; ctx.fillText(m.level * 100, 4, 6);
+  ctx.fillStyle = col; ctx.fillText(m.level * 100, 0, 0);
+  ctx.font = `700 14px ${FONT}`;
+  ctx.fillText('POINTS', 0, size * .55);
+  ctx.restore();
+}
+function checkMilestone() {
+  const value = Math.max(E.pot, E.shotScore || 0);
+  const reached = Math.min(10, Math.floor(value / 100));
+  if (reached > shotMilestone) {
+    shotMilestone = reached;
+    playMilestone(reached);
+    potPulse = 1.5;
+    buzzPattern(Math.min(5, 1 + Math.floor(reached / 2)), 70);
+    const color = milestoneColor(reached);
+    milestoneFx = {level: reached, t: 0, color};
+    edge = {color, t: 0, width: 14 + reached * 2 + (isCycle(reached) ? 8 : 0)};
+    shake = Math.max(shake, .2 + reached * .04);
+    hitStop = Math.max(hitStop, .06 + reached * .01);
+  }
+}
+
+// ---------- 画面上部の持ち玉の位置（論理座標） ----------
+function moneyTarget() {
+  const r = $('money').getBoundingClientRect();
+  return {x: (r.right - 16 - ox) / scale, y: (r.top + r.height / 2) / scale};
+}
+function sendBalls(n, x, y, color) {
+  for (let i = 0; i < n; i++) flyers.push({kind: 'ball', x0: x, y0: y, t: -i * .09, color, arc: (Math.random() - .5) * 60});
+}
+function scoreTarget() {
+  const r = $('points').getBoundingClientRect();
+  return {x: (r.right - 30 - ox) / scale, y: (r.top + r.height / 2) / scale};
+}
+function sendScore(value, x, y, color) {
+  flyers.push({kind: 'score', value, x0: x, y0: y, t: -.35, color, arc: (Math.random() - .5) * 40});
+}
+
+// ---------- チュートリアル ----------
+// 台・受け皿・玉数・クリア条件をデータとして持つ。順番に1つずつやっていく。
+//   seed    … 台の種。同じ数字なら毎回まったく同じ台が出る
+//   conf    … その台だけの数字（受け皿・■青▲の数・持ち玉など）
+//   clear   … クリア条件。種類は stepState() にある9つ
+// あとで作る挑戦系のミッションも、同じ形のデータと同じ仕組みで動かせる
+const M_SLOT_EASY = [1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3];
+const M_B_NONE = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]];
+const M_B_PLUS = [[0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2]];
+// 文章では言わず、形と色で言う。<i> は色つきの印
+const R = t => `<i style="color:#D7141F">${t}</i>`, Y = t => `<i style="color:#EAA83A">${t}</i>`,
+      BL = t => `<i style="color:#2456B8">${t}</i>`;
+// title … 一覧と画面の上に出す「やること」。形と色は残す
+// hint  … はじめに帯で1回だけ出す、ひとことの説明
+const STEPS = [
+  {id: 'shot', title: '玉を打つ', hint: '画面を引っ張って、はなす', seed: 11, layout: 0,
+   conf: {START: 3, STAGE_B: M_B_NONE}, clear: {type: 'shots', n: 1}},
+  {id: 'mult3', title: Y('×3') + ' に入れる', hint: '入ると、スコアが3倍になる', seed: 23, layout: 2,
+   conf: {START: 5, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'mult', m: 3}},
+  {id: 'gain', title: '持ち玉を増やす', hint: '● の数だけ持ち玉が戻ってくる', seed: 31, layout: 0,
+   conf: {START: 4, STAGE_B: M_B_PLUS}, clear: {type: 'gain', n: 3}},
+  {id: 'square', title: R('■') + ' に当てる', hint: '赤い四角は強くはね返す', seed: 5, layout: 0,
+   conf: {START: 4, SQUARES: 8, BLUES: 0, TRIS: 0, STAGE_B: M_B_NONE}, clear: {type: 'hit', kind: 'square', n: 1}},
+  {id: 'blue', title: BL('●') + ' につかまる', hint: '青い円は玉をつかまえて放す', seed: 7, layout: 0,
+   conf: {START: 4, SQUARES: 0, BLUES: 8, TRIS: 0, STAGE_B: M_B_NONE}, clear: {type: 'hit', kind: 'blue', n: 1}},
+  {id: 'tri5', title: Y('▲') + ' で玉を5つにする', hint: '黄色い三角に当たると3つに分かれる', seed: 13, layout: 0,
+   conf: {START: 5, SQUARES: 0, BLUES: 0, TRIS: 8, STAGE_B: M_B_NONE}, clear: {type: 'balls', n: 5}},
+  {id: 'p100', title: '1回で100点', hint: 'たくさん当てるほどポイントが増える', seed: 17, layout: 0,
+   conf: {START: 6, SQUARES: 4, TRIS: 6, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'shotScore', n: 100}},
+  {id: 'fever', title: 'フィーバーに入る', hint: 'ポイントがたまると入れる', seed: 19, layout: 2,
+   conf: {START: 8, SQUARES: 4, TRIS: 6, SLOT_M: M_SLOT_EASY, STAGE_B: M_B_NONE}, clear: {type: 'fever'}},
+];
+// 押せることを表す右向きの矢印。チェックと同じ描き方で太さをそろえる
+const ARROW = size =>
+  `<svg class="arrow" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">` +
+  `<path d="M9 4.6 L16.4 12 L9 19.4" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="miter"/></svg>`;
+// できた印のチェック。線の太さを数字に合わせて、角は落とさない
+const CHECK = (size, ng) =>
+  `<svg class="check${ng ? ' ng' : ''}" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">` +
+  `<path d="M3.5 12.4 L9.6 18.5 L20.5 5.6" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="miter"/></svg>`;
+const MAX_SHOTS = 25;        // 玉が戻り続けても、これで終わり
+let stepIdx = 0, cleared = [], mProg = null;
+const curStep = () => STEPS[stepIdx];
+try { const r = store.get('dotdrop-tutorial'); if (r) cleared = JSON.parse(r.value); } catch (e) {}
+const isCleared = id => cleared.indexOf(id) >= 0;
+// タイトルのボタンの中に出す、8つの進み具合
+function tutDots() {
+  $('tutDots').innerHTML = STEPS.map(m => `<b class="${isCleared(m.id) ? 'on' : ''}"></b>`).join('');
+}
+function renderTutList() {
+  $('tlistRows').innerHTML = STEPS.map((m, i) => {
+    const done = isCleared(m.id);
+    return `<button data-i="${i}" class="${done ? 'done' : ''}">` +
+      `<b>${i + 1}</b><span>${m.title}</span>${done ? CHECK(20) : '<span></span>'}</button>`;
+  }).join('');
+  [...$('tlistRows').children].forEach(b => b.addEventListener('click', () => {
+    unlockAudio();
+    stepIdx = +b.dataset.i;
+    $('tlist').classList.remove('show'); $('start').classList.remove('show');
+    running = true;
+    reset(TUTORIAL);
+  }));
+}
+function openTutList() { renderTutList(); $('tlist').classList.add('show'); }
+
+// いまの達成度を［いくつ / いくつ］で返す
+function stepState() {
+  const c = curStep().clear;
+  if (c.type === 'shots')     return [mProg.shots, c.n];
+  if (c.type === 'hit')       return [mProg.hits[c.kind] || 0, c.n];
+  if (c.type === 'mult')      return [mProg.maxMult >= c.m ? 1 : 0, 1];
+  if (c.type === 'gain')      return [mProg.gained, c.n];
+  if (c.type === 'balls')     return [mProg.maxBalls, c.n];
+  if (c.type === 'shotScore') return [mProg.bestShot, c.n];
+  if (c.type === 'score')     return [score, c.n];
+  if (c.type === 'fever')     return [mProg.fever ? 1 : 0, 1];
+  if (c.type === 'survive')   return [mProg.shots, c.n];
+  return [0, 1];
+}
+function stepHud(bumpIt) {
+  const [now, goal] = stepState(), done = now >= goal;
+  $('mKicker').textContent = `あそびかた ${stepIdx + 1} / ${STEPS.length}`;
+  $('mTitle').innerHTML = curStep().title;
+  $('mProg').textContent = goal === 1 ? (done ? '●' : '') : `${Math.min(now, goal)} / ${goal}`;
+  $('mProg').classList.toggle('done', done);
+  if (bumpIt) bump('mProg');
+}
+
+// ---------- モード ----------
+// フリープレイとチュートリアルで違うのは「使う数字」「1回打ち終わったあと」「何で終わるか」の3つだけ。
+// 画面・音・振動は両方とも同じものを使う
+const FREE = {
+  conf: () => null,
+  start() { E.boardSeed = null; setLayout(0, false); },
+  shotEnd() {
+    const newShot = bumpRecord('shotScore', E.shotScore);
+    const newBalls = bumpRecord('shotBalls', shotBallsMax);
+    bumpRecord('shotHits', E.hitCount);
+    renderRecords('startRecords', false);
+    if (newShot && shots > 1) setTimeout(() => banner('BEST', `1回の最高スコアを更新 ${E.shotScore}`, '#F2F1EE'), 500);
+    else if (newBalls && shots > 1) setTimeout(() => banner('×' + shotBallsMax, '1回で増えた玉の最多記録', '#EAA83A'), 500);
+    gameBestShot = Math.max(gameBestShot, E.shotScore);
+    boardShots++;
+    if (boardShots >= SHOTS_PER_BOARD) {
+      boardShots = 0;
+      let next; do { next = Math.random() * LAYOUTS | 0; } while (next === E.layout);
+      setLayout(next, true);
+      const before = stageB();
+      E.stage++;
+      bumpRecord('stage', E.stage + 1);
+      const after = stageB();
+      const changed = before.map((v, i) => v !== after[i] ? i : -1).filter(i => i >= 0);
+      slotFlash = changed.length ? {t: 0, slots: changed} : null;
+      setTimeout(() => banner(`STAGE ${E.stage + 1}`, 'ステージが上がりました', '#F2F1EE'), 900);
+      stageHud(true);
+    } else pickGold();
+    stageHud(false);
+  },
+  isOver: () => money < COST,
+  over: () => gameOver(),
+};
+const TUTORIAL = {
+  conf: () => ({...curStep().conf, PERFECT: 0}),
+  start() {
+    const m = curStep();
+    mProg = {shots: 0, hits: {}, maxMult: 0, gained: 0, maxBalls: 1, bestShot: 0, fever: false, cleared: false};
+    E.boardSeed = m.seed;
+    setLayout(m.layout || 0, false);
+    stepHud(false);
+    // ひとことの説明は帯で1回だけ。画面は隠さない
+    setTimeout(() => banner(String(stepIdx + 1), m.hint, '#F2F1EE'), 250);
+  },
+  hit(kind) { mProg.hits[kind] = (mProg.hits[kind] || 0) + 1; },
+  land(b, v) {
+    if (b.pts > 0) mProg.maxMult = Math.max(mProg.maxMult, b.mult);
+    if (v > 0) mProg.gained += v;
+  },
+  shotEnd() {
+    mProg.shots = shots;
+    mProg.bestShot = Math.max(mProg.bestShot, E.shotScore || 0);
+    mProg.maxBalls = Math.max(mProg.maxBalls, shotBallsMax);
+    if (E.fever) mProg.fever = true;
+    pickGold();
+    const [now, goal] = stepState();
+    if (!mProg.cleared && now >= goal) {
+      mProg.cleared = true;
+      banner('CLEAR', '', '#D7141F');
+      [0, 4, 7, 12].forEach((sp, k) => voice(note(6) * Math.pow(2, sp / 12), .35, .07, 'square', k * .07));
+      buzzPattern(3, 80);
+    }
+    stepHud(true);
+  },
+  isOver: () => mProg.cleared || money < COST || shots >= MAX_SHOTS,
+  over: () => stepOver(),
+};
+let mode = FREE;
+
+function stepOver() {
+  if ($('mover').classList.contains('show')) return;
+  const ok = mProg.cleared;
+  if (ok && !isCleared(curStep().id)) {
+    cleared.push(curStep().id);
+    store.set('dotdrop-tutorial', JSON.stringify(cleared));
+  }
+  tutDots();
+  const last = stepIdx >= STEPS.length - 1, toNext = ok && !last;
+  $('mResMark').innerHTML = CHECK(76, !ok);
+  $('mResText').textContent = ok ? 'CLEAR' : '玉切れ';
+  // どこまで来たかを8つの丸で
+  $('mDots').innerHTML = STEPS.map(m => `<i class="${isCleared(m.id) ? 'on' : ''}"></i>`).join('');
+  // つぎに何をするのかを、ボタン自体に書く
+  $('mNextLabel').style.display = toNext ? '' : 'none';
+  $('mNextRow').style.display = toNext ? '' : 'none';
+  // つぎのやることは、一覧の行と同じ形で見せる。この行を押すと進む
+  if (toNext) $('mNextRow').innerHTML =
+    `<b>${stepIdx + 2}</b><span>${STEPS[stepIdx + 1].title}</span>${ARROW(22)}`;
+  $('mRetry').style.display = ok ? 'none' : '';
+  $('mPlay').style.display = ok && last ? '' : 'none';
+  $('mover').classList.add('show');
+}
+
+// ---------- ゲームのフック ----------
+E.hooks.hit = (p, b, n, force, kind, pts) => {
+  if (mode.hit) mode.hit(kind);
+  waves.push({x: p.x, y: p.y, t: 0, big: kind !== 'dot'});
+  potPulse = 1;
+  if (!E.fever) gauge += pts;
+  if (kind === 'dot') {
+    const now = performance.now();
+    if (now - lastDot > 28) { lastDot = now; voice(note(n), .3, Math.min(.12, .05 + force / 9000)); }
+    buzz(6);
+  }
+  if (kind === 'square') {
+    voice(note(n) / 2, .18, .12, 'square'); noise(.06, .2, 2400); voice(note(n), .3, .08);
+    hitStop = Math.max(hitStop, .05); shake = Math.max(shake, .2); buzz(14, 0);
+  }
+  if (kind === 'blue') { voice(note(n), .8, .1, 'sine'); voice(note(n) * 1.5, .8, .06, 'sine', .08); buzz(10, 0); }
+  if (kind === 'tri') {
+    const count = E.balls.length;
+    [0, 4, 7, 12].forEach((s, k) => voice(note(Math.min(count, 15)) * Math.pow(2, s / 12), .35, .08, 'triangle', k * .04));
+    noise(.08, .12, 4000);
+    hitStop = Math.max(hitStop, count >= 9 ? .1 : .06); shake = Math.max(shake, Math.min(.6, .2 + count * .02));
+    buzzPattern(2, 50);
+    if (count >= 9) slowPulse = .35;
+    if (count >= MAX_BALLS && !E.maxShown) { E.maxShown = true; banner('×' + MAX_BALLS, '玉が最大まで増えました', '#EAA83A'); buzzPattern(5, 60); }
+    const tris = E.pegs.filter(q => q.kind === 'tri');
+    if (!triBonus && tris.length === TRIS && tris.every(q => q.triHit)) {
+      triBonus = true;
+      banner('▲▲▲', '3つとも当てて +3玉', '#EAA83A');
+      sendBalls(3, LW / 2, (field().top + field().bottom) / 2, SHAPE.tri());
+      buzzPattern(4, 70);
+    }
+  }
+  if (pts > 1) floaters.push({x: p.x, y: p.y - 16, text: '+' + pts, t: 0, color: kind === 'blue' ? '#7FA2EC' : SHAPE[kind]()});
+  if (n % 10 === 0) { hitStop = Math.max(hitStop, .05); shake = Math.max(shake, .15); }
+  if (gauge >= FEVER_AT && !E.fever) E.feverReady = true;
+};
+// 台の釘を1つ残らず当てた。いちばん大きい演出
+E.hooks.perfect = bonus => {
+  perfectFx = {t: 0};
+  hitStop = Math.max(hitStop, .45);
+  shake = Math.max(shake, 1.1);
+  edge = {color: 'cycle', t: 0, width: 44};
+  banner('PERFECT', `ドットをすべて赤くした +${bonus}`, '#D7141F');
+  fanfarePerfect();
+  cheer();
+  buzzPattern(8, 95);
+};
+E.hooks.release = p => { voice(note(12), .15, .08, 'triangle'); p.pulse = 1; buzz(6, 0); };
+E.hooks.land = (b, v) => {
+  if (mode.land) mode.land(b, v);
+  const top = slotTop(), m = b.mult, gain = b.gain;
+  catches.push({slot: b.slot, m, t: 0});
+  bumpRecord('ballGain', gain);
+  if (m > 0 && b.pts > 0) {
+    // 「12×3」を見せてから、スコアへ吸い込ませる
+    floaters.push({x: b.x, y: top - 22, text: `${b.pts}×${m}`, t: 0, color: multColor(m), big: true, life: .5});
+    sendScore(gain, b.x, top - 22, multColor(m));
+    voice(note(4 + m), .18, .1, 'square'); noise(.04, .12, 3000);
+    hitStop = Math.max(hitStop, m >= 5 ? .14 : .05);
+    if (m >= 5) { shake = Math.max(shake, .45); buzzPattern(3, 60); edge = {color: '#D7141F', t: 0}; } else buzz(12, 0);
+  } else {
+    floaters.push({x: b.x, y: top - 22, text: '×0', t: 0, color: pal().dim, big: true, life: .7});
+    voice(150, .14, .08, 'sine'); noise(.05, .06, 400);
+  }
+  if (v > 0) {
+    floaters.push({x: b.x, y: top - 50, text: `+${v}玉`, t: 0, color: pal().text, life: .9});
+    sendBalls(v, b.x, top, pal().ball);
+  } else if (v < 0) {
+    // 持ち玉から1つ抜けて、受け皿へ落ちていく
+    const lose = Math.min(-v, money);
+    if (lose > 0) {
+      money -= lose; moneyRoll.set(money); bump('money');
+      const from = moneyTarget();
+      for (let i = 0; i < lose; i++) flyers.push({kind: 'minus', x0: from.x, y0: from.y, tx: b.x, ty: top + 20, t: -i * .08, color: '#D7141F', arc: 0});
+    }
+    floaters.push({x: b.x, y: top - 50, text: `−${-v}`, t: 0, color: '#D7141F', big: true, life: 1});
+    if (-v >= 3) { edge = {color: '#D7141F', t: 0}; shake = Math.max(shake, .45); }
+    voice(110, .35, .12, 'sawtooth'); noise(.15, .12, 250);
+    shake = Math.max(shake, .25); buzzPattern(2, 90);
+  }
+};
+E.hooks.shotEnd = () => {
+  feverStep();
+  mode.shotEnd();
+  hud();
+  checkOver();
+};
+// フィーバーの出入りは両モード共通
+function feverStep() {
+  if (E.fever) {
+    feverLeft--;
+    if (feverLeft <= 0) { E.fever = false; gauge = 0; }
+  } else if (gauge >= FEVER_AT) {
+    E.fever = true; feverLeft = FEVER_SHOTS;
+    banner('FEVER', `${FEVER_SHOTS}回、ポイント2倍・玉が減らない`, '#D7141F');
+    [0, 4, 7, 12, 16, 19, 24].forEach((sp, k) => voice(note(1) * Math.pow(2, sp / 12), .4, .07, 'square', k * .06));
+    buzzPattern(4, 80);
+  }
+}
+
+// 画面を隠さない帯の演出＋画面のふちが光る
+let bannerState = null;
+function banner(word, sub, color) {
+  bannerState = {word, sub, color, t: 0};
+  edge = {color, t: 0};
+}
+// 引いている間の狙い（進む方向の軌道と、引いた側のパワーの弧）
+function drawAim() {
+  const L = LAUNCH, P = pal();
+  const [vx, vy] = launchVelocity(pullX, pullY, true);
+  // 軌道：細かい丸の点線（進む方向）
+  ctx.fillStyle = P.text;
+  for (let i = 1; i <= 10; i++) {
+    const t = i * .035, x = L.x + vx * t, y = L.y + vy * t + GRAV * t * t / 2;
+    ctx.globalAlpha = (1 - i / 11) * .7;
+    ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  // パワー：引いた側に弧が5本（電波マークのように広がる）。軌道と形がかぶらない
+  const base = Math.atan2(-vy, -vx), spread = .42;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < LEVELS; i++) {
+    const r = 17 + i * 8;
+    ctx.strokeStyle = i < level ? (level === LEVELS ? '#EAA83A' : '#D7141F') : P.peg;
+    ctx.lineWidth = i < level ? 3.5 : 2;
+    ctx.beginPath(); ctx.arc(L.x, L.y, r, base - spread, base + spread); ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+}
+// 発射前の玉。帯より手前に描くので、いつでも見える
+function drawLaunchBall() {
+  if (!canShoot()) return;
+  ctx.fillStyle = pal().ball;
+  ctx.beginPath(); ctx.arc(LAUNCH.x, LAUNCH.y, BR + level / LEVELS * 1.2, 0, 7); ctx.fill();
+}
+// 玉のまわりの飾りと、はじめの説明（帯より奥）
+function drawLaunch(top) {
+  if (!canShoot()) return;
+  const L = LAUNCH, P = pal();
+  if (level === 0 && !bannerUp()) {
+    ctx.strokeStyle = P.dim; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(L.x, L.y, BR + 8 + Math.sin(E.time * 3) * 1.5, 0, 7); ctx.stroke();
+    ctx.setLineDash([2, 5]);
+    ctx.beginPath(); ctx.arc(L.x, L.y, 34, Math.PI, 0); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  if (firstShot && mode !== TUTORIAL) {
+    ctx.fillStyle = P.text; ctx.globalAlpha = .7 + Math.sin(E.time * 3) * .2;
+    ctx.font = `500 13px ${FONT}`;
+    ctx.textAlign = 'center';
+    ctx.fillText('引っ張ってはなす', LW / 2, 188);
+    ctx.fillText('×は倍率　●は戻る玉　点線は減る玉', LW / 2, top - 30);
+    ctx.globalAlpha = 1;
+  }
+}
+// 帯が出ている間かどうか。出ている間は発射前の飾りを消して、上を静かにする
+const bannerUp = () => bannerState && bannerState.t < 1.5;
+// 帯の高さ。もとは画面の上端からの固定だったが、HUD はノッチのぶん下がるので、
+// ノッチのある端末ほど上が詰まっていた。帯も同じだけ下げる。
+// ただし下げすぎると釘（field().top = 200）に重なるので、26 で頭打ちにする
+let BANNER_Y = 116;
+const BANNER_H = 56, SUB_SIZE = 14;
+function drawBanner() {
+  const b = bannerState;
+  // FEVER の行だけは帯と同じ高さにあるので、帯が出ている間は消す
+  // （発射前の飾りと同じ扱い。数字と持ち玉／スコアの文字は帯に掛からない）
+  document.body.classList.toggle('banner-up', !!(b && b.t < 1.5));
+  if (!b || b.t > 1.5) return;
+  const t = b.t, off = t < .25 ? -LW * (1 - ease(t / .25)) : t > 1.2 ? LW * ease((t - 1.2) / .3) : 0;
+  const y = BANNER_Y, h = BANNER_H, mid = y + h / 2;
+  ctx.fillStyle = b.color; ctx.fillRect(off, y, LW, h);
+  const ink = b.color === '#F2F1EE' || b.color === '#EAA83A' || b.color === '#D7141F' ? '#1C1716' : '#F2F1EE';
+  ctx.fillStyle = ink;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  // 帯に収まるよう、見出しと説明の大きさを自動で合わせる。
+  // まず見出しを縮め、それでも入らなければ説明も縮める（長い説明が右で切れていた）
+  let size = 40, subSize = SUB_SIZE;
+  const total = () => {
+    ctx.font = `700 ${size}px ${FONT}`;
+    const w1 = ctx.measureText(b.word).width;
+    ctx.font = `700 ${subSize}px ${FONT}`;
+    return w1 + (b.sub ? ctx.measureText(b.sub).width : 0) + 62;
+  };
+  while (size > 20 && total() > LW) size -= 2;
+  while (subSize > 11 && total() > LW) subSize -= 1;
+  ctx.font = `700 ${size}px ${FONT}`;
+  ctx.fillText(b.word, off + 16, mid + 2);
+  const w = ctx.measureText(b.word).width;
+  if (b.sub) {
+    // 見出しと説明の間に細い区切りを1本。2つの役割が違うことが形で分かる
+    const x = off + 16 + w + 14;
+    ctx.globalAlpha = .28;
+    ctx.fillRect(x, y + 14, 1.5, h - 28);
+    ctx.globalAlpha = 1;
+    ctx.font = `700 ${subSize}px ${FONT}`;
+    ctx.fillText(b.sub, x + 14, mid + 1);
+  }
+  ctx.textAlign = 'center';
+}
+let overPending = false;
+function checkOver() {
+  if (overPending) return;
+  overPending = true;
+  setTimeout(() => {
+    overPending = false;
+    if (!mode.isOver()) return;
+    if (!E.balls.length && !flyers.length) mode.over(); else checkOver();
+  }, 900);
+}
+function gameOver() {
+  if ($('over').classList.contains('show')) return;
+  bumpRecord('gameScore', score); bumpRecord('peakMoney', peak);
+  const entry = {score, stage: E.stage + 1, shots, date: Date.now()};
+  const rank = addRanking(entry);
+  $('stStage').textContent = E.stage + 1;
+  $('stBest').textContent = gameBestShot;
+  const nr = $('newRank');
+  nr.textContent = rank === 0 && ranking.length > 1 ? 'NEW RECORD' : rank >= 0 ? `${rank + 1}位` : '';
+  nr.classList.toggle('show', rank >= 0);
+  nr.classList.toggle('top', rank === 0);
+  renderRanking('overRanking', entry, 5);
+  renderRecords('overRecords', true);
+  $('over').classList.add('show');
+  $('over').scrollTop = 0;
+  // 総合スコアを0からカウントアップ
+  const el = $('overScore'), t0 = performance.now(), dur = Math.min(1600, 400 + score * 2);
+  (function tick(now) {
+    const k = Math.min(1, (now - t0) / dur), v = Math.round(score * (1 - Math.pow(1 - k, 3)));
+    el.textContent = v;
+    if (k < 1) { if (Math.random() < .35) voice(1800 + k * 900, .02, .03, 'sine'); requestAnimationFrame(tick); }
+    else { voice(note(5), .3, .08, 'triangle'); voice(note(8), .4, .07, 'triangle', .08); if (rank === 0) playMilestone(Math.min(10, Math.max(3, Math.floor(score / 300)))); }
+  })(t0);
+}
+$('retry').addEventListener('click', () => { unlockAudio(); reset(FREE); });
+// タイトルへ戻る道。これがないと、遊び終わったあと「あそびかた」に行けない
+$('toTitle').addEventListener('click', () => {
+  unlockAudio();
+  running = false;
+  reset(FREE);
+  tutDots();
+  $('start').classList.add('show');
+});
+// 遊んでいる途中でリセットする。押し間違いがあるので、必ず一度たずねる
+const sheetEl = $('sheet'), sheetCard = $('sheetCard');
+function openSheet() { sheetEl.classList.add('show'); requestAnimationFrame(() => sheetEl.classList.add('in')); }
+function closeSheet() {
+  sheetEl.classList.remove('in');
+  setTimeout(() => sheetEl.classList.remove('show'), 240);
+}
+$('quitBtn').addEventListener('click', () => { unlockAudio(); openSheet(); });
+$('qBack').addEventListener('click', closeSheet);
+$('sheetScrim').addEventListener('click', closeSheet);   // 外側をタップしても閉じる
+$('qRetry').addEventListener('click', () => { unlockAudio(); closeSheet(); reset(mode); });
+$('qTitle').addEventListener('click', () => {
+  closeSheet();
+  running = false;
+  reset(FREE);
+  tutDots();
+  $('start').classList.add('show');
+});
+// 下にスワイプすると閉じる。指を離すまでは指についてくる
+let shStart = null, shDy = 0, shMoved = false;
+sheetCard.addEventListener('pointerdown', e => {
+  shStart = e.clientY; shDy = 0; shMoved = false;
+  sheetCard.style.transition = 'none';
+});
+addEventListener('pointermove', e => {
+  if (shStart === null) return;
+  shDy = Math.max(0, e.clientY - shStart);
+  if (shDy > 6) shMoved = true;
+  sheetCard.style.transform = `translateY(${shDy}px)`;
+});
+const shEnd = () => {
+  if (shStart === null) return;
+  const far = shDy > 70;
+  shStart = null;
+  sheetCard.style.transition = '';
+  sheetCard.style.transform = '';
+  if (far) closeSheet();
+  setTimeout(() => { shMoved = false; }, 60);
+};
+addEventListener('pointerup', shEnd);
+addEventListener('pointercancel', shEnd);
+// 引いたあとの指離しは、ボタンを押したことにしない
+sheetCard.addEventListener('click', e => {
+  if (shMoved) { e.stopPropagation(); e.preventDefault(); }
+}, true);
+$('tutBtn').addEventListener('click', () => { unlockAudio(); openTutList(); });
+$('tlistBack').addEventListener('click', () => { $('tlist').classList.remove('show'); });
+$('mNextRow').addEventListener('click', () => { unlockAudio(); stepIdx = Math.min(STEPS.length - 1, stepIdx + 1); reset(TUTORIAL); });
+$('mRetry').addEventListener('click', () => { unlockAudio(); reset(TUTORIAL); });
+// 最後まで終わったら、そのままフリープレイへ
+$('mPlay').addEventListener('click', () => { unlockAudio(); $('mover').classList.remove('show'); running = true; reset(FREE); });
+$('mQuit').addEventListener('click', () => {
+  $('mover').classList.remove('show');
+  document.body.classList.remove('tutorial');
+  running = false;
+  $('start').classList.add('show');
+  openTutList();
+});
+$('startBtn').addEventListener('click', () => { unlockAudio(); $('start').classList.remove('show'); running = true; reset(FREE); bestAtStart = personalBest(); bestHud(); voice(note(1), .2, .08); voice(note(3), .2, .08, 'triangle', .08); voice(note(5), .3, .08, 'triangle', .16); });
+
+function canShoot() {
+  return running && !E.balls.length && money >= COST &&
+    !$('over').classList.contains('show') && !$('mover').classList.contains('show');
+}
+function shoot() {
+  if (!canShoot() || level === 0) return;
+  money -= COST; shots++; firstShot = false; moneyRoll.set(money);
+  shotBallsMax = 1; E.maxShown = false; triBonus = false; shotShow = 0; shotMilestone = 0;
+  launch(...launchVelocity(pullX, pullY));
+  voice(880, .1, .08, 'triangle'); noise(.05, .1, 1500); buzz(10, 0);
+}
+
+// ---------- 引っ張り操作 ----------
+let lastStep = 0;
+// パワーは5段階。引いた距離で段階が決まり、方向はそのまま使う
+const LEVELS = 5;
+let level = 0;
+function setPull(dx, dy) {
+  const mag = Math.hypot(dx, Math.max(0, dy));
+  level = mag < 14 ? 0 : Math.min(LEVELS, Math.ceil(mag / (MAX_PULL / LEVELS)));
+  const len = Math.hypot(dx, dy) || 1, p = level / LEVELS * MAX_PULL;
+  pullX = dx / len * p; pullY = dy / len * p;
+  if (level !== lastStep) {
+    if (level > lastStep) { buzz(level === LEVELS ? 18 : 8, 0); voice(note(level * 2 + 1), .08, .08, level === LEVELS ? 'square' : 'triangle'); }
+    lastStep = level;
+  }
+}
+addEventListener('pointerdown', e => {
+  if (!canShoot() || e.target.closest('button') || e.target.closest('.overlay') || e.target.closest('.sheet')) return;
+  pulling = true; startX = e.clientX; startY = e.clientY; pullX = pullY = 0; lastStep = 0;
+});
+addEventListener('pointermove', e => {
+  if (!pulling) return;
+  setPull((e.clientX - startX) / scale, (e.clientY - startY) / scale);
+});
+const release = () => { if (!pulling) return; pulling = false; shoot(); pullX = pullY = 0; level = 0; lastStep = 0; };
+addEventListener('pointerup', release);
+addEventListener('pointercancel', release);
+document.addEventListener('touchmove', e => { if (!e.target.closest('.overlay') && !e.target.closest('.sheet')) e.preventDefault(); }, {passive: false});
+// PC：←→で角度、スペース長押しで強さ
+addEventListener('keydown', e => {
+  if (e.code === 'ArrowLeft') keyAim = Math.max(-1, keyAim - .1);
+  if (e.code === 'ArrowRight') keyAim = Math.min(1, keyAim + .1);
+  if (e.code !== 'Space' || e.repeat || !canShoot()) return;
+  e.preventDefault(); keyCharge = true; keyStart = performance.now();
+});
+addEventListener('keyup', e => {
+  if (e.code !== 'Space' || !keyCharge) return;
+  keyCharge = false; shoot(); pullX = pullY = 0; level = 0; lastStep = 0;
+});
+
+// ---------- 描画 ----------
+const ease = t => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
+function rrect(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); }
+function slotX(i) {
+  const u = ((i * SLOT_W + E.conveyor) % CONV_LEN + CONV_LEN) % CONV_LEN;
+  return u > LW + SLOT_W ? u - CONV_LEN : u;
+}
+
+function draw(dt) {
+  const P = pal();
+  bg = bg.map((c, i) => c + (P.bg[i] - c) * Math.min(1, dt * 5));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = `rgb(${bg.map(Math.round).join(',')})`;
+  ctx.fillRect(0, 0, innerWidth, innerHeight);
+  if (milestoneFx && milestoneFx.t < .35) {
+    // 背景の色が一瞬変わる
+    ctx.globalAlpha = (1 - milestoneFx.t / .35) * .55;
+    ctx.fillStyle = resolveColor(milestoneFx.color, milestoneFx.t);
+    ctx.fillRect(0, 0, innerWidth, innerHeight);
+    ctx.globalAlpha = 1;
+  }
+
+  const sx = shake > 0 ? (Math.random() - .5) * 14 * shake : 0, sy = shake > 0 ? (Math.random() - .5) * 14 * shake : 0;
+  ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * sy);
+  // 受け皿を画面の下まで流したいので、切り取りは画面の下端まで（横は台の幅のまま）
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, LW, screenH); ctx.clip();
+
+  const top = slotTop(), f = field(), cy = (f.top + f.bottom) / 2;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+
+  // ---- 光の柱（入った受け皿）----
+  for (const c of catches) {
+    if (c.m === 0) continue;
+    const x = slotX(c.slot), col = multColor(c.m);
+    const g = ctx.createLinearGradient(0, top, 0, top - 420);
+    g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.globalAlpha = (1 - ease(c.t)) * (shotBallsMax > 3 ? .25 : .5); ctx.fillStyle = g;
+    ctx.fillRect(x + 2, top - 420, SLOT_W - 4, 420);
+  }
+  ctx.globalAlpha = 1;
+
+  // ---- 今回のポイント（背景の大きな数字）----
+  potAlpha += ((E.balls.length ? 1 : 0) - potAlpha) * Math.min(1, dt * 3);
+  const bgNumAlpha = potAlpha * (1 - milestoneVisible());
+  if (bgNumAlpha > .01 && E.pot > 0) {
+    const landed = E.shotScore > 0;
+    ctx.globalAlpha = bgNumAlpha; ctx.fillStyle = P.big;
+    ctx.font = `700 ${(E.pot >= 100 ? 150 : 210) * (landed ? .5 : 1 + potPulse * .08)}px ${FONT}`;
+    ctx.fillText(Math.round(potShow), LW / 2, landed ? cy - 100 : cy);
+    if (landed) {
+      shotShow += (E.shotScore - shotShow) * Math.min(1, dt * 8);
+      ctx.fillStyle = E.fever ? '#1C1716' : '#F2F1EE'; ctx.globalAlpha = bgNumAlpha * .9;
+      ctx.font = `700 ${shotShow >= 1000 ? 110 : 150}px ${FONT}`;
+      ctx.fillText('+' + Math.round(shotShow), LW / 2, cy + 20);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ---- 発射前の飾りと、待っている玉（帯より奥に描く）----
+  // 帯は玉の位置を横切るので、ここで手前に描くと文字が玉で隠れて読めない。
+  // 引きはじめたら下で手前に描き直すので、狙っている間は玉が隠れることはない
+  drawLaunch(top);
+  if (level === 0) drawLaunchBall();
+  // ---- 帯の演出 ----
+  // 帯より奥にあるのは、発射前の飾りだけ。
+  // 釘・受け皿・玉・狙いは帯より手前に描くので、帯が遊びを隠すことはない。
+  // （飾りの点線が文字に重なって読めなかったので、そこだけ順番を入れ替えた）
+  drawBanner();
+
+  // ---- 釘 ----
+  for (const p of E.pegs) {
+    let bumpR = 0;
+    for (const w of waves) {
+      const d = Math.hypot(p.x - w.x, p.y - w.y), front = w.t * 260;
+      const k = 1 - Math.abs(d - front) / 26;
+      if (k > 0 && d < 150) bumpR += k * (1 - d / 150) * (w.big ? 4 : 2.2);
+    }
+    const pg = perfectGlow(p);
+    const grow = p.pulse * 5 + Math.min(bumpR, 6) + pg * 4.5;
+    if (p.kind === 'square') {
+      const h = SQ_H + grow;
+      ctx.fillStyle = SHAPE.square(); ctx.fillRect(p.x - h, p.y - h, h * 2, h * 2);
+    } else if (p.kind === 'blue') {
+      const holding = E.balls.some(b => b.state === 'held' && b.hold === p);
+      ctx.fillStyle = SHAPE.blue();
+      ctx.beginPath(); ctx.arc(p.x, p.y, BLUE_R + grow + (holding ? 5 : 0), 0, 7); ctx.fill();
+    } else if (p.kind === 'tri') {
+      const t = TRI_R + 2 + grow + Math.sin(E.time * 6) * 1;
+      ctx.fillStyle = SHAPE.tri(); ctx.globalAlpha = p.triHit ? .55 : 1;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y - t); ctx.lineTo(p.x + t * .92, p.y + t * .6); ctx.lineTo(p.x - t * .92, p.y + t * .6); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.beginPath(); ctx.arc(p.x, p.y, PR + grow + p.lit * 1.5, 0, 7);
+      if (pg > .02) { ctx.fillStyle = '#D7141F'; ctx.globalAlpha = 1; }
+      else if (p.lit > .02) { ctx.fillStyle = '#D7141F'; ctx.globalAlpha = .3 + p.lit * .7; }
+      // その台で当てた丸は薄い赤のまま残す。あと何本残っているかが見える
+      else if (p.boardHit) { ctx.fillStyle = '#D7141F'; ctx.globalAlpha = .4; }
+      else ctx.fillStyle = P.peg;
+      ctx.fill(); ctx.globalAlpha = 1;
+    }
+  }
+
+  // ---- 敷き詰めた受け皿（倍率と戻る玉）----
+  for (let i = 0; i < SLOT_M.length; i++) {
+    const x = slotX(i);
+    if (x < -SLOT_W || x > LW) continue;
+    const info = slotInfo(i), [fill, fg] = slotColors(info.m, info.b);
+    const c = catches.filter(k => k.slot === i).pop();
+    const k = c ? 1 - ease(c.t / .5) : 0, lift = c && c.m > 0 ? 8 * k : 0;
+    // 受け皿は画面の下へそのまま流す（下の余白はなし）。
+    // 倍率と●は top からの位置なので、ホームバーの帯より上に必ず収まる
+    rrect(x + 2, top + 6 - lift, SLOT_W - 4, screenH + 14 - top - 6 + lift, 6);
+    ctx.fillStyle = fill; ctx.fill();
+    if (c && c.m > 0) { ctx.strokeStyle = P.ball; ctx.lineWidth = 2.5 * k; if (k > .05) ctx.stroke(); }
+    if (slotFlash && slotFlash.t < 2 && slotFlash.slots.includes(i) && Math.sin(slotFlash.t * 18) > 0) {
+      rrect(x + 2, top + 6, SLOT_W - 4, screenH + 14 - top - 6, 6);
+      ctx.strokeStyle = '#D7141F'; ctx.lineWidth = 3; ctx.stroke();
+    }
+    ctx.fillStyle = fg; ctx.font = `700 ${(info.m >= 5 ? 26 : 22) + k * 8}px ${FONT}`;
+    ctx.fillText('×' + info.m, x + SLOT_W / 2, top + 28 - lift);
+    // 戻ってくる玉の数を丸で表示
+    for (let j = 0; j < info.b; j++) {
+      ctx.beginPath(); ctx.arc(x + SLOT_W / 2 + (j - (info.b - 1) / 2) * 11, top + 50 - lift, 3.5, 0, 7); ctx.fill();
+    }
+    if (info.b < 0) {
+      // 玉が減る受け皿：点線の丸（ここにあるはずの玉がない）
+      const n = -info.b;
+      ctx.strokeStyle = E.fever ? '#1C1716' : '#D7141F'; ctx.lineWidth = 1.6; ctx.setLineDash([2.2, 2]);
+      for (let j = 0; j < n; j++) {
+        ctx.beginPath(); ctx.arc(x + SLOT_W / 2 + (j - (n - 1) / 2) * 14, top + 50 - lift, 5, 0, 7); ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
+  }
+
+  // ---- 床で跳ねる外れ玉 ----
+  for (const fb of fallen) {
+    ctx.globalAlpha = Math.max(0, 1 - fb.t / .6); ctx.fillStyle = P.ball;
+    ctx.beginPath(); ctx.arc(fb.x, fb.y - BR, BR * (1 - fb.t * .6), 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  drawMilestone();
+  // 引いている間は、狙いも玉もいちばん手前。帯が出ていても狙いは見える
+  if (canShoot() && level > 0) { drawAim(); drawLaunchBall(); }
+
+  // ---- 玉 ----
+  for (const b of E.balls) {
+    if (b.state === 'held') {
+      const k = b.holdT / .5;
+      ctx.strokeStyle = SHAPE.blue(); ctx.lineWidth = 2; ctx.globalAlpha = 1 - k;
+      ctx.beginPath(); ctx.arc(b.x, b.y, BLUE_R + 6 + k * 18, 0, 7); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.fillStyle = P.ball;
+      ctx.beginPath(); ctx.arc(b.x, b.y, BR * (.55 + .45 * Math.abs(Math.cos(k * Math.PI))), 0, 7); ctx.fill();
+      continue;
+    }
+    if (b.state !== 'fly') continue;
+    b.trail.push([b.x, b.y]); if (b.trail.length > 8) b.trail.shift();
+    ctx.fillStyle = P.ball;
+    b.trail.forEach(([tx, ty], i) => {
+      ctx.globalAlpha = (i + 1) / b.trail.length * .25;
+      ctx.beginPath(); ctx.arc(tx, ty, BR * (i + 1) / b.trail.length, 0, 7); ctx.fill();
+    });
+    ctx.globalAlpha = .2; ctx.beginPath(); ctx.arc(b.x, b.y, BR + 6, 0, 7); ctx.fill();
+    ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(b.x, b.y, BR, 0, 7); ctx.fill();
+  }
+
+  // ---- 吹き出し ----
+  for (const fl of floaters) {
+    const life = fl.life || .9;
+    ctx.globalAlpha = Math.max(0, 1 - fl.t / life);
+    ctx.fillStyle = fl.color; ctx.font = `700 ${fl.big ? 24 : 18}px ${FONT}`;
+    ctx.fillText(fl.text, fl.x, fl.y - fl.t * 34);
+  }
+  ctx.globalAlpha = 1;
+
+  // ---- 持ち玉・スコアへ吸い込まれていく ----
+  const tgtBall = moneyTarget(), tgtScore = scoreTarget();
+  for (const fy of flyers) {
+    if (fy.t < 0) continue;
+    const tgt = fy.kind === 'ball' ? tgtBall : fy.kind === 'minus' ? {x: fy.tx, y: fy.ty} : tgtScore;
+    const k = Math.pow(Math.min(1, fy.t / .55), 2.2);
+    const x = fy.x0 + (tgt.x - fy.x0) * k + Math.sin(k * Math.PI) * fy.arc;
+    const y = fy.y0 + (tgt.y - fy.y0) * k - Math.sin(k * Math.PI) * 60;
+    ctx.fillStyle = fy.color;
+    if (fy.kind === 'ball') { ctx.beginPath(); ctx.arc(x, y, BR * (1 - k * .35), 0, 7); ctx.fill(); }
+    else if (fy.kind === 'minus') { ctx.strokeStyle = fy.color; ctx.lineWidth = 2; ctx.setLineDash([3, 2.5]); ctx.beginPath(); ctx.arc(x, y, BR, 0, 7); ctx.stroke(); ctx.setLineDash([]); }
+    else { ctx.font = `700 ${24 - k * 10}px ${FONT}`; ctx.fillText('+' + fy.value, x, y); }
+  }
+
+  ctx.restore();
+  if (edge && edge.t < .9) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalAlpha = 1 - edge.t / .9; ctx.strokeStyle = resolveColor(edge.color, edge.t); ctx.lineWidth = edge.width || 16;
+    ctx.strokeRect(0, 0, innerWidth, innerHeight); ctx.globalAlpha = 1;
+  }
+}
+
+// ---------- ループ ----------
+let last = performance.now(), lastScoreStep = 0;
+function frame(now) {
+  const real = Math.min(.05, (now - last) / 1000); last = now;
+  if (keyCharge) { const p = Math.min(1, (now - keyStart) / 1200) * MAX_PULL; setPull(-keyAim * p * .8, p); }
+
+  let slow = false;
+  for (const b of E.balls) {
+    if (b.state !== 'fly' || b.vy <= 0) continue;
+    const gap = slotTop() - b.y;
+    if (gap > 0 && gap < 110) {
+      const t = gap / b.vy;
+      if (slotInfo(slotAt(b.x + b.vx * t, t)).m >= 5) slow = true;
+    }
+  }
+  if (shotBallsMax > 4) slow = false;
+  if (slowPulse > 0) { slowPulse -= real; slow = true; }
+  timeScale += ((slow ? .3 : 1) - timeScale) * Math.min(1, real * 12);
+
+  if (hitStop > 0) hitStop -= real;
+  else {
+    const dt = real * timeScale;
+    for (let i = 0; i < 6; i++) stepPhysics(dt / 6);
+  }
+  shotBallsMax = Math.max(shotBallsMax, E.balls.length);
+  if (running) checkMilestone();
+  if (!E.balls.length) { E.time += real; E.conveyor += CONV_SPEED * real; }
+  if (edge) edge.t += real;
+  if (milestoneFx) milestoneFx.t += real;
+  if (perfectFx) { perfectFx.t += real; if (perfectFx.t > 2.1) perfectFx = null; }
+  if (slotFlash) slotFlash.t += real;
+  if (bannerState) bannerState.t += real;
+
+  // 飛んできた玉が届いたら持ち玉 +1
+  for (const fy of flyers) {
+    fy.t += real;
+    if (fy.t >= .55 && !fy.done) {
+      fy.done = true;
+      if (fy.kind === 'minus') { noise(.05, .08, 300); }
+      else if (fy.kind === 'ball') {
+        money++; peak = Math.max(peak, money);
+        moneyRoll.set(money); bump('money');
+        collectCombo = now - lastCollect < 250 ? collectCombo + 1 : 0; lastCollect = now;
+        voice(note(6 + Math.min(collectCombo, 8)) * 2, .09, .09, 'triangle'); buzz(6, 0);
+      } else {
+        score += fy.value; bump('points');
+        if (!beatBest && bestAtStart > 0 && score > bestAtStart) {
+          beatBest = true; bestHud();
+          banner('NEW RECORD', `自己ベスト${bestAtStart}を超えた`, '#D7141F');
+          [0, 4, 7, 12].forEach((s, k) => voice(note(6) * Math.pow(2, s / 12), .35, .07, 'square', k * .07));
+          buzzPattern(3, 80);
+        }
+        voice(note(10) * 2, .06, .06, 'sine'); buzz(5, 0);
+      }
+    }
+  }
+  flyers = flyers.filter(fy => !fy.done);
+
+  // ポイントはコロコロと少しずつ回す
+  potShow += (E.pot - potShow) * Math.min(1, real * 18);
+  if (scoreShown < score && now - lastScoreStep > 60) {
+    lastScoreStep = now;
+    scoreShown = Math.min(score, scoreShown + Math.max(1, Math.ceil((score - scoreShown) * .18)));
+    pointsRoll.set(scoreShown);
+    if (Math.random() < .5) voice(2400, .02, .025, 'sine');
+  }
+  if (!E.fever) $('gauge').firstChild.style.width = Math.min(1, gauge / FEVER_AT) * 100 + '%';
+
+  for (const p of E.pegs) {
+    p.pulse = Math.max(0, p.pulse - real * 5);
+    if (!E.balls.length) p.lit = Math.max(0, p.lit - real * 1.2);
+    if (p.m < 1) {
+      p.m = Math.min(1, p.m + real * 1.4);
+      const k = ease(p.m);
+      p.x = p.fx + (p.tx - p.fx) * k; p.y = p.fy + (p.ty - p.fy) * k;
+    }
+  }
+  potPulse = Math.max(0, potPulse - real * 6);
+  waves.forEach(w => w.t += real); waves = waves.filter(w => w.t < .7);
+  if (waves.length > 40) waves.splice(0, waves.length - 40);
+  floaters.forEach(fl => fl.t += real); floaters = floaters.filter(fl => fl.t < (fl.life || .9));
+  catches.forEach(c => c.t += real); catches = catches.filter(c => c.t < 1);
+  fallen.forEach(fb => fb.t += real); fallen = fallen.filter(fb => fb.t < .6);
+  shake = Math.max(0, shake - real * 1.6);
+  draw(real);
+  requestAnimationFrame(frame);
+}
+
+fit(); reset(FREE); tutDots(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>

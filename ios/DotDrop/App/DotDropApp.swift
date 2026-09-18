@@ -1,11 +1,12 @@
 import SwiftUI
-import DotDropEngine
 
 @main
 struct DotDropApp: App {
     var body: some Scene {
         WindowGroup {
-            RootView()
+            WebGameView()
+                .ignoresSafeArea()
+                .statusBarHidden(true)
                 .preferredColorScheme(.dark)
         }
     }
