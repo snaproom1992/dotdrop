@@ -295,7 +295,7 @@ struct BoardCanvas: View {
             layer.opacity = alpha
             layer.draw(
                 Text(fl.text)
-                    .font(DD.bold((fl.big ? 24 : 18) * s))
+                    .font(DD.bold(Double(fl.big ? 24 : 18) * Double(s)))
                     .foregroundColor(fl.color),
                 at: p,
                 anchor: .center
@@ -332,7 +332,7 @@ struct BoardCanvas: View {
             case .score:
                 ctx.draw(
                     Text("+\(fy.value)")
-                        .font(DD.bold((24 - k * 10) * s))
+                        .font(DD.bold((24 - k * 10) * Double(s)))
                         .foregroundColor(fy.color),
                     at: CGPoint(x: x, y: y),
                     anchor: .center
@@ -392,7 +392,7 @@ struct BoardCanvas: View {
         )
         layer.draw(
             Text("POINTS")
-                .font(DD.bold(14 * s))
+                .font(DD.bold(14 * Double(s)))
                 .foregroundColor(col),
             at: CGPoint(x: 0, y: sizePt * 0.55),
             anchor: .center
@@ -437,14 +437,14 @@ struct BoardCanvas: View {
         if session.level == 0 && session.firstShot && !bannerUp {
             ctx.draw(
                 Text("引っ張ってはなす")
-                    .font(DD.regular(13 * s))
+                    .font(DD.regular(13 * Double(s)))
                     .foregroundColor(DD.fg(fever: fever).opacity(0.7)),
                 at: pt(Engine.logicalWidth / 2, L.y + 48),
                 anchor: .center
             )
             ctx.draw(
                 Text("×は倍率　●は戻る玉　点線は減る玉")
-                    .font(DD.regular(13 * s))
+                    .font(DD.regular(13 * Double(s)))
                     .foregroundColor(DD.fg(fever: fever).opacity(0.7)),
                 at: pt(Engine.logicalWidth / 2, top - 30),
                 anchor: .center
@@ -501,7 +501,7 @@ struct BoardCanvas: View {
         } else {
             off = 0
         }
-        let y = Double(fit.bannerY * s)
+        let y = fit.bannerY * Double(s)
         let h = 56 * Double(s)
         let mid = y + h / 2
         ctx.fill(Path(CGRect(x: off, y: y, width: LW, height: h)), with: .color(b.color))
@@ -510,7 +510,7 @@ struct BoardCanvas: View {
         func width(_ text: String, _ px: Double) -> Double {
             guard !text.isEmpty else { return 0 }
             return ctx.resolve(Text(text).font(DD.bold(px * Double(s))))
-                .measure(in: CGSize(width: .greatestFiniteMagnitude, height: .greatestFiniteMagnitude)).width
+                .measure(in: CGSize(width: 10_000, height: 10_000)).width
         }
         // 収まる大きさを探す。まず見出し、それでも足りなければ説明も縮める。
         // 62 は左の余白16＋区切りの前後14×2＋右の余白
