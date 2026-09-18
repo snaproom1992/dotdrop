@@ -7,8 +7,11 @@ import DotDropEngine
 final class GameAudio {
     static let shared = GameAudio()
 
-    private var engine: AVAudioEngine?
-    private var sfx: AVAudioMixerNode?
+    // 節目の音（MilestoneAudio.swift）から触るので private にしない
+    var engine: AVAudioEngine?
+    var sfx: AVAudioMixerNode?
+    /// 節目の音だけを通すバス。残響がかかる
+    var fan: AVAudioMixerNode?
     private var voices = 0
     private let penta = [0, 2, 4, 7, 9]
 
@@ -22,12 +25,22 @@ final class GameAudio {
 
     private func build() {
         let eng = AVAudioEngine()
-        let mix = AVAudioMixerNode()
+        let mix = AVAudioMixerNode()        // 釘の音
+        let fanMix = AVAudioMixerNode()     // 節目の音
+        // 節目にだけ残響をかける。釘の音まで濡らすと、当たった粒立ちが消える
+        let verb = AVAudioUnitReverb()
+        verb.loadFactoryPreset(.mediumHall)
+        verb.wetDryMix = 28
         eng.attach(mix)
+        eng.attach(fanMix)
+        eng.attach(verb)
         eng.connect(mix, to: eng.mainMixerNode, format: nil)
+        eng.connect(fanMix, to: verb, format: nil)
+        eng.connect(verb, to: eng.mainMixerNode, format: nil)
         eng.mainMixerNode.outputVolume = 0.9
         engine = eng
         sfx = mix
+        fan = fanMix
     }
 
     func note(_ n: Int, fever: Bool) -> Double {
