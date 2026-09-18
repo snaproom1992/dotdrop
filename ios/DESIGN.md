@@ -1,37 +1,31 @@
-# DOT DROP — iOS 移植 設計書
+# DOT DROP — iOS ネイティブ移植
 
-## 方針（確定）
+## 方針
 
-**完全再現。** ゲーム本体はリポジトリ直下の `index.html`（および付随アセット）が正本。  
-iOS アプリはそれを WKWebView でフルスクリーン表示する箱である。
-
-- 見た目・配置・HUD・受け皿・物理・音・あそびかた・結果画面は、Web と同じコードパスを通る
-- Swift で簡略 UI を書き直して「近づける」ことはしない
-- `index.html` を直したら `bash ios/tools/sync-www.sh` で `ios/DotDrop/Resources/www/` に同期してからビルドする
-
-以前試した Swift 独自描画（PlayView）は、配置も手触りも別物になったため撤去した。
+- **App Store 審査を通すため、ネイティブ（SwiftUI + 自前 Engine）で実装する**
+- WKWebView で HTML を包む方式は使わない（申請で弾かれやすい）
+- **見た目・配置・物理の正本は `index.html`**
+  - 色・余白・HUD は CSS の数値を写す（`Theme` / `GameHUD` / `TitleView`）
+  - 物理は `/*ENGINE*/` を `DotDropEngine` に移植（数値の独自調整はしない）
+  - 盤面は `draw()` の順と色に合わせる（`BoardCanvas`）
 
 ## 構成
 
 ```
-ios/
-  DESIGN.md
-  README.md
-  tools/sync-www.sh          … 正本 → www へコピー
-  DotDrop/
-    App/WebGameView.swift    … WKWebView
-    App/DotDropApp.swift
-    Resources/www/           … 同梱された index.html 一式
-  DotDropEngine/             … ENGINE 突き合わせ用（任意・テスト）
+ios/DotDrop/App/
+  Theme.swift        … :root / fit()
+  GameSession.swift  … フリープレイ進行
+  TitleView.swift    … #start
+  GameHUD.swift      … <header>
+  BoardCanvas.swift  … canvas draw
+  ResultOverlay.swift… #over / #sheet
+  RootView.swift     … overlay 切り替え
+DotDropEngine/       … ENGINE + フィクスチャテスト
 ```
 
-## App Store 向けに箱側で持つもの
+## 未接続（次）
 
-- Bundle ID / 署名 / アイコン
-- 縦固定・ステータスバー非表示
-- セーフエリアは HTML 側の `env(safe-area-inset-*)` と `fit()` に任せる
-
-## DotDropEngine について
-
-JS の `/*ENGINE*/` を Swift に移植したパッケージは残す（フィクスチャ突き合わせ用）。  
-**アプリのプレイ画面には使わない。** 正本は常に `index.html`。
+- あそびかた（STEPS 全接続）
+- 音・振動
+- ランキング／記録の完全移植
+- 帯・数字ドン・PERFECT 演出の細部

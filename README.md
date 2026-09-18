@@ -1,13 +1,9 @@
 # dotdrop
 
-スマホ向けブラウザゲーム「DOT DROP」。GitHub Pages で `index.html` を公開。
+スマホ向けブラウザゲーム「DOT DROP」。
 
-## iOS アプリ
+## iOS
 
-`index.html` をそのまま WKWebView で動かす（完全再現）。
-
-```bash
-open ios/DotDrop/DotDrop.xcodeproj
-```
+ネイティブ移植（Swift）。`open ios/DotDrop/DotDrop.xcodeproj`
 
 手順は [`ios/README.md`](ios/README.md)。
