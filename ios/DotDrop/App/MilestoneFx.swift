@@ -69,37 +69,39 @@ struct MilestoneFx {
         return 1
     }
 
-    /// 台の座標系（論理384×…）のまま描く。呼ぶのは**いちばん最後**（釘や玉より手前）。
-    /// `centerY` は Web と同じく field の上下まんなか − 10。
-    func draw(ctx: GraphicsContext, logicalWidth: Double, centerY: Double, font: (Double) -> Font) {
+    /// BoardCanvas の流儀に合わせて、画面の座標で描く。
+    /// `center` は数字を置く位置（画面座標）、`s` は台の拡大率。
+    /// 呼ぶのは**いちばん最後**（釘・受け皿・玉より手前）。
+    func draw(ctx: GraphicsContext, center: CGPoint, scale s: Double, font: (Double) -> Font) {
         guard let m = active, m.t <= 1.1 else { return }
 
         // ドン：2.4倍で入って1倍まで縮み、そのあと少しだけ揺り返す
         let inK = min(1, m.t / 0.12)
-        let scale: Double
+        let pop: Double
         if m.t < 0.12 {
-            scale = 2.4 - 1.4 * Self.ease(inK)
+            pop = 2.4 - 1.4 * Self.ease(inK)
         } else if m.t < 0.22 {
-            scale = 1 + 0.08 * sin((m.t - 0.12) / 0.1 * .pi)
+            pop = 1 + 0.08 * sin((m.t - 0.12) / 0.1 * .pi)
         } else {
-            scale = 1
+            pop = 1
         }
         let alpha = m.t > 0.8 ? 1 - (m.t - 0.8) / 0.3 : 1
         let col = m.color.resolved(t: m.t)
-        let size: Double = m.level >= 10 ? 130 : 150
+        let base: Double = m.level >= 10 ? 130 : 150
+        let size = base * pop * s
 
         var c = ctx
-        c.translateBy(x: logicalWidth / 2, y: centerY)
-        c.scaleBy(x: scale, y: scale)
         c.opacity = max(0, alpha)
-
         let number = Text("\(m.level * 100)").font(font(size))
         // 影でくっきり（こげ茶の背景でも赤や青が沈まない）
-        c.draw(number.foregroundColor(DD.ink.opacity(0.55)), at: CGPoint(x: 4, y: 6), anchor: .center)
-        c.draw(number.foregroundColor(col), at: .zero, anchor: .center)
         c.draw(
-            Text("POINTS").font(font(14)).foregroundColor(col),
-            at: CGPoint(x: 0, y: size * 0.55), anchor: .center
+            number.foregroundColor(DD.ink.opacity(0.55)),
+            at: CGPoint(x: center.x + 4 * s * pop, y: center.y + 6 * s * pop), anchor: .center
+        )
+        c.draw(number.foregroundColor(col), at: center, anchor: .center)
+        c.draw(
+            Text("POINTS").font(font(14 * pop * s)).foregroundColor(col),
+            at: CGPoint(x: center.x, y: center.y + base * 0.55 * pop * s), anchor: .center
         )
     }
 

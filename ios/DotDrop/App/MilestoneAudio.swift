@@ -97,9 +97,9 @@ extension GameAudio {
     func duck(dur: Double) {
         guard let sfx else { return }
         sfx.outputVolume = 0.18
-        let deadline = DispatchTime.now() + dur
-        DispatchQueue.main.asyncAfter(deadline: deadline) { [weak sfx] in
-            sfx?.outputVolume = 1
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(max(0, dur) * 1_000_000_000))
+            self?.sfx?.outputVolume = 1
         }
     }
 
@@ -165,13 +165,13 @@ extension GameAudio {
             let env: Double = k < 0.85
                 ? 0.0001 * pow(g / 0.0001, k / 0.85)
                 : g * pow(0.0001 / g, (k - 0.85) / 0.15)
-            // 2極のバンドパス（Q=3 相当）
+            // 2極のバンドパス（Q=3 相当）。fc は音量の g と別物なので名前を分ける
             let white = Double.random(in: -1...1)
-            let g = min(0.99, 2 * sin(.pi * min(f, sr * 0.45) / sr))
+            let fc = min(0.99, 2 * sin(.pi * min(f, sr * 0.45) / sr))
             let q = 1.0 / 3.0
-            lp += g * bp
+            lp += fc * bp
             let hp = white - lp - q * bp
-            bp += g * hp
+            bp += fc * hp
             return (bp * env, 1)
         }
     }

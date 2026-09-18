@@ -41,8 +41,10 @@ struct BoardCanvas: View {
 
         ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(DD.bg(fever: fever)))
 
+        // 台だけを揺らす（背景と帯は動かさない）。Web の translate と同じ量
+        let shake = session.juice.shakeOffset
         func pt(_ x: Double, _ y: Double) -> CGPoint {
-            CGPoint(x: ox + x * s, y: y * s)
+            CGPoint(x: ox + x * s + shake.width, y: y * s + shake.height)
         }
 
         func slotLogicalX(_ i: Int) -> Double {
@@ -84,7 +86,8 @@ struct BoardCanvas: View {
         }
 
         // ---- 今回のポイント（背景の大きな数字）----
-        let bgNumAlpha = session.potAlpha
+        // 大きな数字は重ねない。数字ドンが出ている間は背景の数字を消す
+        let bgNumAlpha = session.potAlpha * (1 - session.milestone.visible)
         if bgNumAlpha > 0.01, e.pot > 0 {
             let landed = e.shotScore > 0
             let pulse = 1 + session.potPulse * 0.08
@@ -184,17 +187,19 @@ struct BoardCanvas: View {
                 )
             }
 
-            let cx = ox + (x + slotW / 2) * s
+            let cx = pt(x + slotW / 2, 0).x
+            let rowY = pt(0, top + 28 - lift).y
+            let dotY = pt(0, top + 50 - lift).y
             let fontSize = ((info.m >= 5 ? 26.0 : 22.0) + k * 8) * s
             ctx.draw(
                 Text("×\(info.m)").font(.system(size: fontSize, weight: .bold)).foregroundColor(fg),
-                at: CGPoint(x: cx, y: (top + 28 - lift) * s),
+                at: CGPoint(x: cx, y: rowY),
                 anchor: .center
             )
             if info.b > 0 {
                 for j in 0..<info.b {
                     let oxj = (Double(j) - Double(info.b - 1) / 2) * 11
-                    let c = CGPoint(x: cx + oxj * s, y: (top + 50 - lift) * s)
+                    let c = CGPoint(x: cx + oxj * s, y: dotY)
                     let r = 3.5 * s
                     ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(fg))
                 }
@@ -203,7 +208,7 @@ struct BoardCanvas: View {
                 let stroke = fever ? DD.ink : DD.red
                 for j in 0..<n {
                     let oxj = (Double(j) - Double(n - 1) / 2) * 14
-                    let c = CGPoint(x: cx + oxj * s, y: (top + 50 - lift) * s)
+                    let c = CGPoint(x: cx + oxj * s, y: dotY)
                     let r = 5 * s
                     let path = Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
                     ctx.stroke(path, with: .color(stroke), style: StrokeStyle(lineWidth: 1.6 * s, dash: [2.2 * s, 2 * s]))
@@ -303,6 +308,17 @@ struct BoardCanvas: View {
                 )
             }
         }
+
+        // ---- 100点ごとの数字ドン（釘・受け皿・玉より手前）----
+        session.milestone.draw(
+            ctx: ctx,
+            center: pt(Engine.logicalWidth / 2, cy - 10),
+            scale: s,
+            font: { size in .system(size: CGFloat(size), weight: .bold) }
+        )
+
+        // ---- 画面のふちの光（台の揺れの外側）----
+        session.juice.drawEdge(ctx: ctx, size: size)
     }
 
     private func drawLaunchBall(

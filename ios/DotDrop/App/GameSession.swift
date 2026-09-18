@@ -36,6 +36,10 @@ final class GameSession {
     @ObservationIgnored var potPulse: Double = 0
     @ObservationIgnored var shotShow: Double = 0
     @ObservationIgnored var shotBallsMax: Int = 1
+    /// 止め・揺れ・スロー・ふちの光
+    @ObservationIgnored var juice = GameJuice()
+    /// 100点ごとの数字ドン
+    @ObservationIgnored var milestone = MilestoneFx()
 
     @ObservationIgnored private var lastDate: Date?
     @ObservationIgnored private var triBonus = false
@@ -168,6 +172,7 @@ final class GameSession {
         shotBallsMax = 1
         shotShow = 0
         potShow = 0
+        milestone.reset()   // 段は1回の放出ごとに数える
         lastDate = nil
         wireHooks()
         GameAudio.shared.playShoot()
@@ -195,10 +200,27 @@ final class GameSession {
             }
             GameAudio.shared.playHit(kind: kind, hitCount: n, fever: self.engine.fever)
             switch kind {
-            case .dot: GameHaptics.buzz(.light)
-            case .square: GameHaptics.buzz(.heavy, gap: 0)
-            case .blue: GameHaptics.buzz(.medium, gap: 0)
-            case .tri: GameHaptics.pattern(2, intervalMs: 50)
+            case .dot:
+                GameHaptics.buzz(.light)
+            case .square:
+                GameHaptics.buzz(.heavy, gap: 0)
+                // ■ は強くはね返すので、一瞬止めて揺らす
+                self.juice.addHitStop(0.05)
+                self.juice.addShake(0.2)
+            case .blue:
+                GameHaptics.buzz(.medium, gap: 0)
+            case .tri:
+                GameHaptics.pattern(2, intervalMs: 50)
+                // ▲ は玉が増えるほど手応えを強く。9個を超えたらスローにする
+                let count = self.engine.balls.count
+                self.juice.addHitStop(count >= 9 ? 0.1 : 0.06)
+                self.juice.addShake(min(0.6, 0.2 + Double(count) * 0.02))
+                if count >= 9 { self.juice.slowPulse = 0.35 }
+            }
+            // 10回ごとに軽く手応え（当たり続けている実感）
+            if n % 10 == 0 {
+                self.juice.addHitStop(0.05)
+                self.juice.addShake(0.15)
             }
         }
         engine.hooks.shotEnd = { [weak self] _ in
@@ -213,7 +235,13 @@ final class GameSession {
             }
         }
         engine.hooks.perfect = { [weak self] bonus in
-            self?.showBanner("PERFECT", "ドットをすべて赤くした +\(bonus)", DD.red)
+            guard let self else { return }
+            self.showBanner("PERFECT", "ドットをすべて赤くした +\(bonus)", DD.red)
+            // いちばん大きい演出。止めも揺れもふちも最大
+            self.juice.addHitStop(0.45)
+            self.juice.addShake(1.1)
+            self.juice.flashEdge(.cycle, width: 44)
+            GameHaptics.pattern(8, intervalMs: 95)
         }
         engine.hooks.land = { [weak self] ball, v, _ in
             self?.onLand(ball: ball, v: v)
@@ -242,8 +270,11 @@ final class GameSession {
             sendScore(gain, x: ball.x, y: top - 22, color: col)
             GameAudio.shared.voice(freq: GameAudio.shared.note(4 + m, fever: fever), dur: 0.18, gain: 0.1)
             GameAudio.shared.noise(dur: 0.04, gain: 0.12, freq: 3000)
+            juice.addHitStop(m >= 5 ? 0.14 : 0.05)
             if m >= 5 {
                 GameHaptics.pattern(3, intervalMs: 60)
+                juice.addShake(0.45)
+                juice.flashEdge(.solid(DD.red))
             } else {
                 GameHaptics.buzz(.medium, gap: 0)
             }
@@ -438,8 +469,10 @@ final class GameSession {
             engine.time += real
             engine.conveyor += Engine.conveyorSpeed * real
         }
-        if busy {
-            var left = real
+        // 止めている間は物理を進めない。advance が「進めてよい秒数」
+        let advance = juice.tick(real: real)
+        if busy, advance > 0 {
+            var left = advance
             let step = Engine.physicsSubstep
             while left > 0 {
                 let d = min(step, left)
@@ -453,6 +486,14 @@ final class GameSession {
                 if b.trail.count > 8 { b.trail.removeFirst() }
             }
         }
+        // 100点ごとの数字ドン（物理を進めたあとに見る）
+        if screen == .playing,
+           let level = milestone.check(pot: engine.pot, shotScore: engine.shotScore, juice: &juice) {
+            GameAudio.shared.playMilestone(level: level)
+            potPulse = 1.5
+            GameHaptics.pattern(min(5, 1 + level / 2), intervalMs: 70)
+        }
+        milestone.tick(real: real)
 
         // floaters / catches / pot
         for i in floaters.indices { floaters[i].t += real }
