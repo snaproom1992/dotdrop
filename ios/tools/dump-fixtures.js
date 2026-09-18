@@ -4,6 +4,7 @@
 //
 // 台の種（boardSeed）とはなす瞬間のブレなし（exact）に加え、
 // Math.random を一時的にシード付きに差し替えて、結果を再現可能にする。
+// 釘配置も JSON に含め、Swift 側が同じ台で物理だけを比較できるようにする。
 
 const fs = require('fs');
 const path = require('path');
@@ -48,8 +49,13 @@ function shootExact({ boardSeed, layout, stage, fever, angleDeg, level, playSeed
     E.fever = fever;
     E.convHold = false;
     E.conveyor = 0;
+    E.time = 0;
     setLayout(layout, false);
     pickGold();
+
+    const pegs = E.pegs.map(p => ({
+      x: p.x, y: p.y, kind: p.kind
+    }));
 
     const a = angleDeg * Math.PI / 180;
     const pull = level / LEVELS * MAX_PULL;
@@ -58,20 +64,19 @@ function shootExact({ boardSeed, layout, stage, fever, angleDeg, level, playSeed
 
     const step = 1 / 360;
     let t = 0, done = false;
+    const kinds = {};
     E.hooks.shotEnd = () => { done = true; };
-    E.hooks.hit = () => {};
+    E.hooks.hit = (p, b, n, force, kind) => { kinds[kind] = (kinds[kind] || 0) + 1; };
     E.hooks.land = () => {};
     E.hooks.release = () => {};
     E.hooks.perfect = () => {};
-
-    const kinds = {};
-    E.hooks.hit = (p, b, n, force, kind) => { kinds[kind] = (kinds[kind] || 0) + 1; };
 
     while (!done && t < 40) {
       stepPhysics(step);
       t += step;
     }
     return {
+      pegs,
       hitCount: E.hitCount,
       shotPay: E.shotPay,
       shotScore: E.shotScore || 0,
@@ -106,6 +111,7 @@ const shots = cases.map(c => {
     step: 1 / 360,
     maxTime: 40,
     launch: { vx: r.vx, vy: r.vy },
+    pegs: r.pegs,
     expected: {
       hitCount: r.hitCount,
       shotPay: r.shotPay,
@@ -113,25 +119,26 @@ const shots = cases.map(c => {
       kinds: r.kinds,
       stuck: r.stuck
     },
-    meta: { duration: Number(r.duration.toFixed(4)) }
+    meta: { duration: Number(r.duration.toFixed(4)), pegCount: r.pegs.length }
   };
 });
 
-// 種乱数の先頭列（Swift SeededRandom の突き合わせ用）
 const seq = seeded(42);
-const seededSample = Array.from({ length: 8 }, () => seq());
+const seededSample42 = Array.from({ length: 8 }, () => seq());
 
 const out = {
-  version: 1,
-  note: 'Generated from index.html ENGINE by ios/tools/dump-fixtures.js. Math.random was replaced with seeded(playSeed) during each shot.',
+  version: 2,
+  note: 'Generated from index.html ENGINE by ios/tools/dump-fixtures.js. Math.random replaced with seeded(playSeed). Pegs snapshotted after setLayout+pickGold.',
   generatedAt: new Date().toISOString(),
   maxPull: MAX_PULL,
   levels: LEVELS,
-  seededSample42: seededSample,
+  seededSample42,
   shots
 };
 
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, JSON.stringify(out, null, 2) + '\n');
 console.log('wrote', path.relative(root, outPath));
-console.log('shots:', shots.map(s => `${s.id} hits=${s.expected.hitCount} pay=${s.expected.shotPay} score=${s.expected.shotScore}`).join('\n  '));
+for (const s of shots) {
+  console.log(`  ${s.id} pegs=${s.meta.pegCount} hits=${s.expected.hitCount} pay=${s.expected.shotPay} score=${s.expected.shotScore}`);
+}

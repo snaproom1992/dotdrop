@@ -397,15 +397,23 @@ function setLayout(kind, animate) {
   });
   E.perfect = false;   // この台でまだ全部に当てていない
   // 形ごとに役割：■はね返す ●(青)つかまえる ▲分裂
-  const idx = E.pegs.map((_, i) => i).sort(() => boardRand() - .5);
+  // シャッフルは Fisher–Yates（sort+乱数比較だとエンジンごとに台が変わるため）
+  const idx = shuffle(E.pegs.map((_, i) => i), boardRand);
   idx.slice(0, SQUARES).forEach(i => E.pegs[i].kind = 'square');
   idx.slice(SQUARES, SQUARES + BLUES).forEach(i => E.pegs[i].kind = 'blue');
   pickGold();
 }
+function shuffle(arr, rand) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  }
+  return arr;
+}
 function pickGold() {
   seedBoard();
   E.pegs.forEach(p => { p.triHit = false; if (p.kind === 'tri') p.kind = 'dot'; });
-  const dots = E.pegs.filter(p => p.kind === 'dot').sort(() => boardRand() - .5);
+  const dots = shuffle(E.pegs.filter(p => p.kind === 'dot'), boardRand);
   dots.slice(0, TRIS).forEach(p => p.kind = 'tri');
 }
 

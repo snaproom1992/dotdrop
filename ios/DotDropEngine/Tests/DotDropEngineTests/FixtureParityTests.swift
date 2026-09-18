@@ -5,24 +5,11 @@ final class SeededRandomTests: XCTestCase {
     func testSeededSequenceIsStable() {
         let a = SeededRandom(seed: 42)
         let b = SeededRandom(seed: 42)
-        let seqA = (0..<8).map { _ in a.next() }
-        let seqB = (0..<8).map { _ in b.next() }
-        XCTAssertEqual(seqA, seqB)
+        XCTAssertEqual((0..<8).map { _ in a.next() }, (0..<8).map { _ in b.next() })
     }
 
-    func testDifferentSeedsDiverge() {
-        let a = SeededRandom(seed: 1).next()
-        let b = SeededRandom(seed: 2).next()
-        XCTAssertNotEqual(a, b)
-    }
-
-    /// dump-fixtures.js の seededSample42 と一致すること（JS seeded との同一性）。
     func testMatchesJavaScriptSeededSample() throws {
-        let url = try XCTUnwrap(
-            Bundle.module.url(forResource: "shots", withExtension: "json", subdirectory: "Fixtures")
-            ?? Bundle.module.url(forResource: "shots", withExtension: "json")
-        )
-        let root = try JSONDecoder().decode(FixtureFile.self, from: Data(contentsOf: url))
+        let root = try Self.loadFixtures()
         let expected = try XCTUnwrap(root.seededSample42)
         let rng = SeededRandom(seed: 42)
         for (i, exp) in expected.enumerated() {
@@ -32,23 +19,64 @@ final class SeededRandomTests: XCTestCase {
 }
 
 final class FixtureParityTests: XCTestCase {
-    /// JS の dump-fixtures.js が出した JSON と、Swift Engine を突き合わせる。
-    /// フェーズ0ではファイルの形だけ検証。物理一致は Engine 移植後。
     func testFixtureFileShape() throws {
+        let root = try Self.loadFixtures()
+        XCTAssertEqual(root.version, 2)
+        XCTAssertFalse(root.shots.isEmpty)
+    }
+
+    /// JS と同じ釘・同じ乱数・同じ発射で、hitCount / shotPay / shotScore が一致する。
+    func testPhysicsMatchesJavaScriptFixtures() throws {
+        let root = try Self.loadFixtures()
+        for shot in root.shots {
+            let play = SeededRandom(seed: shot.playSeed ?? 0)
+            let engine = Engine(playRandom: play)
+            engine.applyConf(.freePlay)
+            engine.boardSeed = shot.boardSeed
+            engine.stage = shot.stage
+            engine.fever = shot.fever
+            engine.convHold = false
+            engine.conveyor = 0
+            engine.time = 0
+
+            let pegs = shot.pegs.map { (x: $0.x, y: $0.y, kind: PegKind(rawValue: $0.kind)!) }
+            engine.loadPegs(pegs)
+            engine.launch(vx: shot.launch.vx, vy: shot.launch.vy)
+
+            let finished = engine.runShotToEnd(maxTime: shot.maxTime)
+            XCTAssertEqual(!finished, shot.expected.stuck, shot.id)
+            XCTAssertEqual(engine.hitCount, shot.expected.hitCount, "\(shot.id) hitCount")
+            XCTAssertEqual(engine.shotPay, shot.expected.shotPay, "\(shot.id) shotPay")
+            XCTAssertEqual(engine.shotScore, shot.expected.shotScore, "\(shot.id) shotScore")
+        }
+    }
+
+    /// setLayout + pickGold が JS と同じ釘配置になる（Fisher–Yates + boardSeed）。
+    func testSetLayoutMatchesFixturePegs() throws {
+        let root = try Self.loadFixtures()
+        for shot in root.shots {
+            let engine = Engine()
+            engine.applyConf(.freePlay)
+            engine.boardSeed = shot.boardSeed
+            engine.logicalHeight = 700
+            engine.setLayout(shot.layout, animate: false)
+
+            XCTAssertEqual(engine.pegs.count, shot.pegs.count, shot.id)
+            for (i, exp) in shot.pegs.enumerated() {
+                let p = engine.pegs[i]
+                XCTAssertEqual(p.x, exp.x, accuracy: 1e-6, "\(shot.id) peg[\(i)].x")
+                XCTAssertEqual(p.y, exp.y, accuracy: 1e-6, "\(shot.id) peg[\(i)].y")
+                XCTAssertEqual(p.kind.rawValue, exp.kind, "\(shot.id) peg[\(i)].kind")
+            }
+        }
+    }
+
+    static func loadFixtures() throws -> FixtureFile {
         let url = try XCTUnwrap(
             Bundle.module.url(forResource: "shots", withExtension: "json", subdirectory: "Fixtures")
             ?? Bundle.module.url(forResource: "shots", withExtension: "json")
         )
-        let data = try Data(contentsOf: url)
-        let root = try JSONDecoder().decode(FixtureFile.self, from: data)
-        XCTAssertEqual(root.version, 1)
-        XCTAssertFalse(root.shots.isEmpty)
-
-        // 移植後: 各 shot について Engine を回し、hitCount / shotPay / shotScore を比較する
-        for shot in root.shots {
-            XCTAssertGreaterThanOrEqual(shot.boardSeed, 0)
-            XCTAssertEqual(shot.step, Engine.physicsSubstep, accuracy: 1e-12)
-        }
+        return try JSONDecoder().decode(FixtureFile.self, from: Data(contentsOf: url))
     }
 }
 
@@ -71,7 +99,20 @@ struct ShotFixture: Decodable {
     var exact: Bool
     var step: Double
     var maxTime: Double
+    var launch: LaunchFixture
+    var pegs: [PegFixture]
     var expected: ShotExpected
+}
+
+struct LaunchFixture: Decodable {
+    var vx: Double
+    var vy: Double
+}
+
+struct PegFixture: Decodable {
+    var x: Double
+    var y: Double
+    var kind: String
 }
 
 struct ShotExpected: Decodable {

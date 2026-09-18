@@ -11,26 +11,31 @@ XcodeGen は不要です。`.xcodeproj` をリポジトリに入れています�
 
 ## 開き方（これだけ）
 
-1. このリポジトリを Mac に取る（まだなら clone／あれば pull）
-
 ```bash
-git fetch origin
-git checkout cursor/ios-native-design-9ade
-```
-
-2. Finder で次のファイルをダブルクリックする（またはターミナル）
-
-```bash
+cd ~/dotdrop   # clone した場所
+git pull
 open ios/DotDrop/DotDrop.xcodeproj
 ```
 
-3. Xcode で
-   - 左の **DotDrop** プロジェクト → **Signing & Capabilities**
-   - **Team** に自分の Apple ID / Developer を選ぶ
-   - 必要なら Bundle Identifier を変える（例: `com.yourname.dotdrop`）
-   - 上で iPhone シミュレータを選んで ▶ Run
+Xcode で Team を選んで ▶ Run。  
+タイトルの ▶ から、**引っ張ってはなす**簡易プレイに入れます。
 
-いまは「準備中」のプレースホルダ画面が出れば成功です。
+## テスト（Mac）
+
+Xcode で `DotDropEngine` パッケージのテストを実行するか:
+
+```bash
+cd ios/DotDropEngine
+swift test
+```
+
+`shots.json`（JS ENGINE の正解）と hitCount / shotPay / shotScore、および釘配置が一致することを見ます。
+
+フィクスチャの再生成（数字や ENGINE を変えたら）:
+
+```bash
+node ios/tools/dump-fixtures.js
+```
 
 ## 構成
 

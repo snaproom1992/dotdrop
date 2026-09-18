@@ -11,6 +11,7 @@
 		AA0000000000000000000002 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000011 /* RootView.swift */; };
 		AA0000000000000000000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000012 /* Assets.xcassets */; };
 		AA0000000000000000000004 /* DotDropEngine in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000020 /* DotDropEngine */; };
+		AA0000000000000000000005 /* PlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000014 /* PlayView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -18,6 +19,7 @@
 		AA0000000000000000000011 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000012 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA0000000000000000000013 /* DotDrop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DotDrop.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000014 /* PlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -46,6 +48,7 @@
 			children = (
 				AA0000000000000000000010 /* DotDropApp.swift */,
 				AA0000000000000000000011 /* RootView.swift */,
+				AA0000000000000000000014 /* PlayView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -144,6 +147,7 @@
 			files = (
 				AA0000000000000000000001 /* DotDropApp.swift in Sources */,
 				AA0000000000000000000002 /* RootView.swift in Sources */,
+				AA0000000000000000000005 /* PlayView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

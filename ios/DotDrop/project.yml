@@ -23,6 +23,8 @@ targets:
     platform: iOS
     sources:
       - path: App
+        includes:
+          - "**/*.swift"
     resources:
       - path: Resources
     dependencies:
