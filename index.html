@@ -76,9 +76,9 @@ transform:translateX(-50%);animation:trail 1.05s both}
   100%{transform:translateY(0) scale(1,1)}}
 @media (prefers-reduced-motion:reduce){.overlay h1 i{animation:none}.overlay h1 i b{display:none}}
 .overlay p{margin-top:14px;font-size:15px;opacity:.75;line-height:1.7}
-.overlay button{margin-top:28px;font:inherit;font-weight:700;font-size:18px;color:var(--paper);background:var(--red);border:none;border-radius:999px;padding:16px 40px;cursor:pointer}
-.overlay button:focus-visible{outline:3px solid var(--paper);outline-offset:3px}
-.overlay button.sub{margin-top:14px;background:none;border:1.5px solid rgba(242,241,238,.35);font-size:13px;padding:10px 18px}
+.overlay button,.sheet-card button{margin-top:28px;font:inherit;font-weight:700;font-size:18px;color:var(--paper);background:var(--red);border:none;border-radius:999px;padding:16px 40px;cursor:pointer}
+.overlay button:focus-visible,.sheet-card button:focus-visible{outline:3px solid var(--paper);outline-offset:3px}
+.overlay button.sub,.sheet-card button.sub{margin-top:14px;background:none;border:1.5px solid rgba(242,241,238,.35);font-size:13px;padding:10px 18px}
 #tutBtn{margin-top:14px;display:flex;flex-direction:column;align-items:center;gap:9px;background:none;border:2px solid var(--paper);border-radius:4px;font-size:16px;padding:15px 30px}
 #tutBtn i{display:flex;gap:5px}
 #tutBtn i b{width:6px;height:6px;border-radius:50%;background:var(--paper);opacity:.25}
@@ -99,11 +99,26 @@ transform:translateX(-50%);animation:trail 1.05s both}
 /* 遊んでいる途中でやめる。持ち玉の数字の真上、HUD の上端のすきまに小さく置く。
    ここだけは桁数が増えても帯の演出（y=116）とも当たらない。
    overlay は z-index:6 なので、タイトルや結果が出ている間は勝手に隠れる */
-#quitBtn{position:absolute;left:16px;top:max(0px,calc(env(safe-area-inset-top) - 2px));
-  font:inherit;font-weight:700;font-size:10px;letter-spacing:.1em;line-height:1;
-  color:var(--paper);opacity:.45;background:none;border:none;padding:4px 12px;
+#quitBtn{position:absolute;left:14px;top:max(2px,calc(env(safe-area-inset-top) - 1px));
+  display:flex;align-items:center;line-height:0;
+  color:var(--paper);opacity:.45;background:none;border:none;padding:2px 12px;
   pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent}
 #quitBtn:active{opacity:.9}
+/* 下から出る板。下にスワイプ・キャンセル・外側をタップ、の3通りで閉じられる */
+.sheet{position:fixed;inset:0;z-index:7;display:none}
+.sheet.show{display:block}
+.sheet-scrim{position:absolute;inset:0;background:rgba(28,23,22,.74);
+  opacity:0;transition:opacity .22s}
+.sheet.in .sheet-scrim{opacity:1}
+.sheet-card{position:absolute;left:0;right:0;bottom:0;background:var(--brown);
+  border-radius:20px 20px 0 0;padding:10px 24px calc(env(safe-area-inset-bottom) + 26px);
+  display:flex;flex-direction:column;align-items:center;touch-action:none;
+  transform:translateY(100%);transition:transform .24s cubic-bezier(.2,.8,.3,1)}
+.sheet.in .sheet-card{transform:translateY(0)}
+.sheet-card > *{width:100%;max-width:320px}
+/* つまみ。ここを下へ引くと閉じられることを形で示す */
+.grab{width:40px;height:4px;border-radius:2px;background:rgba(242,241,238,.3);margin:0 auto 4px}
+.sheet-card button:first-of-type{margin-top:18px}
 body.tutorial #quitBtn{display:none}   /* あそびかたは打つ回数に限りがあり、必ず終わる */
 .stage-hud{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 18px);transform:translateX(-50%);text-align:center}
 .stage-hud small{display:block;font-size:10px;font-weight:700;letter-spacing:.12em;opacity:.6}
@@ -147,9 +162,6 @@ body.tutorial .stage-hud{display:none}
 .tlist button.done b{opacity:.5}
 .result{justify-content:flex-start;padding:calc(env(safe-area-inset-top) + 40px) 24px calc(env(safe-area-inset-bottom) + 40px)}
 .result > *{width:100%;max-width:320px}
-/* たずねるだけの短い画面なので、結果画面とちがって上下まんなかに置く */
-#quitAsk{justify-content:safe center}
-#quitAsk .kicker{margin-bottom:6px}
 .res-top{display:flex;gap:8px;justify-content:center;align-items:center;min-height:26px}
 .pill{font-size:12px;font-weight:700;border:1.5px solid rgba(242,241,238,.35);border-radius:999px;padding:3px 10px}
 .rankbadge{display:none;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--ink);background:var(--mustard);border-radius:3px;padding:3px 8px}
@@ -187,7 +199,7 @@ body.tutorial .stage-hud{display:none}
 <canvas id="c"></canvas>
 <i id="safeProbe" aria-hidden="true"></i>
 <header>
-  <button id="quitBtn">やめる</button>
+  <button id="quitBtn" aria-label="リセット"></button>
   <div class="stat"><b id="money" class="roll"></b><small>持ち玉</small></div>
   <div class="stage-hud" id="stageHudBox"><small>STAGE</small><b id="stageNo">1</b><div id="stageDots"></div></div>
   <div class="tut-hud" id="tutHud"><small id="mKicker"></small><b id="mTitle"></b><u id="mProg"></u></div>
@@ -218,11 +230,14 @@ body.tutorial .stage-hud{display:none}
   <button id="mPlay">ゲームをはじめる</button>
   <button id="mQuit" class="sub">一覧</button>
 </div>
-<div id="quitAsk" class="overlay result">
-  <small class="kicker">やめますか</small>
-  <button id="qRetry">もう一度</button>
-  <button id="qTitle" class="sub">タイトルへ</button>
-  <button id="qBack" class="sub">つづける</button>
+<div id="sheet" class="sheet">
+  <div class="sheet-scrim" id="sheetScrim"></div>
+  <div class="sheet-card" id="sheetCard">
+    <i class="grab" aria-hidden="true"></i>
+    <button id="qRetry">リセット</button>
+    <button id="qTitle" class="sub">タイトルに戻る</button>
+    <button id="qBack" class="sub">キャンセル</button>
+  </div>
 </div>
 <div id="over" class="overlay result">
   <div class="res-top"><span id="newRank" class="rankbadge"></span></div>
@@ -1098,6 +1113,11 @@ const ARROW = size =>
   `<svg class="arrow" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">` +
   `<path d="M9 4.6 L16.4 12 L9 19.4" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="miter"/></svg>`;
 // できた印のチェック。線の太さを数字に合わせて、角は落とさない
+// リセットの印。すき間のある丸と、向きを示す三角だけで作る（形は丸・四角・三角のルール通り）
+const RESET = size =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">` +
+  `<path d="M20 12.6 A8.4 8.4 0 1 1 16.6 5.7" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="butt"/>` +
+  `<path d="M11.4 5.6 L19.4 2.2 L18.6 10.8 Z" fill="currentColor"/></svg>`;
 const CHECK = (size, ng) =>
   `<svg class="check${ng ? ' ng' : ''}" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">` +
   `<path d="M3.5 12.4 L9.6 18.5 L20.5 5.6" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="miter"/></svg>`;
@@ -1477,17 +1497,52 @@ $('toTitle').addEventListener('click', () => {
   tutDots();
   $('start').classList.add('show');
 });
-// 遊んでいる途中でやめる。押し間違いがあるので、必ず一度たずねる
-$('quitBtn').addEventListener('click', () => { unlockAudio(); $('quitAsk').classList.add('show'); });
-$('qBack').addEventListener('click', () => { $('quitAsk').classList.remove('show'); });
-$('qRetry').addEventListener('click', () => { unlockAudio(); $('quitAsk').classList.remove('show'); reset(mode); });
+// 遊んでいる途中でリセットする。押し間違いがあるので、必ず一度たずねる
+$('quitBtn').innerHTML = RESET(15);
+const sheetEl = $('sheet'), sheetCard = $('sheetCard');
+function openSheet() { sheetEl.classList.add('show'); requestAnimationFrame(() => sheetEl.classList.add('in')); }
+function closeSheet() {
+  sheetEl.classList.remove('in');
+  setTimeout(() => sheetEl.classList.remove('show'), 240);
+}
+$('quitBtn').addEventListener('click', () => { unlockAudio(); openSheet(); });
+$('qBack').addEventListener('click', closeSheet);
+$('sheetScrim').addEventListener('click', closeSheet);   // 外側をタップしても閉じる
+$('qRetry').addEventListener('click', () => { unlockAudio(); closeSheet(); reset(mode); });
 $('qTitle').addEventListener('click', () => {
-  $('quitAsk').classList.remove('show');
+  closeSheet();
   running = false;
   reset(FREE);
   tutDots();
   $('start').classList.add('show');
 });
+// 下にスワイプすると閉じる。指を離すまでは指についてくる
+let shStart = null, shDy = 0, shMoved = false;
+sheetCard.addEventListener('pointerdown', e => {
+  shStart = e.clientY; shDy = 0; shMoved = false;
+  sheetCard.style.transition = 'none';
+});
+addEventListener('pointermove', e => {
+  if (shStart === null) return;
+  shDy = Math.max(0, e.clientY - shStart);
+  if (shDy > 6) shMoved = true;
+  sheetCard.style.transform = `translateY(${shDy}px)`;
+});
+const shEnd = () => {
+  if (shStart === null) return;
+  const far = shDy > 70;
+  shStart = null;
+  sheetCard.style.transition = '';
+  sheetCard.style.transform = '';
+  if (far) closeSheet();
+  setTimeout(() => { shMoved = false; }, 60);
+};
+addEventListener('pointerup', shEnd);
+addEventListener('pointercancel', shEnd);
+// 引いたあとの指離しは、ボタンを押したことにしない
+sheetCard.addEventListener('click', e => {
+  if (shMoved) { e.stopPropagation(); e.preventDefault(); }
+}, true);
 $('tutBtn').addEventListener('click', () => { unlockAudio(); openTutList(); });
 $('tlistBack').addEventListener('click', () => { $('tlist').classList.remove('show'); });
 $('mNextRow').addEventListener('click', () => { unlockAudio(); stepIdx = Math.min(STEPS.length - 1, stepIdx + 1); reset(TUTORIAL); });
@@ -1531,7 +1586,7 @@ function setPull(dx, dy) {
   }
 }
 addEventListener('pointerdown', e => {
-  if (!canShoot() || e.target.closest('button') || e.target.closest('.overlay')) return;
+  if (!canShoot() || e.target.closest('button') || e.target.closest('.overlay') || e.target.closest('.sheet')) return;
   pulling = true; startX = e.clientX; startY = e.clientY; pullX = pullY = 0; lastStep = 0;
 });
 addEventListener('pointermove', e => {
@@ -1541,7 +1596,7 @@ addEventListener('pointermove', e => {
 const release = () => { if (!pulling) return; pulling = false; shoot(); pullX = pullY = 0; level = 0; lastStep = 0; };
 addEventListener('pointerup', release);
 addEventListener('pointercancel', release);
-document.addEventListener('touchmove', e => { if (!e.target.closest('.overlay')) e.preventDefault(); }, {passive: false});
+document.addEventListener('touchmove', e => { if (!e.target.closest('.overlay') && !e.target.closest('.sheet')) e.preventDefault(); }, {passive: false});
 // PC：←→で角度、スペース長押しで強さ
 addEventListener('keydown', e => {
   if (e.code === 'ArrowLeft') keyAim = Math.max(-1, keyAim - .1);
