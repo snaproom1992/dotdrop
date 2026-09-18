@@ -11,6 +11,7 @@ settings:
     TARGETED_DEVICE_FAMILY: "1"
     INFOPLIST_KEY_UILaunchScreen_Generation: YES
     INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+    INFOPLIST_KEY_UIStatusBarHidden: YES
     INFOPLIST_KEY_CFBundleDisplayName: DOT DROP
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
