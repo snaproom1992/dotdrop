@@ -189,7 +189,7 @@ public final class Engine {
     public var logicalHeight: Double = 700
     /// 発射位置 Y（論理座標）。`applyFit` でノッチ／画面の高さぶん下げる
     public var launchY: Double = baseLaunchY
-    /// 釘フィールド上端。発射位置と同じだけ下げる（間隔 60 を保つ）
+    /// 釘フィールド上端。発射位置と必ず同じだけ動かし、間隔 60 を保つ（パワー弧が被らないように）
     public var fieldTop: Double = 200
     /// 千鳥格子でおよそ 9 行（オリジナルの Safari 見た目）。これ以上は足さない
     public static let maxPegSpan: Double = 42 * 8

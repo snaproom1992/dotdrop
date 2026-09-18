@@ -15,27 +15,27 @@ struct GameHUD: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("\(session.money)")
-                        .font(.system(size: 46, weight: .bold))
+                        .font(DD.statNumber)
                         .tracking(-46 * 0.05)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
-                        .frame(height: 41, alignment: .bottomLeading) // CSS line-height:.9
+                        // CSS .stat b { font-size:46px; line-height:.9 }
+                        .frame(height: 46 * 0.9, alignment: .center)
                     Text("持ち玉")
-                        .font(.system(size: 12, weight: .regular))
-                        .lineSpacing(0)
+                        .font(DD.statLabel)
                         .padding(.top, 2)
                         .opacity(0.65)
                 }
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 0) {
                     Text("\(session.score)")
-                        .font(.system(size: 46, weight: .bold))
+                        .font(DD.statNumber)
                         .tracking(-46 * 0.05)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
-                        .frame(height: 41, alignment: .bottomTrailing)
+                        .frame(height: 46 * 0.9, alignment: .center)
                     Text("スコア")
-                        .font(.system(size: 12, weight: .regular))
+                        .font(DD.statLabel)
                         .padding(.top, 2)
                         .opacity(0.65)
                     HStack(spacing: 6) {

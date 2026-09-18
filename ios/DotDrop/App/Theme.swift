@@ -18,6 +18,20 @@ enum DD {
     static func ball(fever: Bool) -> Color { fever ? ink : paper }
     /// 背景の大きな点数（THEME.*.big）
     static func big(fever: Bool) -> Color { fever ? ink.opacity(0.16) : paper.opacity(0.16) }
+
+    /// Web の Helvetica Neue 700 / 46px。SF Pro だと同じ pt でも細く小さく見える
+    static let statNumber: Font = {
+        if UIFont(name: "HelveticaNeue-Bold", size: 46) != nil {
+            return .custom("HelveticaNeue-Bold", size: 46)
+        }
+        return .system(size: 46, weight: .bold)
+    }()
+    static let statLabel: Font = {
+        if UIFont(name: "HelveticaNeue", size: 12) != nil {
+            return .custom("HelveticaNeue", size: 12)
+        }
+        return .system(size: 12, weight: .regular)
+    }()
 }
 
 extension Color {

@@ -75,13 +75,14 @@ final class GameSession {
         lastFit = fit
         if let safeTop { self.safeTop = safeTop }
         let lh = fit.logicalHeight
-        // ノッチ分は発射玉だけ下げる（STAGE と被らないように）。
-        // 釘の上端まで下げると行数が減るので、余った高さ（tallExtra）だけを両方に足す。
+        // 発射と釘上端は必ず同じだけ動かす（間隔 60 = 200-140）。
+        // 以前はノッチを発射だけに足して間隔が 34 になり、パワー弧（最大半径 49）が釘に被った。
         let notch = fit.bannerY - 116
         let designLH = 200 + Engine.maxPegSpan + 135 // 釘9行のときの LH
         let tallExtra = max(0, lh - designLH)
-        let launchY = Engine.baseLaunchY + notch + tallExtra * 0.5
-        let fieldTop = 200 + tallExtra * 0.5
+        let shift = notch + tallExtra * 0.5
+        let launchY = Engine.baseLaunchY + shift
+        let fieldTop = 200 + shift
         let heightChanged = abs(engine.logicalHeight - lh) > 0.5
         let launchChanged = abs(engine.launchY - launchY) > 0.5
         let fieldChanged = abs(engine.fieldTop - fieldTop) > 0.5
