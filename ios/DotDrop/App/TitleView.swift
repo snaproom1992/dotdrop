@@ -101,7 +101,7 @@ private struct DropO: View {
                     drawTrail(ctx, cx: cx, cy: cy, d: d, ratio: 0.072 / 0.38, up: 0.52, opacity: 0.34)
                     drawTrail(ctx, cx: cx, cy: cy, d: d, ratio: 0.053 / 0.38, up: 0.64, opacity: 0.22)
                 }
-                var xform = CGAffineTransform.identity
+                let xform = CGAffineTransform.identity
                     .translatedBy(x: cx, y: cy + d / 2)
                     .scaledBy(x: pose.sx, y: pose.sy)
                     .translatedBy(x: -cx, y: -(cy + d / 2))

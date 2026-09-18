@@ -301,23 +301,23 @@ final class GameSession {
 
     private func moneyTarget() -> (x: Double, y: Double) {
         guard let fit = lastFit else { return (40, 90) }
-        let sx = 20 + 36
-        let sy = safeTop + 38 + 23
+        let sx: CGFloat = 20 + 36
+        let sy: CGFloat = safeTop + 38 + 23
         return (Double((sx - fit.ox) / fit.scale), Double(sy / fit.scale))
     }
 
     private func scoreTarget() -> (x: Double, y: Double) {
         guard let fit = lastFit else { return (320, 90) }
         let width = fit.ox * 2 + EngineLogical.w * fit.scale
-        let sx = width - 56
-        let sy = safeTop + 38 + 23
+        let sx: CGFloat = width - 56
+        let sy: CGFloat = safeTop + 38 + 23
         return (Double((sx - fit.ox) / fit.scale), Double(sy / fit.scale))
     }
 
     /// 描画用：持ち玉・スコアの画面座標
     func moneyTargetScreen() -> CGPoint {
-        guard let fit = lastFit else { return CGPoint(x: 56, y: 120) }
-        return CGPoint(x: 20 + 36, y: safeTop + 38 + 23)
+        guard lastFit != nil else { return CGPoint(x: 56, y: 120) }
+        return CGPoint(x: CGFloat(20 + 36), y: safeTop + 38 + 23)
     }
     func scoreTargetScreen() -> CGPoint {
         guard let fit = lastFit else { return CGPoint(x: 320, y: 120) }
