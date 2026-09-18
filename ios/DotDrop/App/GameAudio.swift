@@ -12,6 +12,8 @@ final class GameAudio {
     var sfx: AVAudioMixerNode?
     /// 節目の音だけを通すバス。残響がかかる
     var fan: AVAudioMixerNode?
+    /// ダッキングの通し番号。節目が続けて鳴ったとき、古いほうの戻しを無視するのに使う
+    var duckSeq: UInt = 0
     private var voices = 0
     private let penta = [0, 2, 4, 7, 9]
 

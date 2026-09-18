@@ -93,21 +93,34 @@ extension GameAudio {
         }
     }
 
-    /// 節目が鳴っている間、釘の音を小さくする
+    /// 節目が鳴っている間、釘の音を小さくする。
+    /// 埋もれると言われたら、まずこの 0.12 を下げる（0 にすると釘の音が完全に消える）
     func duck(dur: Double) {
         guard let sfx else { return }
-        sfx.outputVolume = 0.18
+        duckSeq &+= 1
+        let mine = duckSeq
+        sfx.outputVolume = 0.12
         Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(max(0, dur) * 1_000_000_000))
-            self?.sfx?.outputVolume = 1
+            // 戻すのは1段ずつ。一気に戻すとプツッと鳴る。
+            // あとから別の節目が鳴っていたら、そちらに任せて何もしない
+            for i in 1...8 {
+                guard let self, self.duckSeq == mine else { return }
+                self.sfx?.outputVolume = 0.12 + (1 - 0.12) * Float(i) / 8
+                try? await Task.sleep(nanoseconds: 40_000_000)
+            }
         }
     }
 
     // MARK: - 節目専用の楽器
 
     /// ブラス：少しずらした2本のノコギリ波＋1オクターブ下の矩形波を、
-    /// フィルターを開きながら鳴らす（金管っぽい「パーッ」）
+    /// フィルターを開きながら鳴らす（金管っぽい「パーッ」）。
+    ///
+    /// **フィルターは Q=2 の共振つきでなければいけない。**カットオフのあたりが持ち上がって、
+    /// 金管の芯になる。ここを単純な1次のローパスにすると、音が痩せて釘の音に埋もれる。
     func brass(freq: Double, dur: Double, gain: Double = 0.1, delay: Double = 0) {
+        var lp = 0.0, bp = 0.0
         renderToFan(dur: dur + 0.12, delay: delay) { t, sr in
             // フィルターの開き具合：350 →(0.06秒)→ freq*7 →(dur)→ freq*3.5
             let cutoff: Double
@@ -132,11 +145,17 @@ extension GameAudio {
             for cents in [-7.0, 7.0] {
                 let f = (freq + vib) * pow(2, cents / 1200)
                 let ph = (f * t).truncatingRemainder(dividingBy: 1)
-                s += (ph * 2 - 1) * 0.5                       // ノコギリ波
+                s += ph * 2 - 1                               // ノコギリ波（Web と同じ振幅）
             }
             let subPh = (freq / 2 * t).truncatingRemainder(dividingBy: 1)
             s += (subPh < 0.5 ? 1.0 : -1.0) * 0.25            // 1オクターブ下の矩形波
-            return (s * env, cutoff / (sr * 0.5))             // 第2要素がローパスの強さ
+            // Q=2 の2極ローパス。カットオフのあたりが持ち上がる
+            let fc = min(0.9, 2 * sin(.pi * min(cutoff, sr * 0.45) / sr))
+            let q = 0.5                                        // 1 / Q
+            lp += fc * bp
+            let hp = s - lp - q * bp
+            bp += fc * hp
+            return (lp * env, 1)                               // フィルターは自前で掛けた
         }
     }
 
@@ -203,11 +222,15 @@ extension GameAudio {
         let frames = AVAudioFrameCount((dur + delay + 0.02) * sr)
         guard frames > 0, let buf = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames) else { return }
         buf.frameLength = frames
-        guard let data = buf.floatChannelData?[0] else { return }
+        guard let chans = buf.floatChannelData else { return }
 
+        let channels = Int(format.channelCount)
         let delayN = Int(delay * sr)
         let n = Int(dur * sr)
-        for i in 0..<Int(frames) { data[i] = 0 }
+        for ch in 0..<channels {
+            let d = chans[ch]
+            for i in 0..<Int(frames) { d[i] = 0 }
+        }
         var lp = 0.0
         for i in 0..<n {
             let idx = delayN + i
@@ -216,8 +239,9 @@ extension GameAudio {
             // ローパス（cut が 1 なら素通し）
             let a = max(0.0001, min(1, cut))
             lp += a * (raw - lp)
-            let s = a >= 1 ? raw : lp
-            data[idx] += Float(max(-1, min(1, s)))
+            let s = Float(max(-1, min(1, a >= 1 ? raw : lp)))
+            // 左右の両方に書く。片方だけだと、イヤホンで半分の大きさに聞こえる
+            for ch in 0..<channels { chans[ch][idx] += s }
         }
 
         let player = AVAudioPlayerNode()
