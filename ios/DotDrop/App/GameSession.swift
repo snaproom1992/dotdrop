@@ -68,6 +68,10 @@ final class GameSession: ObservableObject {
     }
 
     func startFreePlay() {
+        GameAudio.shared.unlock()
+        GameHaptics.prepare()
+        GameAudio.shared.playStart()
+        GameHaptics.buzz(.medium, gap: 0)
         engine.applyConf(.freePlay)
         engine.boardSeed = nil
         engine.stage = 0
@@ -122,10 +126,12 @@ final class GameSession: ObservableObject {
         triBonus = false
         lastDate = nil
         wireHooks()
+        GameAudio.shared.playShoot()
+        GameHaptics.buzz(.light, gap: 0)
     }
 
     private func wireHooks() {
-        engine.hooks.hit = { [weak self] _, _, _, _, _, pts in
+        engine.hooks.hit = { [weak self] _, _, n, _, kind, pts in
             guard let self else { return }
             if !self.engine.fever { self.gauge += pts }
             if !self.triBonus {
@@ -134,7 +140,15 @@ final class GameSession: ObservableObject {
                     self.triBonus = true
                     self.money += 3
                     self.showBanner("▲▲▲", "3つとも当てて +3玉", DD.mustard)
+                    GameHaptics.pattern(4, intervalMs: 70)
                 }
+            }
+            GameAudio.shared.playHit(kind: kind, hitCount: n, fever: self.engine.fever)
+            switch kind {
+            case .dot: GameHaptics.buzz(.light)
+            case .square: GameHaptics.buzz(.heavy, gap: 0)
+            case .blue: GameHaptics.buzz(.medium, gap: 0)
+            case .tri: GameHaptics.pattern(2, intervalMs: 50)
             }
             self.tick &+= 1
         }
