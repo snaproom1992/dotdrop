@@ -1,4 +1,4 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 import UIKit
 import DotDropEngine
 
@@ -49,7 +49,6 @@ final class GameAudio {
         guard let data = buf.floatChannelData?[0] else { return }
 
         let delayN = Int(delay * sr)
-        let durN = Int(dur * sr)
         for i in 0..<Int(frames) {
             data[i] = 0
         }
@@ -79,9 +78,12 @@ final class GameAudio {
         eng.attach(player)
         eng.connect(player, to: sfx, format: format)
         voices += 1
+        // AVAudio* は Sendable でないので、完了コールバックへ渡す参照は nonisolated(unsafe)
+        nonisolated(unsafe) let unsafeEng = eng
+        nonisolated(unsafe) let unsafePlayer = player
         player.scheduleBuffer(buf, completionHandler: { [weak self] in
             Task { @MainActor in
-                eng.detach(player)
+                unsafeEng.detach(unsafePlayer)
                 self?.voices = max(0, (self?.voices ?? 1) - 1)
             }
         })
@@ -110,8 +112,10 @@ final class GameAudio {
         let player = AVAudioPlayerNode()
         eng.attach(player)
         eng.connect(player, to: sfx, format: format)
+        nonisolated(unsafe) let unsafeEng = eng
+        nonisolated(unsafe) let unsafePlayer = player
         player.scheduleBuffer(buf, completionHandler: {
-            Task { @MainActor in eng.detach(player) }
+            Task { @MainActor in unsafeEng.detach(unsafePlayer) }
         })
         player.play()
     }

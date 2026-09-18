@@ -68,7 +68,6 @@ struct RootView: View {
             .onAppear {
                 refreshSafeArea()
                 session.applyFit(fit)
-                if session.screen == .title { session.openTitle() }
             }
             .onChange(of: geo.size) { _, _ in
                 refreshSafeArea()
@@ -85,9 +84,13 @@ struct RootView: View {
     private func refreshSafeArea() {
         let apply = {
             let insets = ScreenSafeArea.insets
-            // 起動直後はウィンドウ未準備で 0 のことがある。取れた値だけ反映
-            if insets.top > 0 { safeTop = insets.top }
-            if insets.bottom > 0 { safeBot = insets.bottom }
+            // 値が変わったときだけ書く（AttributeGraph cycle / 無駄な再レイアウト防止）
+            if insets.top > 0, abs(safeTop - insets.top) > 0.5 {
+                safeTop = insets.top
+            }
+            if insets.bottom > 0, abs(safeBot - insets.bottom) > 0.5 {
+                safeBot = insets.bottom
+            }
         }
         apply()
         // Web の fit() と同様、少し遅れて測り直す（ホーム画面起動などで高さが後から変わる）

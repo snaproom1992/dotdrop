@@ -21,7 +21,6 @@ final class GameSession: ObservableObject {
     @Published var gameBestShot = 0
     @Published var personalBest = 0
     @Published var beatBest = false
-    @Published var tick = 0
     @Published var tutorialCleared: Set<String> = []
 
     private var lastDate: Date?
@@ -36,6 +35,11 @@ final class GameSession: ObservableObject {
         var sub: String
         var color: Color
         var born: Date
+    }
+
+    init() {
+        loadTutorialProgress()
+        personalBest = storedBest()
     }
 
     var fever: Bool { engine.fever }
@@ -100,7 +104,6 @@ final class GameSession: ObservableObject {
         screen = .playing
         wireHooks()
         startDisplayLoop()
-        tick &+= 1
     }
 
     func setPull(dx: Double, dy: Double) {
@@ -150,7 +153,6 @@ final class GameSession: ObservableObject {
             case .blue: GameHaptics.buzz(.medium, gap: 0)
             case .tri: GameHaptics.pattern(2, intervalMs: 50)
             }
-            self.tick &+= 1
         }
         engine.hooks.shotEnd = { [weak self] pay in
             guard let self else { return }
@@ -164,7 +166,6 @@ final class GameSession: ObservableObject {
             self.busy = false
             self.feverStep()
             self.afterShot()
-            self.tick &+= 1
             if self.money < self.engine.config.cost {
                 self.finishGame()
             }
@@ -269,8 +270,7 @@ final class GameSession: ObservableObject {
                 if !busy { break }
             }
         }
-        // TimelineView の再描画用（状態が変わらなくても受け皿は流れる）
-        tick &+= 1
+        // 盤面の再描画は BoardCanvas の TimelineView が担う（毎フレーム @Published しない）
     }
 
     // MARK: - Storage (localStorage 相当)

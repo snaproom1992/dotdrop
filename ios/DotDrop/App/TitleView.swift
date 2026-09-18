@@ -26,10 +26,11 @@ struct TitleView: View {
     private var titleBlock: some View {
         // h1: 76px, letter-spacing -.06em, line-height .9
         // DOT の O は .38em / 左右 .17em / vertical-align:baseline / top:-.17em
+        // レイアウト用の固定枠と、アニメ用の TimelineView を分ける（AttributeGraph cycle 防止）
         VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 0) {
                 Text("D")
-                DropO()
+                DropOSlot()
                 Text("T")
             }
             Text("DROP")
@@ -37,7 +38,7 @@ struct TitleView: View {
         .font(.system(size: 76, weight: .bold))
         .foregroundStyle(DD.paper)
         .tracking(-76 * 0.06)
-        .lineSpacing(-76 * 0.1) // line-height .9 ≒ 行間を詰める
+        .lineSpacing(-76 * 0.1)
         .multilineTextAlignment(.center)
     }
 
@@ -82,35 +83,62 @@ struct TitleView: View {
     }
 }
 
-/// CSS: inline-block .38em、vertical-align:baseline、top:-.17em、dropIn
-struct DropO: View {
-    @State private var start = Date()
+/// レイアウトだけ担当（サイズ固定）。アニメは overlay 内の DropO に閉じる。
+private struct DropOSlot: View {
     private let em: CGFloat = 76
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 60)) { timeline in
-            let t = min(1.05, timeline.date.timeIntervalSince(start))
-            let pose = dropPose(t)
-            ZStack(alignment: .bottom) {
-                if pose.trails {
-                    trail(0.095, 0.39, 0.5)
-                    trail(0.072, 0.52, 0.34)
-                    trail(0.053, 0.64, 0.22)
-                }
+        Color.clear
+            .frame(width: em * 0.38, height: 1)
+            .padding(.horizontal, em * 0.17)
+            .overlay(alignment: .bottom) {
+                DropO()
+                    .offset(y: -em * 0.17) // CSS top: -.17em
+            }
+            .alignmentGuide(.firstTextBaseline) { d in d[VerticalAlignment.bottom] }
+    }
+}
+
+/// CSS dropIn / trail（描画のみ。親レイアウトを動かさない）
+private struct DropO: View {
+    @State private var start = Date()
+    @State private var finished = false
+    private let em: CGFloat = 76
+
+    var body: some View {
+        Group {
+            if finished {
                 Circle()
                     .fill(DD.paper)
                     .frame(width: em * 0.38, height: em * 0.38)
-                    .scaleEffect(x: pose.sx, y: pose.sy, anchor: .bottom)
-                    .offset(y: em * pose.ty)
+            } else {
+                TimelineView(.animation(minimumInterval: 1 / 60)) { timeline in
+                    let t = min(1.05, timeline.date.timeIntervalSince(start))
+                    let pose = dropPose(t)
+                    ZStack(alignment: .bottom) {
+                        if pose.trails {
+                            trail(0.095, 0.39, 0.5)
+                            trail(0.072, 0.52, 0.34)
+                            trail(0.053, 0.64, 0.22)
+                        }
+                        Circle()
+                            .fill(DD.paper)
+                            .frame(width: em * 0.38, height: em * 0.38)
+                            .scaleEffect(x: pose.sx, y: pose.sy, anchor: .bottom)
+                            .offset(y: em * pose.ty)
+                    }
+                    .frame(width: em * 0.38, height: em * 0.38, alignment: .bottom)
+                }
             }
-            .frame(width: em * 0.38, height: em * 0.38, alignment: .bottom)
         }
-        .padding(.horizontal, em * 0.17)
-        // CSS vertical-align:baseline → 下端を文字のベースラインに合わせる
-        .alignmentGuide(.firstTextBaseline) { d in d[VerticalAlignment.bottom] }
-        // CSS top: -.17em（ベースラインからわずかに上げて、O らしく見せる）
-        .offset(y: -em * 0.17)
-        .onAppear { start = Date() }
+        .frame(width: em * 0.38, height: em * 0.38, alignment: .bottom)
+        .onAppear {
+            start = Date()
+            finished = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.05) {
+                finished = true
+            }
+        }
     }
 
     private func trail(_ size: CGFloat, _ bottom: CGFloat, _ opacity: Double) -> some View {
