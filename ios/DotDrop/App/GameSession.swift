@@ -57,8 +57,14 @@ final class GameSession {
 
     func applyFit(_ fit: BoardFit) {
         let lh = fit.logicalHeight
-        guard abs(engine.logicalHeight - lh) > 0.5 else { return }
+        // 帯と同じ：ノッチ分だけ発射位置を下げる（上限 26）。STAGE と玉が被らないようにする
+        let notch = fit.bannerY - 116
+        let launchY = Engine.baseLaunchY + notch
+        let heightChanged = abs(engine.logicalHeight - lh) > 0.5
+        let launchChanged = abs(engine.launchY - launchY) > 0.5
+        guard heightChanged || launchChanged else { return }
         engine.logicalHeight = lh
+        engine.launchY = launchY
         if screen == .playing, engine.balls.isEmpty {
             engine.setLayout(engine.layout, animate: false)
         }

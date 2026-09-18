@@ -31,6 +31,9 @@ DotDropEngine/       … ENGINE + フィクスチャテスト
 - タイトルの O は固定サイズの Canvas アニメ。`alignmentGuide` は使わない（AttributeGraph cycle）
 - `GameSession` は `@Observable`。`pullX/Y` と `engine` は `@ObservationIgnored`
   （ドラッグや物理のたびに RootView 全体が再構築されないようにする）
+- `BoardCanvas` の `TimelineView` は **`timeline.date` を Canvas 内で読む**こと。
+  読まないと Canvas が再描画されず、受け皿も脈打ちも止まる
+- 発射 Y は帯と同じくノッチ分だけ下げる（上限 26）。STAGE と玉の重なり防止
 
 ## フィーバー（Web と同じ）
 

@@ -177,12 +177,16 @@ public final class Engine {
     public static let blueRadius: Double = 9
     public static let triRadius: Double = 8
     public static let physicsSubstep: Double = 1.0 / 360.0
-    public static let launchPoint = (x: logicalWidth / 2, y: 140.0)
+    /// 基準の発射 Y。ノッチ分は `launchY` に上乗せする（帯 BANNER_Y と同じ考え方）
+    public static let baseLaunchY: Double = 140
     public static let layouts = 4
     public static let maxPull: Double = 130
     public static let levels = 5
 
     public var logicalHeight: Double = 700
+    /// 発射位置 Y（論理座標）。`applyFit` でノッチ分だけ下げる
+    public var launchY: Double = baseLaunchY
+    public var launchPoint: (x: Double, y: Double) { (Self.logicalWidth / 2, launchY) }
     public var pegs: [Peg] = []
     public var balls: [Ball] = []
     public var pot: Int = 0
@@ -397,7 +401,7 @@ public final class Engine {
 
     public func launch(vx: Double, vy: Double) {
         pot = 0; shotPay = 0; hitCount = 0; shotScore = 0
-        let L = Self.launchPoint
+        let L = launchPoint
         balls = [Ball(x: L.x, y: L.y, vx: vx, vy: vy)]
     }
 

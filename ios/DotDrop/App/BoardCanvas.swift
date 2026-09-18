@@ -7,9 +7,10 @@ struct BoardCanvas: View {
     var fit: BoardFit
 
     var body: some View {
-        // 物理更新は GameSession のタイマー。ここでは描画だけ（view update 中の @Published 禁止対策）
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { _ in
+        // timeline.date を Canvas 内で読まないと再描画が止まる（@Published tick をやめたあとの罠）
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
             Canvas { ctx, size in
+                let _ = timeline.date
                 draw(ctx: ctx, size: size)
             }
         }
@@ -144,7 +145,7 @@ struct BoardCanvas: View {
 
         // 発射前（drawLaunch / drawLaunchBall）
         if session.canShoot {
-            let L = Engine.launchPoint
+            let L = e.launchPoint
             let c = pt(L.x, L.y)
             let bannerUp = session.banner != nil
             let r = (Engine.ballRadius + Double(session.level) / Double(Engine.levels) * 1.2) * s
@@ -189,7 +190,7 @@ struct BoardCanvas: View {
                     Text("引っ張ってはなす")
                         .font(.system(size: 13 * s, weight: .medium))
                         .foregroundColor(DD.fg(fever: fever).opacity(0.7)),
-                    at: pt(Engine.logicalWidth / 2, 188),
+                    at: pt(Engine.logicalWidth / 2, L.y + 48),
                     anchor: .center
                 )
                 ctx.draw(
