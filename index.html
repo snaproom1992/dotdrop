@@ -42,9 +42,13 @@ header{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-be
 .roll .strip{display:block;transition:transform .18s cubic-bezier(.3,1.5,.5,1)}
 .roll .strip span{display:block;height:.9em}
 /* フィーバーのゲージ。まんなかには置けない（ノッチのある端末で、発射前の玉の飾りと
-   場所を取り合って必ずどれかが乗る）。スコアの下のまま、色だけマスタードにして
-   ステージの丸（赤）と分ける。丸＝とびとび・赤、棒＝連続・マスタード */
-#gauge{width:96px;height:5px;margin:6px 0 0 auto;background:rgba(242,241,238,.16);border-radius:3px;overflow:hidden}
+   場所を取り合って必ずどれかが乗る）。スコアの下のまま、色をマスタードにして
+   ステージの丸（赤）と分け、さらに FEVER と書いて何のゲージか分かるようにする。
+   色は body.fever で自動的に反転する（フィーバー中は背景がマスタードになるため） */
+.fever-row{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:6px;transition:opacity .18s}
+body.banner-up .fever-row{opacity:0}
+.fever-row small{font-size:9px;font-weight:700;letter-spacing:.12em;opacity:.5;line-height:1}
+#gauge{width:58px;height:5px;background:rgba(242,241,238,.16);border-radius:3px;overflow:hidden}
 body.fever #gauge{background:rgba(28,23,22,.18)}
 body.fever #gauge i{background:#1C1716}   /* フィーバー中は背景がマスタードなので、色を入れ替える */
 #gauge i{display:block;height:100%;width:0;background:#EAA83A;transition:width .25s}
@@ -223,7 +227,7 @@ body.tutorial .stage-hud{display:none}
   <div class="stat"><b id="money" class="roll"></b><small>持ち玉</small></div>
   <div class="stage-hud" id="stageHudBox"><small>STAGE</small><b id="stageNo">1</b><div id="stageDots"></div></div>
   <div class="tut-hud" id="tutHud"><small id="mKicker"></small><b id="mTitle"></b><u id="mProg"></u></div>
-  <div class="stat right"><b id="points" class="roll"></b><small id="pointsLabel">スコア</small><div id="gauge"><i></i></div></div>
+  <div class="stat right"><b id="points" class="roll"></b><small id="pointsLabel">スコア</small><div class="fever-row"><small>FEVER</small><div id="gauge"><i></i></div></div></div>
 </header>
 <div id="start" class="overlay show">
   <h1>D<i><b></b><b></b><b></b></i>T<br>DROP</h1>
@@ -1446,6 +1450,9 @@ let BANNER_Y = 116;
 const BANNER_H = 56, SUB_SIZE = 14;
 function drawBanner() {
   const b = bannerState;
+  // FEVER の行だけは帯と同じ高さにあるので、帯が出ている間は消す
+  // （発射前の飾りと同じ扱い。数字と持ち玉／スコアの文字は帯に掛からない）
+  document.body.classList.toggle('banner-up', !!(b && b.t < 1.5));
   if (!b || b.t > 1.5) return;
   const t = b.t, off = t < .25 ? -LW * (1 - ease(t / .25)) : t > 1.2 ? LW * ease((t - 1.2) / .3) : 0;
   const y = BANNER_Y, h = BANNER_H, mid = y + h / 2;
