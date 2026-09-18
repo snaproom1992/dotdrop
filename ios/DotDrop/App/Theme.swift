@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// `index.html` の `:root` / THEME に対応
 enum DD {
@@ -52,4 +53,20 @@ struct BoardFit: Equatable {
 
 enum EngineLogical {
     static let w: CGFloat = 360
+}
+
+/// `.ignoresSafeArea()` すると GeometryReader の insets が 0 になる。
+/// Web の `env(safe-area-inset-*)` と同じ値を、ウィンドウから取る。
+enum ScreenSafeArea {
+    static var insets: UIEdgeInsets {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let window = scenes
+            .flatMap(\.windows)
+            .first(where: \.isKeyWindow)
+            ?? scenes.flatMap(\.windows).first
+        return window?.safeAreaInsets ?? .zero
+    }
+
+    static var top: CGFloat { insets.top }
+    static var bottom: CGFloat { insets.bottom }
 }

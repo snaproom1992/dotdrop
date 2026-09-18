@@ -24,9 +24,10 @@ struct TitleView: View {
     }
 
     private var titleBlock: some View {
-        // h1: 76px, letter-spacing -.06em, DOT の O は .38em / 左右 .17em
+        // h1: 76px, letter-spacing -.06em, line-height .9
+        // DOT の O は .38em / 左右 .17em / vertical-align:baseline / top:-.17em
         VStack(spacing: 0) {
-            HStack(spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
                 Text("D")
                 DropO()
                 Text("T")
@@ -36,6 +37,7 @@ struct TitleView: View {
         .font(.system(size: 76, weight: .bold))
         .foregroundStyle(DD.paper)
         .tracking(-76 * 0.06)
+        .lineSpacing(-76 * 0.1) // line-height .9 ≒ 行間を詰める
         .multilineTextAlignment(.center)
     }
 
@@ -80,15 +82,16 @@ struct TitleView: View {
     }
 }
 
-/// CSS dropIn / trail
+/// CSS: inline-block .38em、vertical-align:baseline、top:-.17em、dropIn
 struct DropO: View {
     @State private var start = Date()
+    private let em: CGFloat = 76
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 60)) { timeline in
             let t = min(1.05, timeline.date.timeIntervalSince(start))
             let pose = dropPose(t)
-            ZStack {
+            ZStack(alignment: .bottom) {
                 if pose.trails {
                     trail(0.095, 0.39, 0.5)
                     trail(0.072, 0.52, 0.34)
@@ -96,21 +99,25 @@ struct DropO: View {
                 }
                 Circle()
                     .fill(DD.paper)
+                    .frame(width: em * 0.38, height: em * 0.38)
                     .scaleEffect(x: pose.sx, y: pose.sy, anchor: .bottom)
-                    .offset(y: 76 * pose.ty)
+                    .offset(y: em * pose.ty)
             }
-            .frame(width: 76 * 0.38, height: 76 * 0.38)
+            .frame(width: em * 0.38, height: em * 0.38, alignment: .bottom)
         }
-        .padding(.horizontal, 76 * 0.17)
-        .offset(y: -76 * 0.17)
+        .padding(.horizontal, em * 0.17)
+        // CSS vertical-align:baseline → 下端を文字のベースラインに合わせる
+        .alignmentGuide(.firstTextBaseline) { d in d[VerticalAlignment.bottom] }
+        // CSS top: -.17em（ベースラインからわずかに上げて、O らしく見せる）
+        .offset(y: -em * 0.17)
         .onAppear { start = Date() }
     }
 
     private func trail(_ size: CGFloat, _ bottom: CGFloat, _ opacity: Double) -> some View {
         Circle()
             .fill(DD.paper.opacity(opacity))
-            .frame(width: 76 * size, height: 76 * size)
-            .offset(y: -76 * bottom)
+            .frame(width: em * size, height: em * size)
+            .offset(y: -em * bottom)
     }
 
     private func dropPose(_ t: Double) -> (ty: CGFloat, sx: CGFloat, sy: CGFloat, trails: Bool) {
