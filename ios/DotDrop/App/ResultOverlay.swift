@@ -70,12 +70,14 @@ struct ResultOverlay: View {
                     Rectangle().fill(DD.paper.opacity(0.2)).frame(height: 1.5)
                 }
 
+                // 本家の `.result > * { width:100%; max-width:320px }`。
+                // **2つのボタンは同じ幅にそろえる。**文字幅ぶんだけにすると幅が変わる
                 Button(action: onRetry) {
                     Text("もう一度")
                         .font(DD.bold(18))
                         .foregroundStyle(DD.paper)
+                        .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
-                        .padding(.horizontal, 40)
                         .background(DD.red)
                         .clipShape(Capsule())
                 }
@@ -85,8 +87,8 @@ struct ResultOverlay: View {
                     Text("タイトルへ")
                         .font(DD.bold(13))
                         .foregroundStyle(DD.paper)
+                        .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .padding(.horizontal, 18)
                         .overlay(Capsule().stroke(DD.paper.opacity(0.35), lineWidth: 1.5))
                 }
                 .padding(.top, 14)
