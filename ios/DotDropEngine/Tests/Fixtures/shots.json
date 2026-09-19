@@ -1,7 +1,7 @@
 {
   "version": 2,
   "note": "Generated from index.html ENGINE by ios/tools/dump-fixtures.js. Math.random replaced with seeded(playSeed). Pegs snapshotted after setLayout+pickGold.",
-  "generatedAt": "2026-09-19T09:23:15.330Z",
+  "generatedAt": "2026-09-19T09:30:35.944Z",
   "maxPull": 130,
   "levels": 5,
   "seededSample42": [
@@ -294,11 +294,11 @@
         }
       ],
       "expected": {
-        "hitCount": 42,
+        "hitCount": 43,
         "shotPay": 9,
-        "shotScore": 138,
+        "shotScore": 141,
         "kinds": {
-          "dot": 33,
+          "dot": 34,
           "tri": 3,
           "blue": 1,
           "square": 5
@@ -306,7 +306,7 @@
         "stuck": false
       },
       "meta": {
-        "duration": 7.6417,
+        "duration": 7.7222,
         "pegCount": 52
       }
     },

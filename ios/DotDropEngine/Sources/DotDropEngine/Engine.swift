@@ -1,5 +1,11 @@
 import Foundation
 
+/// **`hypot` は使わない。**正しく丸めることを求められていない関数なので、
+/// ブラウザ（Math.hypot）と libm で最後の1ビットがずれる。当たるか外れるかの
+/// 瀬戸際でだけ結果が変わり、本家との一致テストが落ちる。掛けて足して平方根、で統一する
+@inline(__always)
+func hyp(_ a: Double, _ b: Double) -> Double { (a * a + b * b).squareRoot() }
+
 // MARK: - Info
 
 public enum EngineInfo {
@@ -338,7 +344,7 @@ public final class Engine {
                 tries += 1
                 let x = 30 + boardRand() * (LW - 60)
                 let y = f.top + boardRand() * (f.bottom - f.top)
-                if pts.allSatisfy({ hypot($0.0 - x, $0.1 - y) > 40 }) {
+                if pts.allSatisfy({ hyp($0.0 - x, $0.1 - y) > 40 }) {
                     pts.append((x, y))
                 }
             }
@@ -347,7 +353,7 @@ public final class Engine {
         let clamped = pts.map { (max(30, min(LW - 30, $0.0)), $0.1) }
         var unique: [(Double, Double)] = []
         for p in clamped {
-            if !unique.contains(where: { hypot($0.0 - p.0, $0.1 - p.1) < 20 }) {
+            if !unique.contains(where: { hyp($0.0 - p.0, $0.1 - p.1) < 20 }) {
                 unique.append(p)
             }
         }
@@ -494,7 +500,7 @@ public final class Engine {
                     let cx = max(p.x - SQ, min(b.x, p.x + SQ))
                     let cy = max(p.y - SQ, min(b.y, p.y + SQ))
                     var dx = b.x - cx, dy = b.y - cy
-                    var d = hypot(dx, dy)
+                    var d = hyp(dx, dy)
                     if d >= BR { continue }
                     if d < 0.001 { dx = 0; dy = -1; d = 1 }
                     let nx = dx / d, ny = dy / d
@@ -504,7 +510,7 @@ public final class Engine {
                     if vn < 0 {
                         b.vx -= 2 * vn * nx
                         b.vy -= 2 * vn * ny
-                        let sp = hypot(b.vx, b.vy)
+                        let sp = hyp(b.vx, b.vy)
                         if sp < 560 { b.vx *= 560 / sp; b.vy *= 560 / sp }
                         b.vx += (playRand() - 0.5) * 120
                         b.samePeg = (b.lastPeg === p) ? b.samePeg + 1 : 0
@@ -522,7 +528,7 @@ public final class Engine {
                 }
 
                 let m = BR + (p.kind == .blue ? Self.blueRadius : p.kind == .tri ? Self.triRadius : Self.pegRadius)
-                let d = hypot(dx0, dy0)
+                let d = hyp(dx0, dy0)
                 if d < m && d > 0.001 {
                     if p.kind == .blue && time > b.holdCool {
                         b.state = .held
@@ -552,7 +558,7 @@ public final class Engine {
 
             let prevX = b.lx ?? b.x
             let prevY = b.ly ?? b.y
-            let moved = hypot(b.x - prevX, b.y - prevY)
+            let moved = hyp(b.x - prevX, b.y - prevY)
             b.lx = b.x; b.ly = b.y
             if moved < 40 * dt { b.stillT += dt } else { b.stillT = 0 }
             if b.stillT > 0.3 {
@@ -564,7 +570,7 @@ public final class Engine {
                 b.stillT = 0
                 if b.stuckCount >= 3 { b.ghostUntil = time + 0.25 }
             }
-            let sp = hypot(b.vx, b.vy)
+            let sp = hyp(b.vx, b.vy)
             if sp > 1000 { b.vx *= 1000 / sp; b.vy *= 1000 / sp }
             if b.age > 8 { b.vy += 3000 * dt }
             if b.y > slotTop() {

@@ -291,6 +291,10 @@ body.tutorial .stage-hud{display:none}
 <script>
 // ================= 物理とルール =================
 /*ENGINE*/
+// **Math.hypot は使わない。**正しく丸めることを求められていない関数なので、
+// ブラウザと Swift（libm）で最後の1ビットがずれる。当たるか外れるかの瀬戸際で
+// だけ結果が変わり、移植の一致テストが落ちる。掛けて足して平方根、で統一する
+const hyp = (a, b) => Math.sqrt(a * a + b * b);
 const LW = 360, BR = 7, PR = 4.5, GRAV = 1100, CONV_SPEED = 26;
 // 床一面に敷き詰めた受け皿。倍率（m）は固定、戻る玉（b）はステージが進むほど厳しくなる
 const SLOT_M0 = [0, 1, 3, 0, 0, 1, 5, 0, 0, 1, 3, 0, 0, 1, 3, 0];
@@ -379,12 +383,12 @@ function makeLayout(kind) {
     let tries = 0;
     while (tries++ < 4000) {
       const x = 30 + boardRand() * (LW - 60), y = f.top + boardRand() * (f.bottom - f.top);
-      if (pts.every(([px, py]) => Math.hypot(px - x, py - y) > 40)) pts.push([x, y]);
+      if (pts.every(([px, py]) => hyp(px - x, py - y) > 40)) pts.push([x, y]);
     }
   }
   // 壁との間に玉が挟まらないよう、端から十分離す
   return pts.map(([x, y]) => [Math.max(30, Math.min(LW - 30, x)), y])
-    .filter(([x, y], i, arr) => arr.findIndex(([ax, ay]) => Math.hypot(ax - x, ay - y) < 20) === i);
+    .filter(([x, y], i, arr) => arr.findIndex(([ax, ay]) => hyp(ax - x, ay - y) < 20) === i);
 }
 
 function setLayout(kind, animate) {
@@ -484,7 +488,7 @@ function stepPhysics(dt) {
       if (p.kind === 'square') {
         // ■ 強くはね返す
         const cx = Math.max(p.x - SQ_H, Math.min(b.x, p.x + SQ_H)), cy = Math.max(p.y - SQ_H, Math.min(b.y, p.y + SQ_H));
-        let dx = b.x - cx, dy = b.y - cy, d = Math.hypot(dx, dy);
+        let dx = b.x - cx, dy = b.y - cy, d = hyp(dx, dy);
         if (d >= BR) continue;
         if (d < .001) { dx = 0; dy = -1; d = 1; }
         const nx = dx / d, ny = dy / d;
@@ -492,7 +496,7 @@ function stepPhysics(dt) {
         const vn = b.vx * nx + b.vy * ny;
         if (vn < 0) {
           b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny;
-          const sp = Math.hypot(b.vx, b.vy);
+          const sp = hyp(b.vx, b.vy);
           if (sp < 560) { b.vx *= 560 / sp; b.vy *= 560 / sp; }
           b.vx += (Math.random() - .5) * 120;
           // 同じ四角で跳ね続けないように横へ逃がす
@@ -503,7 +507,7 @@ function stepPhysics(dt) {
         continue;
       }
       const m = BR + (p.kind === 'blue' ? BLUE_R : p.kind === 'tri' ? TRI_R : PR);
-      const d = Math.hypot(dx0, dy0);
+      const d = hyp(dx0, dy0);
       if (d < m && d > .001) {
         if (p.kind === 'blue' && E.time > b.holdCool) {
           // ● 青はつかまえて、少し止めてから放す
@@ -523,7 +527,7 @@ function stepPhysics(dt) {
     }
     if (b.state === 'held') continue;
     // 挟まり対策：ほとんど動いていなければ中央へ押し出し、それでもだめなら当たり判定を切る
-    const moved = Math.hypot(b.x - (b.lx ?? b.x), b.y - (b.ly ?? b.y));
+    const moved = hyp(b.x - (b.lx ?? b.x), b.y - (b.ly ?? b.y));
     b.lx = b.x; b.ly = b.y;
     if (moved < 40 * dt) b.stillT = (b.stillT || 0) + dt; else b.stillT = 0;
     if (b.stillT > .3) {
@@ -532,7 +536,7 @@ function stepPhysics(dt) {
       b.stuckCount = (b.stuckCount || 0) + 1; b.stillT = 0;
       if (b.stuckCount >= 3) b.ghostUntil = E.time + .25;
     }
-    const sp = Math.hypot(b.vx, b.vy);
+    const sp = hyp(b.vx, b.vy);
     if (sp > 1000) { b.vx *= 1000 / sp; b.vy *= 1000 / sp; }
     if (b.age > 8) b.vy += 3000 * dt;
     if (b.y > slotTop()) {
@@ -1456,7 +1460,6 @@ function drawLaunch(top) {
     ctx.font = `500 13px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.fillText('引っ張ってはなす', LW / 2, 188);
-    ctx.fillText('×は倍率　●は戻る玉　点線は減る玉', LW / 2, top - 30);
     ctx.globalAlpha = 1;
   }
 }

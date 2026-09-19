@@ -444,13 +444,6 @@ struct BoardCanvas: View {
                 at: pt(Engine.logicalWidth / 2, L.y + 48),
                 anchor: .center
             )
-            ctx.draw(
-                Text("×は倍率　●は戻る玉　点線は減る玉")
-                    .font(DD.regular(13 * Double(s)))
-                    .foregroundColor(DD.fg(fever: fever).opacity(0.7)),
-                at: pt(Engine.logicalWidth / 2, top - 30),
-                anchor: .center
-            )
         }
     }
 
