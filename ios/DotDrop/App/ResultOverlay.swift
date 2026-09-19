@@ -16,14 +16,12 @@ struct ResultOverlay: View {
     private var contentWidth: Double { min(320, Double(width) - 48) }
 
     /// Web の `.bigscore { font-size: clamp(88px, 30vw, 150px) }`。
-    /// **そのうえで、実際に測って入る大きさまで落とす。**
+    /// **リールの1枠は .57em。**その物差しで、入る大きさまで落とす。
     /// 縮む任せ（minimumScaleFactor）にすると、測った幅と描く幅がずれて右端が欠ける
     private var bigScoreSize: Double {
         let cap = min(150, max(88, Double(width) * 0.30))
-        let room = contentWidth - 4
-        let w = GameFx.TextWidth.of("\(session.score)", cap)
-        guard w > room, w > 0 else { return cap }
-        return cap * room / w
+        let digits = Double(max(1, String(max(0, session.score)).count))
+        return min(cap, (contentWidth - 4) / (digits * 0.57))
     }
 
     /// (文字, 赤いか)。1位は NEW RECORD（赤）、2位以下はマスタードの「◯位」
@@ -60,13 +58,11 @@ struct ResultOverlay: View {
                     .foregroundStyle(DD.paper.opacity(0.7))
                     .padding(.top, 26)
 
-                // 桁数が増えても位置が動かないよう、幅は最後の値で取っておく
-                Text("\(displayedScore)")
-                    .font(DD.bold(bigScoreSize))
-                    .kerning(-bigScoreSize * 0.06)
-                    .lineLimit(1)
+                // **ゲーム中の持ち玉・スコアと同じリールで回す。**
+                // ただの数字の差し替えだと、画面が変わっても同じ見せ方にならない
+                RollingNumber(value: displayedScore, size: bigScoreSize)
                     .foregroundStyle(DD.paper)
-                    .frame(width: contentWidth, height: DD.lineBox(bigScoreSize) * 0.78)
+                    .frame(maxWidth: .infinity)
                     .padding(.top, 6)
 
                 HStack(spacing: 0) {

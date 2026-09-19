@@ -301,7 +301,7 @@ public final class Engine {
                 var x = x0
                 while x <= LW - 30 {
                     pts.append((x, y))
-                    x += 50
+                    x += 47
                 }
                 y += 47
                 r += 1
@@ -310,7 +310,7 @@ public final class Engine {
             let cx = LW / 2, cy = (f.top + f.bottom) / 2
             pts.append((cx, cy))
             for ring in 1...7 {
-                let rad = Double(ring) * 45
+                let rad = Double(ring) * 44
                 let n = ring * 5
                 for k in 0..<n {
                     let a = Double(k) / Double(n) * .pi * 2 + Double(ring) * 0.4
@@ -326,10 +326,10 @@ public final class Engine {
             var y = f.top
             while y <= f.bottom {
                 for c in 0..<8 {
-                    let x = 34 + Double(c) * 47 + sin(Double(r) * 0.8 + Double(c) * 0.7) * 20
+                    let x = 34 + Double(c) * 46 + sin(Double(r) * 0.8 + Double(c) * 0.7) * 20
                     pts.append((x, y))
                 }
-                y += 59
+                y += 58
                 r += 1
             }
         } else {
@@ -338,7 +338,7 @@ public final class Engine {
                 tries += 1
                 let x = 30 + boardRand() * (LW - 60)
                 let y = f.top + boardRand() * (f.bottom - f.top)
-                if pts.allSatisfy({ hypot($0.0 - x, $0.1 - y) > 41 }) {
+                if pts.allSatisfy({ hypot($0.0 - x, $0.1 - y) > 40 }) {
                     pts.append((x, y))
                 }
             }
