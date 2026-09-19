@@ -509,19 +509,9 @@ struct BoardCanvas: View {
         ctx.fill(Path(CGRect(x: off, y: y, width: LW, height: h)), with: .color(b.color))
         let ink: Color = (b.color == DD.paper || b.color == DD.mustard || b.color == DD.red) ? DD.ink : DD.paper
 
-        func width(_ text: String, _ px: Double) -> Double {
-            guard !text.isEmpty else { return 0 }
-            return ctx.resolve(Text(text).font(DD.bold(px * Double(s))))
-                .measure(in: CGSize(width: 10_000, height: 10_000)).width
-        }
-        // 収まる大きさを探す。まず見出し、それでも足りなければ説明も縮める。
-        // 62 は左の余白16＋区切りの前後14×2＋右の余白
-        var wordSize = 40.0, subSize = 14.0
-        func total() -> Double { width(b.word, wordSize) + width(b.sub, subSize) + 62 * Double(s) }
-        while wordSize > 20, total() > LW { wordSize -= 2 }
-        while subSize > 11, total() > LW { subSize -= 1 }
-
-        let wordW = width(b.word, wordSize)
+        // 大きさは帯を出したときに決めてある（GameFx.Banner.fit）。ここでは測らない
+        let wordSize = b.wordSize, subSize = b.subSize
+        let wordW = b.wordWidth * Double(s)
         ctx.draw(
             Text(b.word).font(DD.bold(wordSize * Double(s))).foregroundColor(ink),
             at: CGPoint(x: off + 16 * Double(s), y: mid + 2 * Double(s)),

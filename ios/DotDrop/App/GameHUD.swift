@@ -227,7 +227,10 @@ private struct RollingDigit: View {
     var body: some View {
         ReelFace(position: position, size: size)
             .frame(width: size * 0.57, height: size * 0.9)
-            .clipped()
+            // **横は切らないこと。**セル幅 .57em に対して「4」の墨は .55em あり、
+            // 中央に置いても端がぎりぎり。clipped() だと右端がわずかに欠ける。
+            // 上下だけ切れば、隣の数字が見えるのを隠すという目的は果たせる
+            .clipShape(Rectangle().scale(x: 1.6, y: 1))
             .onChange(of: digit) { _, next in
                 let current = (Int(position.rounded()) % 10 + 10) % 10
                 let forward = (next - current + 10) % 10
@@ -248,8 +251,9 @@ private struct ReelFace: View, Animatable {
     }
     var body: some View {
         Canvas { ctx, bounds in
+            // セルの高さは size*0.9。ずれが1セルを超えるものは完全に外なので描かない
             let first = Int(floor(position))
-            for n in (first - 1)...(first + 2) {
+            for n in first...(first + 1) {
                 let digit = (n % 10 + 10) % 10
                 let text = ctx.resolve(Text("\(digit)").font(DD.bold(size)))
                 ctx.draw(text, at: CGPoint(x: bounds.width / 2, y: bounds.height / 2 + (Double(n) - position) * size * 0.9), anchor: .center)

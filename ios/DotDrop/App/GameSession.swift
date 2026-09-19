@@ -119,9 +119,11 @@ final class GameSession {
         lastFit = fit
         if let safeTop { self.safeTop = safeTop }
         let lh = fit.logicalHeight
-        let shift = fit.bannerY - 116
-        let launchY = Engine.baseLaunchY + shift
-        let fieldTop = 200 + shift
+        // **発射位置と釘の上端はノッチで動かさない。**本家は LAUNCH.y=140 / field().top=200 の固定で、
+        // ノッチぶん下げるのは帯（BANNER_Y）だけ。ここまで下げると、待機中の点線の弧の頂点が
+        // ちょうど STAGE の丸の高さに来て潰れる（本家は弧が STAGE の数字を囲む位置になる）
+        let launchY = Engine.baseLaunchY
+        let fieldTop = 200.0
         let heightChanged = abs(engine.logicalHeight - lh) > 0.5
         let launchChanged = abs(engine.launchY - launchY) > 0.5
         let fieldChanged = abs(engine.fieldTop - fieldTop) > 0.5
@@ -246,6 +248,12 @@ final class GameSession {
         isPaused = false
         GameAudio.shared.unlock()
         startDisplayLoop()
+    }
+
+    /// 帯が使える幅（論理座標）。画面の幅 ÷ 拡大率
+    private var bannerScreenWidth: Double {
+        guard let f = lastFit, f.scale > 0 else { return Engine.logicalWidth }
+        return Engine.logicalWidth + 2 * Double(f.ox / f.scale)
     }
 
     private func schedule(after delay: Double, _ action: @escaping () -> Void) {
@@ -607,7 +615,8 @@ final class GameSession {
     }
 
     func showBanner(_ word: String, _ sub: String, _ color: Color) {
-        let next = GameFx.Banner(word: word, sub: sub, color: color)
+        var next = GameFx.Banner(word: word, sub: sub, color: color)
+        next.fit(screenWidth: bannerScreenWidth)
         if banner != nil {
             if !bannerQueue.contains(where: { $0.word == word }) { bannerQueue.append(next) }
             return
@@ -711,7 +720,9 @@ final class GameSession {
 
     func tickFrame(now: Date) {
         let real: Double
-        if let last = lastDate { real = min(now.timeIntervalSince(last), 1.0 / 30.0) }
+        // 上限は本家と同じ 0.05。1/30 にすると、30fps を割ったときに
+        // 時間そのものが実時間より遅れて、待機中のアニメまでゆっくりになる
+        if let last = lastDate { real = min(now.timeIntervalSince(last), 0.05) }
         else { real = 0 }
         lastDate = now
         guard !isPaused, !showResetSheet, screen == .playing else { return }

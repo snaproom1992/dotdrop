@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Web の floaters / flyers / catches / waves / milestone / edge / perfect に対応
 enum GameFx {
@@ -46,6 +47,41 @@ enum GameFx {
         var sub: String
         var color: Color
         var t: Double = 0
+        /// 帯に収まる大きさ。**出すときに1回だけ測る。**
+        /// 毎フレーム測り直すと、文字組みが1フレームに何十回も走って重い
+        var wordSize: Double = 40
+        var subSize: Double = 14
+        var wordWidth: Double = 0
+
+        /// 本家と同じ詰め方：まず見出しを2ずつ、それでも入らなければ説明を1ずつ縮める。
+        /// 62 は左の余白16＋区切りの前後14×2＋右の余白
+        mutating func fit(screenWidth: Double) {
+            wordSize = 40
+            subSize = 14
+            func total() -> Double {
+                TextWidth.of(word, wordSize) + TextWidth.of(sub, subSize) + 62
+            }
+            while wordSize > 20, total() > screenWidth { wordSize -= 2 }
+            while subSize > 11, total() > screenWidth { subSize -= 1 }
+            wordWidth = TextWidth.of(word, wordSize)
+        }
+    }
+
+    /// 文字の幅を測る。**「文字数 × 係数」で見積もらないこと。**
+    /// 日本語は1文字がほぼ倍の幅なので、説明文の幅が大きく外れる
+    enum TextWidth {
+        private static var cache: [String: Double] = [:]
+        static func of(_ text: String, _ size: Double) -> Double {
+            guard !text.isEmpty else { return 0 }
+            let key = "\(Int(size * 10))|\(text)"
+            if let w = cache[key] { return w }
+            let font = UIFont(name: "HelveticaNeue-Bold", size: CGFloat(size))
+                ?? .boldSystemFont(ofSize: CGFloat(size))
+            let w = Double((text as NSString).size(withAttributes: [.font: font]).width)
+            if cache.count > 200 { cache.removeAll() }
+            cache[key] = w
+            return w
+        }
     }
 
     /// 100点ごとの数字ドン。color が nil なら cycle（赤・黄・青）
