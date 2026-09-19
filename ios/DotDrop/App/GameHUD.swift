@@ -6,26 +6,27 @@ struct GameHUD: View {
     var session: GameSession
     var safeTop: CGFloat
     var width: CGFloat
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// 数字に使える幅。画面の半分 −（まんなかの STAGE の半分25）− 32
-    private var room: Double { max(60, Double(width) / 2 - 25 - 32) }
+    private var room: Double { max(30, Double(width) / 2 - (session.tutorial == nil ? 25 : 100) - 32) }
 
     /// 桁が増えても、まんなかの STAGE とぶつからない大きさまで落とす（Web の `Roller.fit()`）
     private func statSize(_ value: Int) -> Double {
-        DD.statSize(digits: String(max(0, value)).count, screenWidth: Double(width))
+        min(46, max(16, room / (Double(String(max(0, value)).count) * 0.57)))
     }
 
-    /// 数字1つ。切れないために3つとも要る。
-    /// - `kerning`（`tracking` ではない）… `tracking` は最後の文字のうしろにも詰めを入れるので右端が欠ける
-    /// - `frame(maxWidth: room)` … まんなかの STAGE へはみ出さない
-    /// - `minimumScaleFactor` … 上の計算で足りなかったときの保険。縮むが、切れはしない
+    /// Fixed-width digit cells; measure the visible digits for flyer destinations.
     private func statNumber(_ value: Int, _ alignment: Alignment) -> some View {
         let size = statSize(value)
-        return Text("\(value)")
-            .font(DD.bold(size))
-            .kerning(-size * 0.05)
-            .lineLimit(1)
-            .minimumScaleFactor(0.5)
+        let key = alignment == .leading ? "money" : "score"
+        return RollingNumber(value: value, size: size)
+            .background {
+                GeometryReader { geo in
+                    Color.clear.preference(key: HUDFramePreference.self,
+                        value: [key: geo.frame(in: .named("board"))])
+                }
+            }
             .frame(maxWidth: room, alignment: alignment)
             .frame(height: size * 0.9, alignment: .center)
     }
@@ -64,12 +65,26 @@ struct GameHUD: View {
                     }
                     .padding(.top, 6)
                     .opacity(session.bannerUp ? 0 : 1)
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: session.bannerUp)
                 }
             }
             .foregroundStyle(fg)
             .padding(.horizontal, 20)
             .padding(.top, safeTop + 38)
 
+            if let step = session.tutorial {
+                VStack(spacing: 4) {
+                    Text("あそびかた \((session.tutorialIndex ?? 0) + 1) / 8")
+                        .font(DD.bold(10)).opacity(0.6)
+                    // Tutorial runs can enter FEVER; tint only the symbol, use the current foreground for text.
+                    (Text(step.symbol).foregroundColor(step.color) + Text(step.title).foregroundColor(fg))
+                        .font(DD.bold(17)).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(session.tutorialSucceeded ? "CLEAR" : "\(min(session.tutorialValue, step.target)) / \(step.target)")
+                        .font(DD.bold(session.tutorialSucceeded ? 14 : 26))
+                        .foregroundStyle(session.tutorialSucceeded ? DD.red : fg)
+                }
+                .foregroundStyle(fg).frame(width: 200).padding(.top, safeTop + 38)
+            } else {
             // .stage-hud — absolute center
             VStack(spacing: 0) {
                 Text("STAGE")
@@ -94,12 +109,14 @@ struct GameHUD: View {
             }
             .foregroundStyle(fg)
             .padding(.top, safeTop + 38)
+            }
 
             // #quitBtn — absolute center, safer than STAGE
-            Button {
-                session.showResetSheet = true
+              Button {
+                if session.tutorial != nil { session.openTutorialList() }
+                else { session.showResetSheet = true }
             } label: {
-                Text("リセット")
+                Text(session.tutorial == nil ? "リセット" : "一覧へ")
                     .font(DD.bold(9.5))
                     .tracking(0.76)
                     .foregroundStyle(fg.opacity(0.55))
@@ -110,7 +127,8 @@ struct GameHUD: View {
             .padding(.top, safeTop + 8)
 
             // #best — absolute right
-            HStack {
+            if session.tutorial == nil {
+              HStack {
                 Spacer()
                 Group {
                     if session.beatBest {
@@ -132,9 +150,14 @@ struct GameHUD: View {
                 .padding(.trailing, 20)
                 .padding(.top, safeTop + 9)
             }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .allowsHitTesting(true)
+        .onPreferenceChange(HUDFramePreference.self) { frames in
+            if let frame = frames["money"] { session.moneyFrame = frame }
+            if let frame = frames["score"] { session.scoreFrame = frame }
+        }
     }
 
     private var gauge: some View {
@@ -166,5 +189,71 @@ struct GameHUD: View {
         }
         .frame(width: 58, height: 5)
         .clipShape(Capsule())
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: session.feverProgress)
+    }
+}
+
+private struct HUDFramePreference: PreferenceKey {
+    static var defaultValue: [String: CGRect] = [:]
+    static func reduce(value: inout [String: CGRect], nextValue: () -> [String: CGRect]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+    }
+}
+
+struct RollingNumber: View {
+    let value: Int
+    let size: Double
+    var body: some View {
+        let digits = Array(String(max(0, value))).reversed().map { Int(String($0)) ?? 0 }
+        HStack(spacing: 0) {
+            ForEach(Array(digits.indices.reversed()), id: \.self) { place in
+                RollingDigit(digit: digits[place], size: size)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(value)")
+    }
+}
+
+private struct RollingDigit: View {
+    let digit: Int
+    let size: Double
+    @State private var position: Double
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    init(digit: Int, size: Double) {
+        self.digit = digit; self.size = size
+        _position = State(initialValue: Double(digit))
+    }
+    var body: some View {
+        ReelFace(position: position, size: size)
+            .frame(width: size * 0.57, height: size * 0.9)
+            .clipped()
+            .onChange(of: digit) { _, next in
+                let current = (Int(position.rounded()) % 10 + 10) % 10
+                let forward = (next - current + 10) % 10
+                let backward = (current - next + 10) % 10
+                withAnimation(reduceMotion ? nil : .timingCurve(0.3, 1.5, 0.5, 1, duration: 0.18)) {
+                    position += Double(forward <= backward ? forward : -backward)
+                }
+            }
+    }
+}
+
+private struct ReelFace: View, Animatable {
+    var position: Double
+    let size: Double
+    var animatableData: Double {
+        get { position }
+        set { position = newValue }
+    }
+    var body: some View {
+        Canvas { ctx, bounds in
+            let first = Int(floor(position))
+            for n in (first - 1)...(first + 2) {
+                let digit = (n % 10 + 10) % 10
+                let text = ctx.resolve(Text("\(digit)").font(DD.bold(size)))
+                ctx.draw(text, at: CGPoint(x: bounds.width / 2, y: bounds.height / 2 + (Double(n) - position) * size * 0.9), anchor: .center)
+            }
+        }
     }
 }
