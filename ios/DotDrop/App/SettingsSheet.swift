@@ -1,15 +1,46 @@
 import SwiftUI
 
-/// 設定の入口。iOS の歯車をそのまま使う。
+/// 設定の入口。iOS の歯車を Liquid Glass のボタンに乗せる。
 ///
 /// **「形は丸と四角と三角だけ」の例外。**丸だけで組んだ印は「何を指しているか
-/// 分からない」となった。歯車は覚えて使う記号なので、形の理屈より通りがよい、
-/// というのが作者の判断（枠つきの「設定」という文字も試したうえで、こちらを選んだ）。
+/// 分からない」となった。歯車は覚えて使う記号なので、形の理屈より通りがよい。
+///
+/// 色は世界観に寄せて**マスタードの薄い色味**（22%）を掛けている。
+/// 赤は「はじめる」が使っているので、右上の小さなものに使うと主役とぶつかる。
+/// 白（クリーム）は玉の色なので単色では使わない。残るのがマスタード。
+///
+/// **Liquid Glass は iOS 26 から。**古い Xcode ではそもそも API が無いので、
+/// `compiler(>=6.2)`（Xcode 26 以降）でも切り分けている。どちらでも形は同じ丸
 struct SettingsButton: View {
     var body: some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            gear
+                .frame(width: 44, height: 44)
+                .glassEffect(
+                    .regular.tint(DD.mustard.opacity(0.22)).interactive(),
+                    in: .circle
+                )
+        } else {
+            plain
+        }
+        #else
+        plain
+        #endif
+    }
+
+    private var gear: some View {
         Image(systemName: "gearshape")
             .font(.system(size: 20, weight: .regular))
-            .foregroundStyle(DD.paper.opacity(0.6))
+            .foregroundStyle(DD.paper.opacity(0.75))
+    }
+
+    /// iOS 26 より前。ガラスの代わりに、こげ茶の上で浮いて見える程度の丸を敷く
+    private var plain: some View {
+        gear
+            .frame(width: 44, height: 44)
+            .background(DD.mustard.opacity(0.14), in: .circle)
+            .overlay(Circle().stroke(DD.paper.opacity(0.18), lineWidth: 1))
     }
 }
 

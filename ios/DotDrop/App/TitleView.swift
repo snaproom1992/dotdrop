@@ -32,9 +32,8 @@ struct TitleView: View {
             }
             // 設定は右上に小さく。「はじめる」「あそびかた」の2つは主役のまま動かさない
             Button { showSettings = true } label: {
-                SettingsButton()
-                    .frame(width: 44, height: 44)   // 指で押せる大きさにする
-                    .contentShape(Rectangle())
+                SettingsButton()          // 44×44。指で押せる大きさ
+                    .contentShape(Circle())
             }
             .accessibilityLabel("設定。音・振動・演出")
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
