@@ -9,7 +9,7 @@ struct BoardCanvas: View {
 
     var body: some View {
         // timeline.date を Canvas 内で読まないと再描画が止まる（@Published tick をやめたあとの罠）
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: session.isPaused || session.showResetSheet)) { timeline in
             Canvas { ctx, size in
                 let _ = timeline.date
                 draw(ctx: ctx, size: size)
@@ -33,9 +33,10 @@ struct BoardCanvas: View {
         let s = fit.scale
         let ox = fit.ox
         // 揺れ
-        let shakeAmt = session.shake
-        let sxOff = shakeAmt > 0 ? (Double.random(in: 0...1) - 0.5) * 14 * shakeAmt * Double(s) : 0
-        let syOff = shakeAmt > 0 ? (Double.random(in: 0...1) - 0.5) * 14 * shakeAmt * Double(s) : 0
+        let calm = session.reduceMotion || GamePreferences.calmEffects
+        let shakeAmt = calm ? 0 : session.shake
+        let sxOff = shakeAmt > 0 ? (Double.random(in: 0...1) - 0.5) * 14 * shakeAmt : 0
+        let syOff = shakeAmt > 0 ? (Double.random(in: 0...1) - 0.5) * 14 * shakeAmt : 0
         let top = e.slotTop()
         let screenH = fit.screenH
         let slotW = Engine.slotWidth
@@ -43,10 +44,10 @@ struct BoardCanvas: View {
         let f = e.field()
         let cy = (f.top + f.bottom) / 2
 
-        ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(DD.bg(fever: fever)))
+        ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(DD.background(mix: session.backgroundMix)))
 
         // 節目で背景が一瞬色づく
-        if let m = session.milestoneFx, m.t < 0.35 {
+        if !calm, let m = session.milestoneFx, m.t < 0.35 {
             var flash = ctx
             flash.opacity = (1 - m.t / 0.35) * 0.55
             flash.fill(
@@ -207,7 +208,7 @@ struct BoardCanvas: View {
                     lineWidth: 2.5 * k * s
                 )
             }
-            if let sf = session.slotFlash, sf.t < 2, sf.slots.contains(i), sin(sf.t * 18) > 0 {
+            if let sf = session.slotFlash, sf.t < 2, sf.slots.contains(i), calm || sin(sf.t * 18) > 0 {
                 let flashOrigin = pt(x + 2, top + 6)
                 let flashRect = CGRect(
                     x: flashOrigin.x, y: flashOrigin.y,
@@ -217,17 +218,17 @@ struct BoardCanvas: View {
                 ctx.stroke(Path(roundedRect: flashRect, cornerRadius: 6 * s), with: .color(DD.red), lineWidth: 3 * s)
             }
 
-            let cx = ox + (x + slotW / 2) * s
+            let cx = pt(x + slotW / 2, top).x
             let fontSize = ((info.m >= 5 ? 26.0 : 22.0) + k * 8) * s
             ctx.draw(
                 Text("×\(info.m)").font(DD.bold(fontSize)).foregroundColor(fg),
-                at: CGPoint(x: cx, y: (top + 28 - lift) * s),
+                at: CGPoint(x: cx, y: pt(0, top + 28 - lift).y),
                 anchor: .center
             )
             if info.b > 0 {
                 for j in 0..<info.b {
                     let oxj = (Double(j) - Double(info.b - 1) / 2) * 11
-                    let c = CGPoint(x: cx + oxj * s, y: (top + 50 - lift) * s)
+                    let c = CGPoint(x: cx + oxj * s, y: pt(0, top + 50 - lift).y)
                     let r = 3.5 * s
                     ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(fg))
                 }
@@ -236,7 +237,7 @@ struct BoardCanvas: View {
                 let stroke = fever ? DD.ink : DD.red
                 for j in 0..<n {
                     let oxj = (Double(j) - Double(n - 1) / 2) * 14
-                    let c = CGPoint(x: cx + oxj * s, y: (top + 50 - lift) * s)
+                    let c = CGPoint(x: cx + oxj * s, y: pt(0, top + 50 - lift).y)
                     let r = 5 * s
                     let path = Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
                     ctx.stroke(path, with: .color(stroke), style: StrokeStyle(lineWidth: 1.6 * s, dash: [2.2 * s, 2 * s]))
@@ -341,12 +342,12 @@ struct BoardCanvas: View {
         }
 
         // ---- ふちの光 ----
-        if let edge = session.edge, edge.t < 0.9 {
+        if !calm, let edge = session.edge, edge.t < 0.9 {
             var layer = ctx
             layer.opacity = 1 - edge.t / 0.9
-            let lw = max(8, edge.width) * s
+            let lw = max(8, edge.width)
             layer.stroke(
-                Path(CGRect(x: lw / 2, y: lw / 2, width: size.width - lw, height: size.height - lw)),
+                Path(CGRect(origin: .zero, size: size)),
                 with: .color(GameFx.resolveColor(edge.color, t: edge.t)),
                 lineWidth: lw
             )
@@ -369,13 +370,14 @@ struct BoardCanvas: View {
             sc = 1
         }
         let alpha = m.t > 0.8 ? 1 - (m.t - 0.8) / 0.3 : 1
-        let col = GameFx.resolveColor(m.color, t: m.t)
+        let calm = session.reduceMotion || GamePreferences.calmEffects
+        let col = calm ? (m.color ?? DD.red) : GameFx.resolveColor(m.color, t: m.t)
         let sizePt = (m.level >= 10 ? 130.0 : 150.0) * s
         let center = pt(Engine.logicalWidth / 2, cy - 10)
         var layer = ctx
         layer.opacity = max(0, alpha)
         layer.translateBy(x: center.x, y: center.y)
-        layer.scaleBy(x: sc, y: sc)
+        layer.scaleBy(x: calm ? 1 : sc, y: calm ? 1 : sc)
         layer.draw(
             Text("\(m.level * 100)")
                 .font(DD.bold(sizePt))
@@ -434,7 +436,7 @@ struct BoardCanvas: View {
             ctx.stroke(arc, with: .color(DD.fg(fever: fever).opacity(0.35)), style: StrokeStyle(lineWidth: 1.5 * s, dash: [2 * s, 5 * s]))
         }
 
-        if session.level == 0 && session.firstShot && !bannerUp {
+        if session.tutorial == nil && session.level == 0 && session.firstShot && !bannerUp {
             ctx.draw(
                 Text("引っ張ってはなす")
                     .font(DD.regular(13 * Double(s)))
