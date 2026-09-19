@@ -1,26 +1,19 @@
 import SwiftUI
 
-/// 設定のしるし。**丸だけで作る**（形は丸と四角と三角だけ、というルール）。
-/// 歯車は使えないので、3本のつまみを「点の列」と「効いている点」で表した。
-/// 効いている点だけ赤いのは、当たった釘・STAGE の進み具合と同じ扱い
-struct DotSettingsIcon: View {
-    var active: Color = DD.red
-    var idle: Color = DD.paper.opacity(0.3)
-    /// 各行で赤くする点の位置。ばらけていないと「つまみ」に見えない
-    private let marks = [1, 3, 0]
-
+/// 設定の入口。**アイコンにしないこと。**
+///
+/// 丸だけで組んだ印を置いたら「何を指しているか分からない」となった。
+/// リセットのボタンでも同じことが起きていて、枠つきの文字にして解決している
+/// （枠がないと、ボタンではなく飾りやラベルに見える）。形を揃える。
+struct SettingsButton: View {
     var body: some View {
-        VStack(spacing: 4) {
-            ForEach(marks.indices, id: \.self) { row in
-                HStack(spacing: 4) {
-                    ForEach(0..<4, id: \.self) { col in
-                        Circle()
-                            .fill(col == marks[row] ? active : idle)
-                            .frame(width: 3.5, height: 3.5)
-                    }
-                }
-            }
-        }
+        Text("設定")
+            .font(DD.bold(9.5))
+            .tracking(0.76)
+            .foregroundStyle(DD.paper.opacity(0.55))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 3)
+            .overlay(Capsule().stroke(DD.paper.opacity(0.45), lineWidth: 1.2))
     }
 }
 
