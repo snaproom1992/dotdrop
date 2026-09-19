@@ -15,6 +15,8 @@ let package = Package(
         .testTarget(
             name: "DotDropEngineTests",
             dependencies: ["DotDropEngine"],
+            path: "Tests",
+            sources: ["DotDropEngineTests"],
             resources: [
                 .copy("Fixtures")
             ]
