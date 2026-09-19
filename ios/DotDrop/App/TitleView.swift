@@ -10,6 +10,7 @@ struct TitleView: View {
     var onTutorial: () -> Void
 
     @State private var showSettings = false
+    @State private var showRecords = false
 
     var body: some View {
         ZStack {
@@ -36,6 +37,17 @@ struct TitleView: View {
               }
               .scrollIndicators(.hidden)
             }
+            // 記録は左上。**ランキングをタイトルに直接は出さない**（数字が主役の画面が
+            // 2つできて、はじめる前に読むものが増える）。押して開く形にとどめる
+            Button { showRecords = true } label: {
+                RecordsButton()
+                    .contentShape(Capsule())
+            }
+            .accessibilityLabel("きろく。ランキングとこれまでの記録")
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.leading, 20)
+            .padding(.top, safeTop + 8)
+
             // 設定は右上に小さく。「はじめる」「あそびかた」の2つは主役のまま動かさない
             Button { showSettings = true } label: {
                 SettingsButton()          // 44×44。指で押せる大きさ
@@ -51,6 +63,11 @@ struct TitleView: View {
             if showSettings {
                 SettingsSheet(safeBottom: safeBottom) { showSettings = false }
                     .zIndex(7)
+            }
+            if showRecords {
+                RecordsScreen(safeTop: safeTop, safeBottom: safeBottom) { showRecords = false }
+                    .zIndex(8)
+                    .transition(.opacity)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

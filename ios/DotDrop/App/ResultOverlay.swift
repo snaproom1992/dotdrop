@@ -12,10 +12,18 @@ struct ResultOverlay: View {
     @State private var displayedScore = 0
     @State private var counted = false
 
+    /// 中身が入る幅（`.frame(maxWidth: 320)` と左右24の余白）
+    private var contentWidth: Double { min(320, Double(width) - 48) }
+
     /// Web の `.bigscore { font-size: clamp(88px, 30vw, 150px) }`。
-    /// 100pt 固定だと、本家より2割小さい
+    /// **そのうえで、実際に測って入る大きさまで落とす。**
+    /// 縮む任せ（minimumScaleFactor）にすると、測った幅と描く幅がずれて右端が欠ける
     private var bigScoreSize: Double {
-        min(150, max(88, Double(width) * 0.30))
+        let cap = min(150, max(88, Double(width) * 0.30))
+        let room = contentWidth - 4
+        let w = GameFx.TextWidth.of("\(session.score)", cap)
+        guard w > room, w > 0 else { return cap }
+        return cap * room / w
     }
 
     /// (文字, 赤いか)。1位は NEW RECORD（赤）、2位以下はマスタードの「◯位」
@@ -26,97 +34,6 @@ struct ResultOverlay: View {
         return nil
     }
 
-    /// 見出し＋中身。Web の `.res-sec`
-    private func section<C: View>(_ title: String, @ViewBuilder content: () -> C) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(DD.bold(12))
-                .tracking(0.48)
-                .foregroundStyle(DD.paper.opacity(0.6))
-            content()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 36)
-    }
-
-    /// 上位5件。今回の回はマスタードで塗って、どれが自分か分かるようにする
-    private var ranking: some View {
-        VStack(spacing: 0) {
-            if session.rankingTop.isEmpty {
-                Text("まだ記録がありません")
-                    .font(DD.regular(13))
-                    .foregroundStyle(DD.paper.opacity(0.55))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 7)
-            } else {
-                ForEach(Array(session.rankingTop.prefix(5).enumerated()), id: \.offset) { i, r in
-                    let me = r == session.currentEntry
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text("\(i + 1)")
-                            .font(DD.bold(14))
-                            .opacity(0.7)
-                            .frame(width: 28, alignment: .leading)
-                        Text("\(r.score)")
-                            .font(DD.bold(20))
-                            .kerning(-0.6)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        Text("ステージ\(r.stage)・\(month(r.date))/\(day(r.date))")
-                            .font(DD.regular(11))
-                            .opacity(0.7)
-                    }
-                    .foregroundStyle(me ? DD.ink : DD.paper)
-                    .padding(.vertical, 7)
-                    .padding(.horizontal, me ? 6 : 0)
-                    .background(me ? DD.mustard : .clear)
-                    .clipShape(RoundedRectangle(cornerRadius: me ? 4 : 0))
-                    .overlay(alignment: .top) {
-                        if !me { Rectangle().fill(DD.paper.opacity(0.14)).frame(height: 1) }
-                    }
-                }
-            }
-        }
-    }
-
-    /// 2列。更新したものにはマスタードの「更新」を出す
-    private var recordGrid: some View {
-        let items = DDStore.recordLabels.filter { (session.records[$0.key] ?? 0) > 0 }
-        return LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-            ForEach(items, id: \.key) { item in
-                let isNew = session.newRecordKeys.contains(item.key)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("\(session.records[item.key] ?? 0)")
-                        .font(DD.bold(22))
-                        .kerning(-0.66)
-                        .foregroundStyle(DD.paper)
-                    Text(item.label)
-                        .font(DD.regular(11))
-                        .foregroundStyle(DD.paper.opacity(0.65))
-                        .lineSpacing(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(isNew ? DD.mustard.opacity(0.18) : DD.paper.opacity(0.06))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .overlay(alignment: .topTrailing) {
-                    if isNew {
-                        Text("更新")
-                            .font(DD.bold(10))
-                            .foregroundStyle(DD.ink)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1)
-                            .background(DD.mustard)
-                            .clipShape(RoundedRectangle(cornerRadius: 3))
-                            .padding(8)
-                    }
-                }
-            }
-        }
-    }
-
-    private func month(_ d: Date) -> Int { Calendar.current.component(.month, from: d) }
-    private func day(_ d: Date) -> Int { Calendar.current.component(.day, from: d) }
 
     var body: some View {
         ScrollView {
@@ -143,21 +60,20 @@ struct ResultOverlay: View {
                     .foregroundStyle(DD.paper.opacity(0.7))
                     .padding(.top, 26)
 
+                // 桁数が増えても位置が動かないよう、幅は最後の値で取っておく
                 Text("\(displayedScore)")
                     .font(DD.bold(bigScoreSize))
-                    .monospacedDigit()
                     .kerning(-bigScoreSize * 0.06)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.6)
                     .foregroundStyle(DD.paper)
-                    .frame(height: bigScoreSize * 0.9)
+                    .frame(width: contentWidth, height: DD.lineBox(bigScoreSize) * 0.78)
                     .padding(.top, 6)
 
                 HStack(spacing: 0) {
                     VStack(spacing: 0) {
                         Text("\(session.engine.stage + 1)")
                             .font(DD.bold(30))
-                            .monospacedDigit().kerning(-1.2).frame(height: 30)
+                            .kerning(-1.2).frame(height: DD.lineBox(30) * 0.8)
                         Text("ステージ")
                             .font(DD.regular(11))
                             .opacity(0.6)
@@ -170,7 +86,7 @@ struct ResultOverlay: View {
                     VStack(spacing: 0) {
                         Text("\(session.gameBestShot)")
                             .font(DD.bold(30))
-                            .monospacedDigit().kerning(-1.2).frame(height: 30)
+                            .kerning(-1.2).frame(height: DD.lineBox(30) * 0.8)
                         Text("1回の最高")
                             .font(DD.regular(11))
                             .opacity(0.6)
@@ -211,8 +127,13 @@ struct ResultOverlay: View {
                 }
                 .padding(.top, 14)
 
-                section("ランキング") { ranking }
-                section("これまでの記録") { recordGrid }
+                RecordsSections(
+                    entries: session.rankingTop,
+                    records: session.records,
+                    highlight: session.currentEntry,
+                    newKeys: session.newRecordKeys,
+                    limit: 5
+                )
 
             }
             .frame(maxWidth: 320)

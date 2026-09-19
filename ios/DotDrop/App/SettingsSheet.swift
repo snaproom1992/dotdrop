@@ -1,46 +1,51 @@
 import SwiftUI
 
-/// 設定の入口。iOS の歯車を Liquid Glass のボタンに乗せる。
+/// Liquid Glass の下地。タイトルの2つのボタン（きろく・設定）で使う。
 ///
-/// **「形は丸と四角と三角だけ」の例外。**丸だけで組んだ印は「何を指しているか
-/// 分からない」となった。歯車は覚えて使う記号なので、形の理屈より通りがよい。
+/// 色は世界観に寄せて**マスタードの薄い色味**（22%）。赤は「はじめる」が使っている
+/// ので右上の小さなものに使うと主役とぶつかる。白（クリーム）は玉の色なので単色では
+/// 使わない。残るのがマスタード。
 ///
-/// 色は世界観に寄せて**マスタードの薄い色味**（22%）を掛けている。
-/// 赤は「はじめる」が使っているので、右上の小さなものに使うと主役とぶつかる。
-/// 白（クリーム）は玉の色なので単色では使わない。残るのがマスタード。
-///
-/// **Liquid Glass は iOS 26 から。**古い Xcode ではそもそも API が無いので、
-/// `compiler(>=6.2)`（Xcode 26 以降）でも切り分けている。どちらでも形は同じ丸
-struct SettingsButton: View {
-    var body: some View {
+/// **Liquid Glass は iOS 26 から。**古い Xcode ではそもそも API が無いので
+/// `compiler(>=6.2)` でも切り分ける。それ以前は同じ形に薄い地と細い枠を敷く
+extension View {
+    @ViewBuilder
+    func glassChip<S: Shape>(_ shape: S) -> some View {
         #if compiler(>=6.2)
         if #available(iOS 26.0, *) {
-            gear
-                .frame(width: 44, height: 44)
-                .glassEffect(
-                    .regular.tint(DD.mustard.opacity(0.22)).interactive(),
-                    in: .circle
-                )
+            self.glassEffect(.regular.tint(DD.mustard.opacity(0.22)).interactive(), in: shape)
         } else {
-            plain
+            self.background(DD.mustard.opacity(0.14), in: shape)
+                .overlay(shape.stroke(DD.paper.opacity(0.18), lineWidth: 1))
         }
         #else
-        plain
+        self.background(DD.mustard.opacity(0.14), in: shape)
+            .overlay(shape.stroke(DD.paper.opacity(0.18), lineWidth: 1))
         #endif
     }
+}
 
-    private var gear: some View {
+/// 設定の入口。iOS の歯車。
+/// **「形は丸と四角と三角だけ」の例外。**自作の印は何を指すか伝わらなかった
+struct SettingsButton: View {
+    var body: some View {
         Image(systemName: "gearshape")
             .font(.system(size: 20, weight: .regular))
             .foregroundStyle(DD.paper.opacity(0.75))
-    }
-
-    /// iOS 26 より前。ガラスの代わりに、こげ茶の上で浮いて見える程度の丸を敷く
-    private var plain: some View {
-        gear
             .frame(width: 44, height: 44)
-            .background(DD.mustard.opacity(0.14), in: .circle)
-            .overlay(Circle().stroke(DD.paper.opacity(0.18), lineWidth: 1))
+            .glassChip(Circle())
+    }
+}
+
+/// 記録の入口。**こちらは文字にする。**トロフィーなどの印は意味が決まらない
+struct RecordsButton: View {
+    var body: some View {
+        Text("きろく")
+            .font(DD.bold(13))
+            .foregroundStyle(DD.paper.opacity(0.75))
+            .padding(.horizontal, 16)
+            .frame(height: 44)
+            .glassChip(Capsule())
     }
 }
 
