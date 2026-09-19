@@ -109,44 +109,135 @@ struct RecordsSections: View {
     private func day(_ d: Date) -> Int { Calendar.current.component(.day, from: d) }
 }
 
-/// タイトルから開く「きろく」。結果画面と違って今回の回がないので、
-/// マスタードの塗りはなし。上位10件まで出す
-struct RecordsScreen: View {
-    var safeTop: CGFloat
+/// タイトルから開く「きろく」。下から出る板。
+///
+/// **ベストスコアを主役にする。**ランキングの1位を大きく出して、結果画面と同じように
+/// 0から回す。順位の並びや細かい記録は、そのあとに続ける
+struct RecordsSheet: View {
     var safeBottom: CGFloat
+    var maxHeight: CGFloat
     var onClose: () -> Void
 
+    @State private var shown = false
+    @State private var drag: CGFloat = 0
+    @State private var moved = false
+    @State private var closing = false
+    @State private var entries: [DDStore.RankEntry] = []
+    @State private var records: [String: Int] = [:]
+    @State private var displayedBest = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private static let slideIn = Animation.timingCurve(0.2, 0.8, 0.3, 1, duration: 0.24)
+    private var best: Int { max(entries.first?.score ?? 0, records["gameScore"] ?? 0) }
+
+    /// 板の中で使える幅（左右24）。リールの1枠は .57em
+    private var bestSize: Double {
+        let digits = Double(max(1, String(max(0, best)).count))
+        return min(80, (320 - 48 - 4) / (digits * 0.57))
+    }
+
     var body: some View {
-        ZStack(alignment: .top) {
-            DD.brown.ignoresSafeArea()
+        ZStack(alignment: .bottom) {
+            Color(hex: 0x1C1716)
+                .opacity(shown ? 0.74 : 0)
+                .ignoresSafeArea()
+                .onTapGesture { close() }
+            card.offset(y: shown ? drag : 1_200)
+        }
+        .onAppear {
+            entries = DDStore.ranking()
+            records = DDStore.records()
+            withAnimation(reduceMotion ? nil : Self.slideIn) { shown = true }
+        }
+        .task {
+            // 結果画面と同じ回し方。0から上がって、リールで止まる
+            let target = max(entries.first?.score ?? 0, DDStore.records()["gameScore"] ?? 0)
+            let duration = reduceMotion ? 0 : min(1.2, 0.3 + Double(target) * 0.0015)
+            let began = Date()
+            while !Task.isCancelled {
+                let p = duration == 0 ? 1 : min(1, Date().timeIntervalSince(began) / duration)
+                displayedBest = Int((Double(target) * (1 - pow(1 - p, 3))).rounded())
+                if p >= 1 { break }
+                try? await Task.sleep(for: .milliseconds(30))
+            }
+        }
+    }
+
+    private var card: some View {
+        VStack(spacing: 0) {
+            // ここだけ指で引ける。下の一覧はスクロールさせたいので、板ごとは引かない
+            header
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { v in
+                            drag = max(0, v.translation.height)
+                            if drag > 6 { moved = true }
+                        }
+                        .onEnded { _ in
+                            let far = drag > 70
+                            withAnimation(reduceMotion ? nil : Self.slideIn) { drag = 0 }
+                            if far { close() }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) { moved = false }
+                        }
+                )
+
             ScrollView {
                 VStack(spacing: 0) {
-                    Text("きろく")
-                        .font(DD.bold(22))
-                        .foregroundStyle(DD.paper)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                     RecordsSections(
-                        entries: DDStore.ranking(),
-                        records: DDStore.records(),
+                        entries: entries,
+                        records: records,
                         highlight: nil,
-                        limit: 10
+                        limit: 5
                     )
-                    Button(action: onClose) {
+                    Button { if !moved { close() } } label: {
                         Text("とじる")
                             .font(DD.bold(14))
                             .foregroundStyle(DD.paper.opacity(0.6))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 15)
                     }
-                    .padding(.top, 24)
+                    .padding(.top, 18)
                 }
                 .frame(maxWidth: 320)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 24)
-                .padding(.top, safeTop + 28)
-                .padding(.bottom, safeBottom + 40)
+                .padding(.bottom, safeBottom + 20)
             }
             .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
         }
+        .frame(maxWidth: .infinity)
+        .frame(maxHeight: maxHeight, alignment: .top)
+        .background(DD.brown)
+        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 20, topTrailingRadius: 20))
+    }
+
+    private var header: some View {
+        VStack(spacing: 0) {
+            Capsule()
+                .fill(DD.paper.opacity(0.3))
+                .frame(width: 40, height: 4)
+                .padding(.top, 10)
+
+            Text("ベストスコア")
+                .font(DD.bold(13))
+                .tracking(0.52)
+                .foregroundStyle(DD.paper.opacity(0.7))
+                .padding(.top, 18)
+
+            // ゲーム中・結果画面と同じリールで回す
+            RollingNumber(value: displayedBest, size: bestSize)
+                .foregroundStyle(DD.paper)
+                .padding(.top, 4)
+        }
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+    }
+
+    private func close() {
+        guard !closing else { return }
+        closing = true
+        withAnimation(reduceMotion ? nil : Self.slideIn) { shown = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0 : 0.24)) { onClose() }
     }
 }

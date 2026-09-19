@@ -26,6 +26,7 @@ struct RootView: View {
                     session: session,
                     safeTop: safeTop,
                     safeBottom: safeBot,
+                    height: size.height,
                     onPlay: { session.startFreePlay() },
                     onTutorial: { session.openTutorialList() }
                 )

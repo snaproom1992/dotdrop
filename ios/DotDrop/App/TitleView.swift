@@ -6,6 +6,7 @@ struct TitleView: View {
     var session: GameSession
     var safeTop: CGFloat
     var safeBottom: CGFloat
+    var height: CGFloat
     var onPlay: () -> Void
     var onTutorial: () -> Void
 
@@ -41,7 +42,7 @@ struct TitleView: View {
             // 2つできて、はじめる前に読むものが増える）。押して開く形にとどめる
             Button { showRecords = true } label: {
                 RecordsButton()
-                    .contentShape(Capsule())
+                    .contentShape(Circle())
             }
             .accessibilityLabel("きろく。ランキングとこれまでの記録")
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -65,9 +66,12 @@ struct TitleView: View {
                     .zIndex(7)
             }
             if showRecords {
-                RecordsScreen(safeTop: safeTop, safeBottom: safeBottom) { showRecords = false }
+                RecordsSheet(
+                    safeBottom: safeBottom,
+                    // 上は画面の端まで来ないように、safe-area ＋ 少し空ける
+                    maxHeight: height - safeTop - 40
+                ) { showRecords = false }
                     .zIndex(8)
-                    .transition(.opacity)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

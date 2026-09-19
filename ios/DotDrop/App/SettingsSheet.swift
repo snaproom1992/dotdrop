@@ -37,15 +37,14 @@ struct SettingsButton: View {
     }
 }
 
-/// 記録の入口。**こちらは文字にする。**トロフィーなどの印は意味が決まらない
+/// 記録の入口。設定の歯車と対になる形（同じ丸・同じガラス）
 struct RecordsButton: View {
     var body: some View {
-        Text("きろく")
-            .font(DD.bold(13))
+        Image(systemName: "trophy")
+            .font(.system(size: 19, weight: .regular))
             .foregroundStyle(DD.paper.opacity(0.75))
-            .padding(.horizontal, 16)
-            .frame(height: 44)
-            .glassChip(Capsule())
+            .frame(width: 44, height: 44)
+            .glassChip(Circle())
     }
 }
 
