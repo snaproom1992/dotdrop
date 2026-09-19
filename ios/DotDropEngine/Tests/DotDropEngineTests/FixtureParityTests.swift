@@ -9,7 +9,7 @@ final class SeededRandomTests: XCTestCase {
     }
 
     func testMatchesJavaScriptSeededSample() throws {
-        let root = try Self.loadFixtures()
+        let root = try FixtureParityTests.loadFixtures()
         let expected = try XCTUnwrap(root.seededSample42)
         let rng = SeededRandom(seed: 42)
         for (i, exp) in expected.enumerated() {
@@ -51,17 +51,22 @@ final class FixtureParityTests: XCTestCase {
         }
     }
 
-    /// setLayout + pickGold が JS と同じ釘配置になる（Fisher–Yates + boardSeed）。
+    /// Native field bounds intentionally cap the peg span. Compare the JS layout
+    /// algorithm using those same bounds; physics still uses untouched Web fixtures.
     func testSetLayoutMatchesFixturePegs() throws {
-        let root = try Self.loadFixtures()
-        for shot in root.shots {
+        let url = try XCTUnwrap(Bundle.module.url(forResource: "native-layouts", withExtension: "json", subdirectory: "Fixtures"))
+        let layouts = try JSONDecoder().decode([NativeLayoutFixture].self, from: Data(contentsOf: url))
+        XCTAssertEqual(layouts.count, 16)
+        for shot in layouts {
             let engine = Engine()
             engine.applyConf(.freePlay)
             engine.boardSeed = shot.boardSeed
-            engine.logicalHeight = 700
+            engine.logicalHeight = shot.height
+            engine.fieldTop = shot.top
             engine.setLayout(shot.layout, animate: false)
 
             XCTAssertEqual(engine.pegs.count, shot.pegs.count, shot.id)
+            guard engine.pegs.count == shot.pegs.count else { continue }
             for (i, exp) in shot.pegs.enumerated() {
                 let p = engine.pegs[i]
                 XCTAssertEqual(p.x, exp.x, accuracy: 1e-6, "\(shot.id) peg[\(i)].x")
@@ -78,6 +83,15 @@ final class FixtureParityTests: XCTestCase {
         )
         return try JSONDecoder().decode(FixtureFile.self, from: Data(contentsOf: url))
     }
+}
+
+struct NativeLayoutFixture: Decodable {
+    var id: String
+    var boardSeed: Int
+    var layout: Int
+    var height: Double
+    var top: Double
+    var pegs: [PegFixture]
 }
 
 struct FixtureFile: Decodable {
