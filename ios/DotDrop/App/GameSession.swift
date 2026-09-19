@@ -270,14 +270,23 @@ final class GameSession {
         let maxPull = Engine.maxPull
         let levels = Engine.levels
         level = mag < 14 ? 0 : min(levels, Int(ceil(mag / (maxPull / Double(levels)))))
-        // 段が上がるたびに、音と振動で強さを返す。**これが無いと引いている間ずっと無音になる**
-        if level > lastStep {
+        // 段が変わるたびに、音と振動で強さを返す。**これが無いと引いている間ずっと無音になる**
+        //
+        // **上がるときだけでなく、下がるときも鳴らす。**片方だけだと、
+        // 引きすぎて戻したときに何も返ってこず、いま何段目か分からなくなる。
+        // 音程はペンタトニックの段をそのまま使う（釘の音と同じ言語）。
+        // 下がるときは1つ下の段（`level * 2`）にして、上がるときの音と混ざらないようにする
+        if level != lastStep {
+            let up = level > lastStep
+            let rung = up ? level * 2 + 1 : max(1, level * 2)
             GameAudio.shared.voice(
-                freq: GameAudio.shared.note(level * 2 + 1, fever: engine.fever),
-                dur: 0.08, gain: 0.08,
-                wave: level == levels ? .square : .triangle
+                freq: GameAudio.shared.note(rung, fever: engine.fever),
+                dur: 0.08,
+                gain: up ? 0.08 : 0.06,
+                // いちばん上まで引いたときだけ矩形波。戻すときは鳴らし分けない
+                wave: (up && level == levels) ? .square : .triangle
             )
-            GameHaptics.buzz(level == levels ? .heavy : .light, gap: 0)
+            GameHaptics.buzz(up && level == levels ? .heavy : .light, gap: 0)
         }
         lastStep = level
         let len = hypot(dx, dy)
