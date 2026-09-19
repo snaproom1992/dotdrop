@@ -1432,7 +1432,8 @@ function drawAim() {
   ctx.lineCap = 'round';
   for (let i = 0; i < LEVELS; i++) {
     const r = 17 + i * 8;
-    ctx.strokeStyle = i < level ? (level === LEVELS ? '#EAA83A' : '#D7141F') : P.peg;
+    // いちばん上まで引いたときだけ黄。フィーバー中は背景と同じ色になるのでクリームへ
+    ctx.strokeStyle = i < level ? (level === LEVELS ? (E.fever ? '#F2F1EE' : '#EAA83A') : '#D7141F') : P.peg;
     ctx.lineWidth = i < level ? 3.5 : 2;
     ctx.beginPath(); ctx.arc(L.x, L.y, r, base - spread, base + spread); ctx.stroke();
   }

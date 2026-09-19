@@ -166,7 +166,7 @@ struct BoardCanvas: View {
                 tri.closeSubpath()
                 var layer = ctx
                 layer.opacity = p.triHit ? 0.55 : 1
-                layer.fill(tri, with: .color(fever ? DD.paper : DD.mustard))
+                layer.fill(tri, with: .color(DD.highlight(fever: fever)))
             case .dot:
                 let r = (Engine.pegRadius + grow + p.lit * 1.5) * s
                 let col: Color
@@ -471,7 +471,8 @@ struct BoardCanvas: View {
             var arc = Path()
             arc.addArc(center: c, radius: rad, startAngle: .radians(base - spread), endAngle: .radians(base + spread), clockwise: false)
             let on = i < session.level
-            let col: Color = on ? (session.level == Engine.levels ? DD.mustard : DD.red) : DD.peg(fever: fever)
+            // いちばん上まで引いたときだけ黄。フィーバー中は背景と同じ色になるのでクリームへ
+            let col: Color = on ? (session.level == Engine.levels ? DD.highlight(fever: fever) : DD.red) : DD.peg(fever: fever)
             ctx.stroke(arc, with: .color(col), style: StrokeStyle(lineWidth: (on ? 3.5 : 2) * s, lineCap: .round))
         }
     }

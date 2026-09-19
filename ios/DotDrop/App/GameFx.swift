@@ -144,6 +144,19 @@ enum GameFx {
     }
 
     /// `multColor` 相当
+    /// 本家の `SHAPE`。釘に当たったときの「+N」や、そこから飛ぶ玉の色。
+    ///
+    /// **フィーバー用の色を必ず持たせること。**フィーバー中は背景が黄なので、
+    /// ▲の黄と、小さい釘のクリームは、そのままだと背景と同じ色になって消える
+    static func shapeColor(_ kind: PegKind, fever: Bool) -> Color {
+        switch kind {
+        case .square: return DD.red
+        case .blue: return DD.blue
+        case .tri: return DD.highlight(fever: fever)
+        case .dot: return DD.fg(fever: fever)
+        }
+    }
+
     static func multColor(_ m: Int, fever: Bool) -> Color {
         if m >= 5 { return DD.red }
         if m == 3 { return fever ? DD.ink : DD.mustard }

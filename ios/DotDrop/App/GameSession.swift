@@ -327,7 +327,10 @@ final class GameSession {
             self.potPulse = 1
             if !self.engine.fever { self.gauge += pts }
             if pts > 1 {
-                let col: Color = kind == .blue ? Color(hex: 0x7FA2EC) : (kind == .square ? DD.red : DD.mustard)
+                // ● 青だけは、そのままの青だと背景に沈むので明るい青にする（本家と同じ）
+                let col: Color = kind == .blue
+                    ? Color(hex: 0x7FA2EC)
+                    : GameFx.shapeColor(kind, fever: self.engine.fever)
                 self.floaters.append(.init(x: peg.x, y: peg.y - 16, text: "+\(pts)", color: col, life: 0.9, big: false))
             }
             switch kind {
@@ -356,7 +359,8 @@ final class GameSession {
                         self.triBonus = true
                         self.showBanner("▲▲▲", "3つとも当てて +3玉", DD.mustard)
                         let mid = self.engine.field()
-                        self.sendBalls(3, x: Engine.logicalWidth / 2, y: (mid.top + mid.bottom) / 2, color: DD.mustard)
+                        self.sendBalls(3, x: Engine.logicalWidth / 2, y: (mid.top + mid.bottom) / 2,
+                                       color: GameFx.shapeColor(.tri, fever: self.engine.fever))
                         GameHaptics.pattern(4, intervalMs: 70)
                     }
                 }

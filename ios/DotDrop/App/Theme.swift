@@ -23,6 +23,9 @@ enum DD {
     static func ball(fever: Bool) -> Color { fever ? ink : paper }
     /// 背景の大きな点数（THEME.*.big）
     static func big(fever: Bool) -> Color { fever ? ink.opacity(0.16) : paper.opacity(0.16) }
+    /// 黄を前に出すもの（▲・最大まで引いたときの弧・▲▲▲のボーナス玉）。
+    /// **フィーバー中は背景が黄なので、そのままだと消える。**クリームに置き換える
+    static func highlight(fever: Bool) -> Color { fever ? paper : mustard }
 
     /// Web の Helvetica Neue 700。SF Pro だと同じ pt でも細く小さく見える。
     ///
