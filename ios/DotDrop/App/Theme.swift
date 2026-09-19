@@ -44,6 +44,11 @@ enum DD {
     static let statNumber: Font = bold(46)
     static let statLabel: Font = regular(12)
 
+    /// ボタンの文字が取る高さ。**`Text` をそのまま置くと CSS より低くなる。**
+    /// CSS の line-height: normal は文字サイズの約1.33倍だが、SwiftUI の Text は
+    /// 約1.17倍しか取らない。そのぶんボタンが上下4pt ほど低くなり、詰まって見える
+    static func lineBox(_ size: Double) -> Double { (size * 1.33).rounded() }
+
     /// 持ち玉・スコアの数字の大きさ。Web の `Roller.fit()` と同じ計算。
     /// 使える幅＝画面の半分 −（まんなかの STAGE の半分25）− 32。1桁の幅は .57em
     static func statSize(digits: Int, screenWidth: Double) -> Double {

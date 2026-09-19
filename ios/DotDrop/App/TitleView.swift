@@ -23,7 +23,9 @@ struct TitleView: View {
                 startButton
                     .padding(.top, 28)
                 tutorialButton
-                    .padding(.top, 14)
+                    // 本家は14。ボタンの高さを本家に戻したうえで、なお詰まって
+                    // 見えるとのことで20にしている
+                    .padding(.top, 20)
                }
                .padding(24)
                .frame(maxWidth: .infinity, minHeight: geo.size.height)
@@ -66,6 +68,7 @@ struct TitleView: View {
             Text("はじめる")
                 .font(DD.bold(18))
                 .foregroundStyle(DD.paper)
+                .frame(height: DD.lineBox(18))
                 .padding(.vertical, 16)
                 .padding(.horizontal, 40)
                 .background(DD.red)
@@ -78,6 +81,7 @@ struct TitleView: View {
             VStack(spacing: 9) {
                 Text("あそびかた")
                     .font(DD.bold(16))
+                    .frame(height: DD.lineBox(16))
                 HStack(spacing: 5) {
                     ForEach(TutorialStep.all) { step in
                         Circle()
