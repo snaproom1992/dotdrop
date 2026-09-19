@@ -127,8 +127,16 @@ struct TitleView: View {
 }
 
 /// CSS dropIn。サイズ固定の Canvas だけ動かす（親レイアウトに影響しない）
+/// 落ちてくるアニメの時計。**最初に実際に描かれたフレームを基点にする。**
+///
+/// `Date()` を画面が出た時点で取ると、ビルド直後の起動のように
+/// 最初のフレームが出るまで1秒以上かかる場合、数え始めた時点ですでに
+/// 1.05秒を過ぎていて、落ちきった姿からいきなり始まってしまう。
+/// クラスにしてあるのは、描いている途中で書き込んでも再描画を呼ばないため
+private final class DropClock { var start: Date? }
+
 private struct DropLogo: View {
-    @State private var born = Date()
+    @State private var clock = DropClock()
     @State private var finished = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let em: CGFloat = 76
@@ -140,7 +148,8 @@ private struct DropLogo: View {
           .overlay(alignment: .bottom) {
             TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: finished || reduceMotion)) { timeline in
               Canvas { ctx, size in
-                let t = reduceMotion ? 1.05 : min(1.05, timeline.date.timeIntervalSince(born))
+                if clock.start == nil { clock.start = timeline.date }
+                let t = reduceMotion ? 1.05 : min(1.05, timeline.date.timeIntervalSince(clock.start ?? timeline.date))
                 let pose = dropPose(t)
                 let extra = size.height - em * 1.8
                 let font = UIFont(name: "HelveticaNeue-Bold", size: em) ?? .boldSystemFont(ofSize: em)
@@ -179,8 +188,11 @@ private struct DropLogo: View {
             .allowsHitTesting(false)
           }
           .task {
-            born = Date()
-            try? await Task.sleep(for: .seconds(1.05))
+            // 最初のフレームが出るまで待ってから数える
+            while clock.start == nil, !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(16))
+            }
+            try? await Task.sleep(for: .seconds(1.1))
             guard !Task.isCancelled else { return }
             finished = true
           }
