@@ -4,8 +4,13 @@ import SwiftUI
 struct ResultOverlay: View {
     var session: GameSession
     var width: CGFloat
+    var safeTop: CGFloat
+    var safeBottom: CGFloat
     var onRetry: () -> Void
     var onTitle: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var displayedScore = 0
+    @State private var counted = false
 
     /// Web の `.bigscore { font-size: clamp(88px, 30vw, 150px) }`。
     /// 100pt 固定だと、本家より2割小さい
@@ -117,7 +122,8 @@ struct ResultOverlay: View {
         ScrollView {
             VStack(spacing: 0) {
                 // 1位なら NEW RECORD、それ以外で10位までに入ったら「◯位」
-                if let badge = rankBadge {
+                ZStack {
+                  if let badge = rankBadge {
                     Text(badge.0)
                         .font(DD.bold(11))
                         .tracking(0.66)
@@ -126,26 +132,32 @@ struct ResultOverlay: View {
                         .padding(.vertical, 3)
                         .background(badge.1 ? DD.red : DD.mustard)
                         .clipShape(RoundedRectangle(cornerRadius: 3))
-                        .padding(.top, 8)
+                        .opacity(counted ? 1 : 0)
+                  }
                 }
+                .frame(height: 22)
 
                 Text("総合スコア")
                     .font(DD.bold(13))
+                    .kerning(0.52)
                     .foregroundStyle(DD.paper.opacity(0.7))
                     .padding(.top, 26)
 
-                Text("\(session.score)")
+                Text("\(displayedScore)")
                     .font(DD.bold(bigScoreSize))
+                    .monospacedDigit()
                     .kerning(-bigScoreSize * 0.06)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                     .foregroundStyle(DD.paper)
+                    .frame(height: bigScoreSize * 0.9)
                     .padding(.top, 6)
 
                 HStack(spacing: 0) {
-                    VStack {
+                    VStack(spacing: 0) {
                         Text("\(session.engine.stage + 1)")
                             .font(DD.bold(30))
+                            .monospacedDigit().kerning(-1.2).frame(height: 30)
                         Text("ステージ")
                             .font(DD.regular(11))
                             .opacity(0.6)
@@ -155,9 +167,10 @@ struct ResultOverlay: View {
                     Rectangle()
                         .fill(DD.paper.opacity(0.2))
                         .frame(width: 1.5)
-                    VStack {
+                    VStack(spacing: 0) {
                         Text("\(session.gameBestShot)")
                             .font(DD.bold(30))
+                            .monospacedDigit().kerning(-1.2).frame(height: 30)
                         Text("1回の最高")
                             .font(DD.regular(11))
                             .opacity(0.6)
@@ -166,10 +179,12 @@ struct ResultOverlay: View {
                     .frame(maxWidth: .infinity)
                 }
                 .foregroundStyle(DD.paper)
-                .padding(.top, 22)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 12)
                 .overlay(alignment: .top) {
                     Rectangle().fill(DD.paper.opacity(0.2)).frame(height: 1.5)
                 }
+                .padding(.top, 22)
 
                 // 本家の `.result > * { width:100%; max-width:320px }`。
                 // **2つのボタンは同じ幅にそろえる。**文字幅ぶんだけにすると幅が変わる
@@ -197,13 +212,36 @@ struct ResultOverlay: View {
                 section("ランキング") { ranking }
                 section("これまでの記録") { recordGrid }
 
-                Spacer(minLength: 40)
             }
             .frame(maxWidth: 320)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 24)
+            .padding(.top, safeTop + 40)
+            .padding(.bottom, safeBottom + 40)
         }
         .background(DD.brown.ignoresSafeArea())
+        .task(id: session.currentEntry?.date) {
+            let target = session.score
+            let duration = reduceMotion ? 0 : min(1.6, 0.4 + Double(target) * 0.002)
+            let began = Date()
+            counted = false
+            while !Task.isCancelled {
+                let p = duration == 0 ? 1 : min(1, Date().timeIntervalSince(began) / duration)
+                displayedScore = Int((Double(target) * (1 - pow(1 - p, 3))).rounded())
+                if p >= 1 { break }
+                if Int(p * 100) % 4 == 0 {
+                    GameAudio.shared.voice(freq: 1800 + p * 900, dur: 0.02, gain: 0.03, wave: .sine)
+                }
+                try? await Task.sleep(for: .milliseconds(30))
+            }
+            guard !Task.isCancelled else { return }
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) { counted = true }
+            GameAudio.shared.voice(freq: GameAudio.shared.note(5, fever: false), dur: 0.3, gain: 0.08)
+            if session.rank == 0 {
+                GameAudio.shared.playMilestone(level: min(10, max(3, target / 300)))
+                GameHaptics.pattern(2, intervalMs: 85)
+            }
+        }
     }
 }
 
@@ -221,6 +259,11 @@ struct ResetSheet: View {
     @State private var drag: CGFloat = 0
     /// 6px 以上引いたら、指を離してもボタンを押したことにしない（引きながらの誤爆を防ぐ）
     @State private var moved = false
+    @State private var closing = false
+    @AppStorage("dotdrop-sound") private var soundEnabled = true
+    @AppStorage("dotdrop-haptics") private var hapticsEnabled = true
+    @AppStorage("dotdrop-calm-effects") private var calmEffects = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let slideIn = Animation.timingCurve(0.2, 0.8, 0.3, 1, duration: 0.24)
 
@@ -232,7 +275,7 @@ struct ResetSheet: View {
                 .onTapGesture { close() }
 
             card
-                .offset(y: shown ? drag : 600)
+                .offset(y: shown ? drag : 1_200)
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { v in
@@ -241,13 +284,19 @@ struct ResetSheet: View {
                         }
                         .onEnded { _ in
                             let far = drag > 70
-                            withAnimation(Self.slideIn) { drag = 0 }
+                            withAnimation(reduceMotion ? nil : Self.slideIn) { drag = 0 }
                             if far { close() }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) { moved = false }
                         }
                 )
         }
-        .onAppear { withAnimation(Self.slideIn) { shown = true } }
+        .onAppear { withAnimation(reduceMotion ? nil : Self.slideIn) { shown = true } }
+        .onChange(of: soundEnabled) { _, enabled in
+            if !enabled { GameAudio.shared.suspend() }
+        }
+        .onChange(of: hapticsEnabled) { _, enabled in
+            if !enabled { GameHaptics.cancel() }
+        }
     }
 
     private var card: some View {
@@ -291,7 +340,7 @@ struct ResetSheet: View {
             .padding(.top, 14)
 
             // キャンセルは丸で囲わない。ただの文字にして、2つの操作と役割を分ける
-            Button { tap { session.showResetSheet = false } } label: {
+            Button { tap({}) } label: {
                 Text("キャンセル")
                     .font(DD.bold(14))
                     .foregroundStyle(DD.paper.opacity(0.6))
@@ -299,6 +348,14 @@ struct ResetSheet: View {
                     .padding(.vertical, 15)
             }
             .padding(.top, 4)
+
+            DisclosureGroup("音・振動・演出") {
+                Toggle("サウンド", isOn: $soundEnabled)
+                Toggle("振動", isOn: $hapticsEnabled)
+                Toggle("点滅・揺れを抑える", isOn: $calmEffects)
+            }
+            .font(DD.regular(13)).foregroundStyle(DD.paper)
+            .tint(DD.mustard).padding(.top, 10)
         }
         .frame(maxWidth: 320)
         .padding(.horizontal, 24)
@@ -313,13 +370,16 @@ struct ResetSheet: View {
     /// 引いたあとの指離しでボタンが反応しないようにする
     private func tap(_ action: @escaping () -> Void) {
         guard !moved else { return }
-        action()
+        close(action)
     }
 
-    private func close() {
-        withAnimation(Self.slideIn) { shown = false }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
+    private func close(_ action: @escaping () -> Void = {}) {
+        guard !closing else { return }
+        closing = true
+        withAnimation(reduceMotion ? nil : Self.slideIn) { shown = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0 : 0.24)) {
             session.showResetSheet = false
+            action()
         }
     }
 }

@@ -215,6 +215,7 @@ extension GameAudio {
     /// **拍手は粒。**ごく短いノイズ（5〜14ms、急に減衰）を1秒に約420発ばらまくと、
     /// 粒が重なって「パチパチ」になる。まばら→密→減る、と密度を変えると自然に聞こえる
     func cheer(dur: Double = 2.6, gain: Double = 0.2) {
+        guard GamePreferences.soundEnabled, isAppActive else { return }
         unlock()
         guard let eng = engine, let fan, eng.isRunning else { return }
         let format = fan.outputFormat(forBus: 0)
@@ -301,6 +302,7 @@ extension GameAudio {
         dur: Double, delay: Double,
         _ body: (Double, Double) -> (Double, Double)
     ) {
+        guard GamePreferences.soundEnabled, isAppActive else { return }
         unlock()
         guard let eng = engine, let fan, eng.isRunning else { return }
         let format = fan.outputFormat(forBus: 0)
