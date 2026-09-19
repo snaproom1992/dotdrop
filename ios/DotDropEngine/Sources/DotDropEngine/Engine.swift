@@ -191,8 +191,6 @@ public final class Engine {
     public var launchY: Double = baseLaunchY
     /// 釘フィールド上端。発射位置と必ず同じだけ動かし、間隔 60 を保つ（パワー弧が被らないように）
     public var fieldTop: Double = 200
-    /// 千鳥格子でおよそ 9 行（オリジナルの Safari 見た目）。これ以上は足さない
-    public static let maxPegSpan: Double = 42 * 8
     public var launchPoint: (x: Double, y: Double) { (Self.logicalWidth / 2, launchY) }
     public var pegs: [Peg] = []
     public var balls: [Ball] = []
@@ -253,11 +251,10 @@ public final class Engine {
     public func slotTop() -> Double { logicalHeight - 84 }
 
     public func field() -> (top: Double, bottom: Double) {
-        // ネイティブは Safari より画面が高いので、そのままだと釘の行が増えすぎる。
-        // 受け皿の位置（slotTop）は logicalHeight のまま下端に置き、釘だけ行数を抑える。
-        let natural = logicalHeight - 135
-        let capped = fieldTop + Self.maxPegSpan
-        return (fieldTop, min(natural, capped))
+        // 本家とまったく同じ（`{top: 200, bottom: E.LH - 135}`）。
+        // **行数に上限を付けないこと。**上限を付けると釘が1行減り、そのぶんが
+        // そのまま受け皿との余白になる（本家は10行／画面 726pt の受け皿まで 95pt）
+        (fieldTop, logicalHeight - 135)
     }
 
     public func slotAt(_ x: Double, t: Double = 0) -> Int {

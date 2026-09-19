@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Independent JS reference for the native app's existing capped field bounds.
+// Independent JS reference for the native field bounds (top だけ差し替え、下端は本家のまま).
 // No changes to the Web source or the physics reference fixtures.
 const fs = require('fs');
 const path = require('path');
@@ -10,7 +10,7 @@ if (start < 0 || end <= start) throw new Error('Missing engine markers');
 let src = html.slice(start, end);
 const original = 'const field = () => ({top: 200, bottom: E.LH - 135});';
 if (!src.includes(original)) throw new Error('Review changed Web field bounds');
-src = src.replace(original, 'const field = () => ({top: E.nativeTop, bottom: Math.min(E.LH - 135, E.nativeTop + 336)});');
+src = src.replace(original, 'const field = () => ({top: E.nativeTop, bottom: E.LH - 135});');
 const { E, applyConf, setLayout } = new Function(src + '\nreturn { E, applyConf, setLayout };')();
 const fixtures = [];
 for (const height of [700, 748]) for (const top of [200, 226]) for (let layout = 0; layout < 4; layout++) {
