@@ -17,15 +17,19 @@ struct TitleView: View {
             GeometryReader { geo in
               ScrollView {
                VStack(spacing: 0) {
+                // 間の取り方は本家の数字に合わせない。**詰まって見えるかどうかで決める。**
+                // 全部を似た間隔（22/28/20）にしていたら、まとまりの差が出ず、
+                // 4つが一つの塊に見えて詰まっていた。3段に分ける：
+                //   タイトルと■●▲は同じまとまり（近い）
+                //   そこから操作へは、いちばん大きく空ける
+                //   2つのボタンは組だが、くっつけない
                 titleBlock
                 shapes
                     .padding(.top, 22)
                 startButton
-                    .padding(.top, 28)
+                    .padding(.top, 44)
                 tutorialButton
-                    // 本家は14。ボタンの高さを本家に戻したうえで、なお詰まって
-                    // 見えるとのことで20にしている
-                    .padding(.top, 20)
+                    .padding(.top, 28)
                }
                .padding(24)
                .frame(maxWidth: .infinity, minHeight: geo.size.height)
