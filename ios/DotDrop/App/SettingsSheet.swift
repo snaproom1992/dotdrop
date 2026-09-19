@@ -1,19 +1,15 @@
 import SwiftUI
 
-/// 設定の入口。**アイコンにしないこと。**
+/// 設定の入口。iOS の歯車をそのまま使う。
 ///
-/// 丸だけで組んだ印を置いたら「何を指しているか分からない」となった。
-/// リセットのボタンでも同じことが起きていて、枠つきの文字にして解決している
-/// （枠がないと、ボタンではなく飾りやラベルに見える）。形を揃える。
+/// **「形は丸と四角と三角だけ」の例外。**丸だけで組んだ印は「何を指しているか
+/// 分からない」となった。歯車は覚えて使う記号なので、形の理屈より通りがよい、
+/// というのが作者の判断（枠つきの「設定」という文字も試したうえで、こちらを選んだ）。
 struct SettingsButton: View {
     var body: some View {
-        Text("設定")
-            .font(DD.bold(9.5))
-            .tracking(0.76)
-            .foregroundStyle(DD.paper.opacity(0.55))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 3)
-            .overlay(Capsule().stroke(DD.paper.opacity(0.45), lineWidth: 1.2))
+        Image(systemName: "gearshape")
+            .font(.system(size: 20, weight: .regular))
+            .foregroundStyle(DD.paper.opacity(0.6))
     }
 }
 
