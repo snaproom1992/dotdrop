@@ -21,13 +21,13 @@ struct TitleView: View {
                 // 全部を似た間隔（22/28/20）にしていたら、まとまりの差が出ず、
                 // 4つが一つの塊に見えて詰まっていた。3段に分ける：
                 //   タイトルと■●▲は同じまとまり（近い）
-                //   そこから操作へは、いちばん大きく空ける
+                //   そこから操作へは、いちばん大きく空ける（22 → 56 → 28）
                 //   2つのボタンは組だが、くっつけない
                 titleBlock
                 shapes
                     .padding(.top, 22)
                 startButton
-                    .padding(.top, 44)
+                    .padding(.top, 56)
                 tutorialButton
                     .padding(.top, 28)
                }
@@ -43,8 +43,10 @@ struct TitleView: View {
             }
             .accessibilityLabel("設定。音・振動・演出")
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-            .padding(.trailing, 8)
-            .padding(.top, safeTop)
+            // 端との空きは20。画面の中の数字（持ち玉・スコア）と同じ空け方にそろえる。
+            // 8 だと画面のふちに貼りついて見える
+            .padding(.trailing, 20)
+            .padding(.top, safeTop + 8)
 
             if showSettings {
                 SettingsSheet(safeBottom: safeBottom) { showSettings = false }
