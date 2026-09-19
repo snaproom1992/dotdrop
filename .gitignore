@@ -6,3 +6,6 @@ ios/DotDrop/Config/Signing.xcconfig
 xcuserdata/
 *.xcuserstate
 DerivedData/
+
+# Swift Package Manager build products
+.build/
