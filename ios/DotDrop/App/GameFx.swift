@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import DotDropEngine
 
 /// Web の floaters / flyers / catches / waves / milestone / edge / perfect に対応
 enum GameFx {
