@@ -119,11 +119,16 @@ final class GameSession {
         lastFit = fit
         if let safeTop { self.safeTop = safeTop }
         let lh = fit.logicalHeight
-        // **発射位置と釘の上端はノッチで動かさない。**本家は LAUNCH.y=140 / field().top=200 の固定で、
-        // ノッチぶん下げるのは帯（BANNER_Y）だけ。ここまで下げると、待機中の点線の弧の頂点が
-        // ちょうど STAGE の丸の高さに来て潰れる（本家は弧が STAGE の数字を囲む位置になる）
-        let launchY = Engine.baseLaunchY
-        let fieldTop = 200.0
+        // 発射位置は固定値にしない。**本家の 140 は本家の HUD の高さを前提にした数字**で、
+        // ネイティブは STAGE の列が約6pt 高く、待機中のリングも約4pt 太いので、
+        // そのまま持ってくると丸とリングが食い合う。HUD の下端から決める。
+        //   HUD の下端 ＝ safe-area ＋ ヘッダーの余白38 ＋ STAGE の列46（実測）
+        //   狙いの点線の弧は玉の中心から上へ34。そこに8の余裕を足した高さまで玉を下げる
+        // ノッチのない端末では 140 に収まり、本家と同じ位置になる
+        let hudBottom = Double(self.safeTop) + 38 + 46
+        let launchY = max(Engine.baseLaunchY, hudBottom / Double(fit.scale) + 34 + 8)
+        // 玉と釘の間隔は本家と同じ60を保つ
+        let fieldTop = launchY + 60
         let heightChanged = abs(engine.logicalHeight - lh) > 0.5
         let launchChanged = abs(engine.launchY - launchY) > 0.5
         let fieldChanged = abs(engine.fieldTop - fieldTop) > 0.5
