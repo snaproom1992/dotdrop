@@ -13,6 +13,11 @@ enum DD {
     static let floorNormal = Color(hex: 0x1E1817)
 
     static func bg(fever: Bool) -> Color { fever ? mustard : brown }
+    static func background(mix: Double) -> Color {
+        let k = max(0, min(1, mix))
+        return Color(.sRGB, red: (42 + 192 * k) / 255,
+                     green: (35 + 133 * k) / 255, blue: (34 + 24 * k) / 255)
+    }
     static func fg(fever: Bool) -> Color { fever ? ink : paper }
     static func peg(fever: Bool) -> Color { fever ? ink.opacity(0.26) : pegNormal }
     static func ball(fever: Bool) -> Color { fever ? ink : paper }
@@ -45,6 +50,12 @@ enum DD {
         let room = screenWidth / 2 - 25 - 32
         return min(46, max(22, room / (Double(max(1, digits)) * 0.57)))
     }
+}
+
+enum GamePreferences {
+    static var soundEnabled: Bool { UserDefaults.standard.object(forKey: "dotdrop-sound") as? Bool ?? true }
+    static var hapticsEnabled: Bool { UserDefaults.standard.object(forKey: "dotdrop-haptics") as? Bool ?? true }
+    static var calmEffects: Bool { UserDefaults.standard.bool(forKey: "dotdrop-calm-effects") }
 }
 
 extension Color {
