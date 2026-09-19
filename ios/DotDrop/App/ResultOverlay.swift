@@ -260,9 +260,6 @@ struct ResetSheet: View {
     /// 6px 以上引いたら、指を離してもボタンを押したことにしない（引きながらの誤爆を防ぐ）
     @State private var moved = false
     @State private var closing = false
-    @AppStorage("dotdrop-sound") private var soundEnabled = true
-    @AppStorage("dotdrop-haptics") private var hapticsEnabled = true
-    @AppStorage("dotdrop-calm-effects") private var calmEffects = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let slideIn = Animation.timingCurve(0.2, 0.8, 0.3, 1, duration: 0.24)
@@ -291,12 +288,6 @@ struct ResetSheet: View {
                 )
         }
         .onAppear { withAnimation(reduceMotion ? nil : Self.slideIn) { shown = true } }
-        .onChange(of: soundEnabled) { _, enabled in
-            if !enabled { GameAudio.shared.suspend() }
-        }
-        .onChange(of: hapticsEnabled) { _, enabled in
-            if !enabled { GameHaptics.cancel() }
-        }
     }
 
     private var card: some View {
@@ -349,13 +340,10 @@ struct ResetSheet: View {
             }
             .padding(.top, 4)
 
-            DisclosureGroup("音・振動・演出") {
-                Toggle("サウンド", isOn: $soundEnabled)
-                Toggle("振動", isOn: $hapticsEnabled)
-                Toggle("点滅・揺れを抑える", isOn: $calmEffects)
-            }
-            .font(DD.regular(13)).foregroundStyle(DD.paper)
-            .tint(DD.mustard).padding(.top, 10)
+            // **ここに設定を足さないこと。**板の中身は［見出し］［ひとこと］［リセット］
+            // ［タイトルに戻る］［キャンセル］の5つ。キャンセルの下に別の操作が付くと
+            // 板の終わりが分からなくなるし、「やめるかどうか」の場に別の用事が混ざる。
+            // 音・振動・演出はタイトル画面の右上へ移した（SettingsSheet）
         }
         .frame(maxWidth: 320)
         .padding(.horizontal, 24)

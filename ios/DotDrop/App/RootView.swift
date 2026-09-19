@@ -24,6 +24,8 @@ struct RootView: View {
             case .title:
                 TitleView(
                     session: session,
+                    safeTop: safeTop,
+                    safeBottom: safeBot,
                     onPlay: { session.startFreePlay() },
                     onTutorial: { session.openTutorialList() }
                 )

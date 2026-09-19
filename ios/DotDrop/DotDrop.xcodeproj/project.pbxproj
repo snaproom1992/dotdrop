@@ -22,6 +22,7 @@
 		AA000000000000000000000C /* GameFx.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001B /* GameFx.swift */; };
 		AA000000000000000000000D /* MilestoneAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001E /* MilestoneAudio.swift */; };
 		AA000000000000000000000E /* Records.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001F /* Records.swift */; };
+		AA000000000000000000000F /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000022 /* SettingsSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +41,7 @@
 		AA000000000000000000001B /* GameFx.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameFx.swift; sourceTree = "<group>"; };
 		AA000000000000000000001E /* MilestoneAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MilestoneAudio.swift; sourceTree = "<group>"; };
 		AA000000000000000000001F /* Records.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Records.swift; sourceTree = "<group>"; };
+		AA0000000000000000000022 /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
 		AA000000000000000000001C /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Shared.xcconfig; path = Config/Shared.xcconfig; sourceTree = "<group>"; };
 		AA000000000000000000001D /* Signing.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Signing.xcconfig.example; path = Config/Signing.xcconfig.example; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -81,6 +83,7 @@
 				AA000000000000000000001B /* GameFx.swift */,
 				AA000000000000000000001E /* MilestoneAudio.swift */,
 				AA000000000000000000001F /* Records.swift */,
+				AA0000000000000000000022 /* SettingsSheet.swift */,
                 AB0000000000000000000002 /* Tutorial.swift */,
 			);
 			path = App;
@@ -199,6 +202,7 @@
 				AA000000000000000000000C /* GameFx.swift in Sources */,
 				AA000000000000000000000D /* MilestoneAudio.swift in Sources */,
 				AA000000000000000000000E /* Records.swift in Sources */,
+				AA000000000000000000000F /* SettingsSheet.swift in Sources */,
                 AB0000000000000000000001 /* Tutorial.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

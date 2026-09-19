@@ -4,8 +4,12 @@ import UIKit
 /// `#start` overlay（justify-content: safe center）
 struct TitleView: View {
     var session: GameSession
+    var safeTop: CGFloat
+    var safeBottom: CGFloat
     var onPlay: () -> Void
     var onTutorial: () -> Void
+
+    @State private var showSettings = false
 
     var body: some View {
         ZStack {
@@ -25,6 +29,21 @@ struct TitleView: View {
                .frame(maxWidth: .infinity, minHeight: geo.size.height)
               }
               .scrollIndicators(.hidden)
+            }
+            // 設定は右上に小さく。「はじめる」「あそびかた」の2つは主役のまま動かさない
+            Button { showSettings = true } label: {
+                DotSettingsIcon()
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("音・振動・演出")
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            .padding(.trailing, 12)
+            .padding(.top, safeTop + 4)
+
+            if showSettings {
+                SettingsSheet(safeBottom: safeBottom) { showSettings = false }
+                    .zIndex(7)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
