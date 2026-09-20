@@ -1,0 +1,9 @@
+// このファイルを Signing.xcconfig にコピーして、YOUR_TEAM_ID を書き換える。
+//
+// Team ID の探し方:
+//   1. https://developer.apple.com/account → Membership details → Team ID
+//   2. または Xcode → Settings → Accounts → 自分の Apple ID → Team を選んで表示される ID
+//
+// 例: DEVELOPMENT_TEAM = A1B2C3D4E5
+
+DEVELOPMENT_TEAM = YOUR_TEAM_ID

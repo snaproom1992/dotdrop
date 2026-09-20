@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  プライバシーマニフェスト。**これが無いとアップロードで弾かれる。**
+
+  このアプリは何も集めず、何も送らない。記録は端末の中（UserDefaults）だけ。
+  ただし UserDefaults は「理由の申告が要る API」に指定されているので、
+  使っていないことではなく「何のために使っているか」を書く必要がある。
+  CA92.1 ＝ このアプリ自身の設定を読み書きするためだけに使う、の意味。
+-->
+<plist version="1.0">
+<dict>
+    <!-- 追跡しない -->
+    <key>NSPrivacyTracking</key>
+    <false/>
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+    <!-- 集めるデータはない -->
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array/>
+    <!-- 理由の申告が要る API -->
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>CA92.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

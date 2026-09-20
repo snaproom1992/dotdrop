@@ -1,0 +1,51 @@
+name: iOS screenshots
+
+# 毎 push では回さない（macOS のランナーは10倍課金）。走らせ方は2つ。
+#   1. Actions のページから手で（Run workflow）
+#   2. コミットメッセージに [shots] と書いて push する
+on:
+  workflow_dispatch:
+  push:
+
+permissions:
+  contents: write
+
+jobs:
+  shots:
+    # [shots] と書いたときだけ。手で起動したときは常に走る
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[shots]')
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      # 20分のビルドを始める前に、数秒で分かる間違いを弾く。
+      # $VAR の直後に全角文字があると、bash が名前の一部として読んでしまう
+      - name: Check the script
+        run: |
+          bash -n ios/tools/shots.sh
+          if LC_ALL=C grep -nP '\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7f]' ios/tools/shots.sh; then
+            echo "↑ \${VAR} と書くこと（全角文字が変数名に食われる）"; exit 1
+          fi
+      - name: Take screenshots
+        run: ios/tools/shots.sh shots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: shots
+          if-no-files-found: error
+      # 撮ったものを shots-latest ブランチに置く（毎回まるごと差し替え）。
+      # Actions のアーティファクトは置き場所が別サーバーで、ここから取りに行けないため。
+      - name: Publish to shots-latest
+        if: always()
+        run: |
+          [ -d shots ] || exit 0
+          cd shots
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "撮影 ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/shots-latest

@@ -1,0 +1,5 @@
+# ローカル生成物のみ無視（.xcodeproj 本体はリポジトリに含める）
+**/xcuserdata/
+**/DerivedData/
+*.xcuserstate
+.DS_Store

@@ -1,0 +1,21 @@
+name: iOS build and engine tests
+on:
+  push:
+    paths: ['ios/**', '.github/workflows/ios-build.yml']
+  pull_request:
+    paths: ['ios/**', '.github/workflows/ios-build.yml']
+permissions:
+  contents: read
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build for iOS Simulator
+        run: xcodebuild -project ios/DotDrop/DotDrop.xcodeproj -scheme DotDrop -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+      - name: Test engine
+        run: swift test --package-path ios/DotDropEngine
