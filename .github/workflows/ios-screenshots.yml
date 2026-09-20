@@ -1,15 +1,21 @@
 name: iOS screenshots
 
-# 毎 push では回さない（macOS のランナーは高い）。
-# 必要なときに Actions から手で走らせるか、API で起動する
+# 毎 push では回さない（macOS のランナーは10倍課金）。走らせ方は2つ。
+#   1. Actions のページから手で（Run workflow）
+#   2. コミットメッセージに [shots] と書いて push する
 on:
   workflow_dispatch:
+  push:
 
 permissions:
   contents: read
 
 jobs:
   shots:
+    # [shots] と書いたときだけ。手で起動したときは常に走る
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[shots]')
     runs-on: macos-15
     timeout-minutes: 30
     steps:
