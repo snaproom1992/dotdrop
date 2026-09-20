@@ -231,6 +231,20 @@ private struct RollingDigit: View {
             // 中央に置いても端がぎりぎり。clipped() だと右端がわずかに欠ける。
             // 上下だけ切れば、隣の数字が見えるのを隠すという目的は果たせる
             .clipShape(Rectangle().scale(x: 1.6, y: 1))
+            // 上下の端をわずかに抜いて、切り口の線を消す。
+            // **抜けるのは外側7%まで。**枠は .9em、数字は .7em なので、
+            // 余っているのは上下11%ずつしかない。深く抜くと数字自体が削れる
+            .mask(
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: .black, location: 0.07),
+                        .init(color: .black, location: 0.93),
+                        .init(color: .clear, location: 1),
+                    ],
+                    startPoint: .top, endPoint: .bottom
+                )
+            )
             .onChange(of: digit) { _, next in
                 let current = (Int(position.rounded()) % 10 + 10) % 10
                 let forward = (next - current + 10) % 10
@@ -255,8 +269,22 @@ private struct ReelFace: View, Animatable {
             let first = Int(floor(position))
             for n in first...(first + 1) {
                 let digit = (n % 10 + 10) % 10
+                // 枠の中心からどれだけずれているか（0＝ぴたり、1＝1枠ぶん外）
+                let off = abs(Double(n) - position)
                 let text = ctx.resolve(Text("\(digit)").font(DD.bold(size)))
-                ctx.draw(text, at: CGPoint(x: bounds.width / 2, y: bounds.height / 2 + (Double(n) - position) * size * 0.9), anchor: .center)
+                var layer = ctx
+                // **ずれている数字ほど薄く、そしてぼかす。**
+                // 止まっているときは off が 0 なのでそのまま。回っている間だけ効く。
+                // 上下を一律にぼかすと止まった数字までにじむので、動いた量で決める
+                if off > 0.02 {
+                    layer.opacity = max(0, 1 - off * 0.85)
+                    layer.addFilter(.blur(radius: min(size * 0.05, off * size * 0.07)))
+                }
+                layer.draw(
+                    text,
+                    at: CGPoint(x: bounds.width / 2, y: bounds.height / 2 + (Double(n) - position) * size * 0.9),
+                    anchor: .center
+                )
             }
         }
     }
