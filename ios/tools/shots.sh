@@ -107,7 +107,7 @@ printf '%s\n' "$DEVICES" | tr ';' '\n' | while IFS= read -r entry; do
     for screen in $SCREENS; do
       # タイトルは玉が落ちきるのを、結果ときろくは数字が回りきるのを待つ
       # split は▲で分裂しきるまで待つ（打ってから落ちきるまで約6秒）
-      case "$screen" in split) wait=6.5;; title|result|records) wait=3.0;; *) wait=2.0;; esac
+      case "$screen" in split) wait=13.0;; title|result|records) wait=3.0;; *) wait=2.0;; esac
       launch "$udid" "$lang" "$screen"
       sleep "$wait"
       xcrun simctl io "$udid" screenshot --type=png "$dir/$screen.png" > /dev/null

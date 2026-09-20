@@ -7,7 +7,7 @@
 // 本家の台は高さ700・発射140 だが、アプリは HUD のぶん発射位置が下がり、
 // 画面も縦に長いので、釘の行数も位置も違う。ここを合わせないと当たらない。
 const fs = require('fs');
-const html = fs.readFileSync('/home/user/dotdrop/index.html', 'utf8');
+const html = fs.readFileSync(require('path').join(__dirname, '../../index.html'), 'utf8');
 let engine = html.slice(html.indexOf('/*ENGINE*/'), html.indexOf('/*END*/'));
 const LAUNCH_Y = 161.5, FIELD_TOP = 221.5, LH = 754.4;
 const before = engine;
@@ -22,7 +22,7 @@ E.LH = LH;
 
 function shoot(angle, level) {
   let done = false; E.hooks.shotEnd = () => { done = true; };
-  const a = angle * Math.PI / 180, p = level * 26 - 0.5;
+  const a = angle * Math.PI / 180, p = level * 26;  // setPull が段ちょうどに丸める
   launch(...launchVelocity(Math.cos(a) * p, Math.sin(a) * p));
   let t = 0, mb = 1;
   while (!done && t < 40) { stepPhysics(1/360); t += 1/360; mb = Math.max(mb, E.balls.length); }
@@ -38,14 +38,16 @@ function eval_(angle, level, n) {
 }
 
 const mode = process.argv[2] || 'seeds';
+// デモの大半はフィーバー中（点が2倍）なので、そちらで評価する
+const FEVER = process.env.FEVER !== '0';
 if (mode === 'seeds') {
   const out = [];
   for (let seed = 1; seed <= 24; seed++) {
-    E.boardSeed = seed; E.stage = 0; E.fever = false; setLayout(0, false);
+    E.boardSeed = seed; E.stage = 0; setLayout(0, false); E.fever = FEVER;
     let best = null;
     for (let angle = 35; angle <= 145; angle += 10)
       for (let level = 3; level <= 5; level++) {
-        const r = eval_(angle, level, 12);
+        const r = eval_(angle, level, 20);
         const v = r.pot + r.balls * 18;
         if (!best || v > best.v) best = {...r, v};
       }
@@ -58,7 +60,7 @@ if (mode === 'seeds') {
     console.log(`種${String(s.seed).padStart(2)}  ${s.angle}° 強さ${s.level}  ポイント${s.pot}  最大玉${s.balls}  100点超え${(s.over100*100)|0}%  6個以上${(s.six*100)|0}%`);
 } else {
   const seed = +mode;
-  E.boardSeed = seed; E.stage = 0; E.fever = false; setLayout(0, false);
+  E.boardSeed = seed; E.stage = 0; setLayout(0, false); E.fever = FEVER;
   const rows = [];
   for (let angle = 55; angle <= 135; angle += 4)
     for (let level = 3; level <= 5; level++) rows.push(eval_(angle, level, 40));
