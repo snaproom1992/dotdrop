@@ -174,7 +174,7 @@ struct SettingsSheet: View {
                     .foregroundStyle(DD.paper)
                     .padding(.top, 6)
                 if showHelp {
-                    Text("iPhone の「設定」→ Game Center をひらき、サインアウトしてください")
+                    Text("サインアウトする場合は、iPhone の「設定」→ Game Center をひらき、サインアウトしてください")
                         .font(DD.regular(11))
                         .foregroundStyle(DD.paper.opacity(0.5))
                         .fixedSize(horizontal: false, vertical: true)
