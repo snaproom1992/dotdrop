@@ -1,6 +1,44 @@
 import SwiftUI
 import UIKit
 
+/// あなた / 世界ランキング の切り替え。
+///
+/// iOS 標準の segmented（`Picker`）。指で滑らせて動かせて、選んだところが滑らかに移る
+struct ScopeSwitch: View {
+    @Binding var scope: RankScope
+
+    var body: some View {
+        Picker("ランキングの範囲", selection: $scope) {
+            Text("あなた").tag(RankScope.local)
+            Text("世界ランキング").tag(RankScope.world)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .onAppear { Self.style() }
+        .onChange(of: scope) { _, value in
+            if value == .world { GameCenter.shared.load() }
+        }
+    }
+
+    /// 標準の切り替えは明るい灰色で、こげ茶の板の上では浮いてしまう。
+    /// 選んだところを赤、字をクリームにして、色の決まりに合わせる。
+    /// アプリの中にこれ1つしかないので、まとめて指定してよい
+    private static func style() {
+        let bar = UISegmentedControl.appearance()
+        bar.selectedSegmentTintColor = UIColor(DD.red)
+        bar.backgroundColor = UIColor(DD.paper.opacity(0.10))
+        let font = UIFont(name: "HelveticaNeue-Bold", size: 13)
+            ?? .systemFont(ofSize: 13, weight: .bold)
+        bar.setTitleTextAttributes(
+            [.foregroundColor: UIColor(DD.paper.opacity(0.6)), .font: font], for: .normal)
+        bar.setTitleTextAttributes(
+            [.foregroundColor: UIColor(DD.paper), .font: font], for: .selected)
+    }
+}
+
+/// この端末の記録か、世界ランキングか
+enum RankScope { case local, world }
+
 /// ランキングと「これまでの記録」。結果画面とタイトルの「きろく」で同じものを使う。
 ///
 /// **2か所で作り分けないこと。**片方だけ直して見た目がずれる
@@ -13,14 +51,15 @@ struct RecordsSections: View {
     var newKeys: Set<String> = []
     var limit: Int = 5
 
-    /// この端末の記録か、世界ランキングか
-    enum Scope { case local, world }
-    @State private var scope: Scope = .local
+    /// 親が持つ。板では切り替えを一番上に置くので、ここでは持たない
+    @Binding var scope: RankScope
+    /// 切り替えを自分で描くか（板は上に置くので false）
+    var showsSwitch: Bool = true
 
     var body: some View {
         VStack(spacing: 0) {
             section("ランキング") {
-                scopeSwitch
+                if showsSwitch { ScopeSwitch(scope: $scope).padding(.top, 2).padding(.bottom, 8) }
                 if scope == .local { ranking } else { worldRanking }
             }
             // 空の箱を2つ並べるとかえって散らかるので、記録が無いときは見出しごと出さない
@@ -28,7 +67,6 @@ struct RecordsSections: View {
                 section("これまでの記録") { recordGrid }
             }
         }
-        .onAppear { Self.styleSegments() }
     }
 
     private func section<C: View>(
@@ -43,39 +81,6 @@ struct RecordsSections: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 36)
-    }
-
-    // MARK: - あなた / 世界ランキング の切り替え
-
-    /// iOS 標準の切り替え（`Picker` の segmented）。指で滑らせて動かせて、
-    /// 選んだところが滑らかに動く。**見出しの下に1行まるごと使う**
-    private var scopeSwitch: some View {
-        Picker("ランキングの範囲", selection: $scope) {
-            Text("あなた").tag(Scope.local)
-            Text("世界ランキング").tag(Scope.world)
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .padding(.top, 2)
-        .padding(.bottom, 8)
-        .onChange(of: scope) { _, value in
-            if value == .world { GameCenter.shared.load() }
-        }
-    }
-
-    /// 標準の切り替えは明るい灰色で、こげ茶の板の上では浮いてしまう。
-    /// 選んだところを赤、字をクリームにして、色の決まりに合わせる。
-    /// アプリの中にこれ1つしかないので、まとめて指定してよい
-    private static func styleSegments() {
-        let bar = UISegmentedControl.appearance()
-        bar.selectedSegmentTintColor = UIColor(DD.red)
-        bar.backgroundColor = UIColor(DD.paper.opacity(0.10))
-        let font = UIFont(name: "HelveticaNeue-Bold", size: 13)
-            ?? .systemFont(ofSize: 13, weight: .bold)
-        bar.setTitleTextAttributes(
-            [.foregroundColor: UIColor(DD.paper.opacity(0.6)), .font: font], for: .normal)
-        bar.setTitleTextAttributes(
-            [.foregroundColor: UIColor(DD.paper), .font: font], for: .selected)
     }
 
     // MARK: - 世界ランキング
@@ -311,14 +316,22 @@ struct RecordsSheet: View {
     @State private var entries: [DDStore.RankEntry] = []
     @State private var records: [String: Int] = [:]
     @State private var displayedBest = 0
+    @State private var scope: RankScope = .local
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let slideIn = Animation.timingCurve(0.2, 0.8, 0.3, 1, duration: 0.24)
     private var best: Int { max(entries.first?.score ?? 0, records["gameScore"] ?? 0) }
 
+    /// 上に大きく出す数字。**切り替えに連動する。**
+    /// 世界を見ているのに自分の点が出ていると、世界1位だと読めてしまう
+    private var hero: Int { scope == .local ? best : (GameCenter.shared.entries.first?.score ?? 0) }
+    private var heroTitle: LocalizedStringKey { scope == .local ? "あなたのベスト" : "世界のベスト" }
+    /// 数字が無いとき（未サインイン・読み込み前など）に出す、板の名前
+    private var heroFallback: LocalizedStringKey { scope == .local ? "きろく" : "世界ランキング" }
+
     /// 板の中で使える幅（左右24）。リールの1枠は .57em
     private var bestSize: Double {
-        let digits = Double(max(1, String(max(0, best)).count))
+        let digits = Double(max(1, String(max(0, hero)).count))
         return min(80, (320 - 48 - 4) / (digits * 0.57))
     }
 
@@ -335,14 +348,17 @@ struct RecordsSheet: View {
             records = DDStore.records()
             withAnimation(reduceMotion ? nil : Self.slideIn) { shown = true }
         }
-        .task {
-            // 結果画面と同じ回し方。0から上がって、リールで止まる
-            let target = max(entries.first?.score ?? 0, DDStore.records()["gameScore"] ?? 0)
-            let duration = reduceMotion ? 0 : min(1.2, 0.3 + Double(target) * 0.0015)
+        // **切り替えるたびに回し直す。**数字が変わったことが、動きで分かる
+        .task(id: hero) {
+            let from = displayedBest
+            let target = hero
+            let gap = Double(abs(target - from))
+            let duration = reduceMotion ? 0 : min(1.2, 0.3 + gap * 0.0015)
             let began = Date()
             while !Task.isCancelled {
                 let p = duration == 0 ? 1 : min(1, Date().timeIntervalSince(began) / duration)
-                displayedBest = Int((Double(target) * (1 - pow(1 - p, 3))).rounded())
+                let eased = 1 - pow(1 - p, 3)
+                displayedBest = Int((Double(from) + (Double(target) - Double(from)) * eased).rounded())
                 if p >= 1 { break }
                 try? await Task.sleep(for: .milliseconds(30))
             }
@@ -370,6 +386,8 @@ struct RecordsSheet: View {
             ScrollView {
                 VStack(spacing: 0) {
                     RecordsSections(
+                        scope: $scope,
+                        showsSwitch: false,
                         entries: entries,
                         records: records,
                         highlight: nil,
@@ -405,8 +423,12 @@ struct RecordsSheet: View {
                 .frame(width: 40, height: 4)
                 .padding(.top, 10)
 
-            if best > 0 {
-                Text("ベストスコア")
+            // **切り替えは一番上。**下にあるもの全部が切り替わる、という意味になる
+            ScopeSwitch(scope: $scope)
+                .padding(.top, 16)
+
+            if hero > 0 {
+                Text(heroTitle)
                     .font(DD.bold(13))
                     .tracking(0.52)
                     .foregroundStyle(DD.paper.opacity(0.7))
@@ -419,7 +441,7 @@ struct RecordsSheet: View {
             } else {
                 // **まだ何も無いときに大きな 0 を出さない。**壊れて見える。
                 // 板の名前だけ出して、中身は下の空の箱に任せる
-                Text("きろく")
+                Text(heroFallback)
                     .font(DD.bold(17))
                     .foregroundStyle(DD.paper)
                     .padding(.top, 14)

@@ -291,6 +291,17 @@
         }
       }
     },
+    "あなたのベスト": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YOUR BEST"
+          }
+        }
+      }
+    },
     "いまのスコアはランキングに残りません": {
       "extractionState": "manual",
       "localizations": {
@@ -626,18 +637,6 @@
         }
       }
     },
-    "ベストスコア": {
-      "comment": "Hero number on the records sheet",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "BEST SCORE"
-          }
-        }
-      }
-    },
     "ポイントがたまると入れる": {
       "comment": "Lesson 8 hint",
       "extractionState": "manual",
@@ -716,6 +715,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "LESSONS"
+          }
+        }
+      }
+    },
+    "世界のベスト": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WORLD BEST"
           }
         }
       }

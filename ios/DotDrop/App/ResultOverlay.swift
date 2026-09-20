@@ -2,6 +2,7 @@ import SwiftUI
 
 /// `#over.result` に対応
 struct ResultOverlay: View {
+    @State private var rankScope: RankScope = .local
     var session: GameSession
     var width: CGFloat
     var safeTop: CGFloat
@@ -124,6 +125,7 @@ struct ResultOverlay: View {
                 .padding(.top, 14)
 
                 RecordsSections(
+                    scope: $rankScope,
                     entries: session.rankingTop,
                     records: session.records,
                     highlight: session.currentEntry,
