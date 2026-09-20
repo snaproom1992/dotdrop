@@ -17,8 +17,9 @@ import UIKit
 final class GameCenter {
     static let shared = GameCenter()
 
-    /// App Store Connect で作るランキングの ID。**同じ文字列でないと届かない**
-    static let leaderboardID = "dotdrop.best"
+    /// App Store Connect のランキング「High Score」の ID。
+    /// **一字でも違うとスコアが届かず、黙って捨てられる**
+    static let leaderboardID = "com.snaproom.dotdrop.highscore"
 
     private(set) var signedIn = false
     private(set) var entries: [Entry] = []
