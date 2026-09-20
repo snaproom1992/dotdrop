@@ -220,6 +220,17 @@
       },
       "comment": "VoiceOver: progress dots"
     },
+    "Game Center にサインインすると、世界のスコアが見られます": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to Game Center to see scores from around the world"
+          }
+        }
+      }
+    },
     "● の数だけ持ち玉が戻ってくる": {
       "extractionState": "manual",
       "localizations": {
@@ -279,6 +290,17 @@
         }
       }
     },
+    "いまは読み込めません": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't load right now"
+          }
+        }
+      }
+    },
     "きろく。ランキングとこれまでの記録": {
       "extractionState": "manual",
       "localizations": {
@@ -290,6 +312,18 @@
         }
       },
       "comment": "VoiceOver: records button"
+    },
+    "この端末": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "THIS PHONE"
+          }
+        }
+      },
+      "comment": "Ranking scope: records stored on this device"
     },
     "これまでの記録": {
       "extractionState": "manual",
@@ -357,6 +391,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "No records yet"
+          }
+        }
+      }
+    },
+    "まだ誰も載っていません": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nobody here yet"
           }
         }
       }
@@ -594,6 +639,18 @@
       },
       "comment": "HUD button during a lesson"
     },
+    "世界": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WORLD"
+          }
+        }
+      },
+      "comment": "Ranking scope: Game Center global leaderboard"
+    },
     "入ると、スコアが3倍になる": {
       "extractionState": "manual",
       "localizations": {
@@ -802,6 +859,17 @@
         }
       },
       "comment": "VoiceOver: settings button"
+    },
+    "読み込んでいます": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading"
+          }
+        }
+      }
     },
     "赤い四角は強くはね返す": {
       "extractionState": "manual",

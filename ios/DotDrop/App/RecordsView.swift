@@ -12,23 +12,125 @@ struct RecordsSections: View {
     var newKeys: Set<String> = []
     var limit: Int = 5
 
+    /// この端末の記録か、世界ランキングか
+    enum Scope { case local, world }
+    @State private var scope: Scope = .local
+    private var gc = GameCenter.shared
+
     var body: some View {
         VStack(spacing: 0) {
-            section("ランキング") { ranking }
+            section("ランキング", trailing: { scopeSwitch }) {
+                if scope == .local { ranking } else { worldRanking }
+            }
             section("これまでの記録") { recordGrid }
         }
     }
 
-    private func section<C: View>(_ title: LocalizedStringKey, @ViewBuilder content: () -> C) -> some View {
+    private func section<C: View, T: View>(
+        _ title: LocalizedStringKey,
+        @ViewBuilder trailing: () -> T = { EmptyView() },
+        @ViewBuilder content: () -> C
+    ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(DD.bold(12))
-                .tracking(0.48)
-                .foregroundStyle(DD.paper.opacity(0.6))
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(DD.bold(12))
+                    .tracking(0.48)
+                    .foregroundStyle(DD.paper.opacity(0.6))
+                Spacer(minLength: 8)
+                trailing()
+            }
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 36)
+    }
+
+    // MARK: - この端末 / 世界 の切り替え
+
+    /// **枠をつける。**枠のない印はボタンだと気づかれない（リセットで一度やった）
+    private var scopeSwitch: some View {
+        HStack(spacing: 0) {
+            segment("この端末", .local)
+            segment("世界", .world)
+        }
+        .overlay(Capsule().stroke(DD.paper.opacity(0.35), lineWidth: 1))
+        .clipShape(Capsule())
+    }
+
+    private func segment(_ title: LocalizedStringKey, _ value: Scope) -> some View {
+        let on = scope == value
+        return Button {
+            scope = value
+            if value == .world { gc.load() }
+        } label: {
+            Text(title)
+                .font(DD.bold(10))
+                .tracking(0.4)
+                .foregroundStyle(on ? DD.paper : DD.paper.opacity(0.55))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(on ? DD.red : .clear)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - 世界ランキング
+
+    private var worldRanking: some View {
+        VStack(spacing: 0) {
+            if !gc.signedIn {
+                note("Game Center にサインインすると、世界のスコアが見られます")
+            } else {
+                switch gc.state {
+                case .loading, .idle: note("読み込んでいます")
+                case .failed: note("いまは読み込めません")
+                case .ready:
+                    if gc.entries.isEmpty {
+                        note("まだ誰も載っていません")
+                    } else {
+                        ForEach(gc.entries.prefix(limit)) { e in worldRow(e) }
+                        // 上位に入っていなくても、自分の順位は見せる
+                        if let me = gc.myEntry, !gc.entries.prefix(limit).contains(me) {
+                            worldRow(me)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func worldRow(_ e: GameCenter.Entry) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(verbatim: "\(e.rank)")
+                .font(DD.bold(14))
+                .opacity(0.7)
+                .frame(width: 28, alignment: .leading)
+            Text(verbatim: "\(e.score)")
+                .font(DD.bold(20))
+                .kerning(-0.6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(verbatim: e.name)
+                .font(DD.regular(11))
+                .opacity(0.7)
+                .lineLimit(1)
+        }
+        .foregroundStyle(e.isMe ? DD.ink : DD.paper)
+        .padding(.vertical, 7)
+        .padding(.horizontal, e.isMe ? 6 : 0)
+        .background(e.isMe ? DD.mustard : .clear)
+        .clipShape(RoundedRectangle(cornerRadius: e.isMe ? 4 : 0))
+        .overlay(alignment: .top) {
+            if !e.isMe { Rectangle().fill(DD.paper.opacity(0.14)).frame(height: 1) }
+        }
+    }
+
+    private func note(_ text: LocalizedStringKey) -> some View {
+        Text(text)
+            .font(DD.regular(13))
+            .foregroundStyle(DD.paper.opacity(0.55))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 7)
     }
 
     private var ranking: some View {

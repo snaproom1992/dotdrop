@@ -23,6 +23,7 @@
 		AA000000000000000000000B /* GameAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001A /* GameAudio.swift */; };
 		AA000000000000000000000C /* GameFx.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001B /* GameFx.swift */; };
 		AA000000000000000000000D /* MilestoneAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001E /* MilestoneAudio.swift */; };
+		AA000000000000000000002C /* GameCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000002D /* GameCenter.swift */; };
 		AA000000000000000000000E /* Records.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001F /* Records.swift */; };
 		AA000000000000000000000F /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000022 /* SettingsSheet.swift */; };
 		AA0000000000000000000023 /* RecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000024 /* RecordsView.swift */; };
@@ -35,6 +36,7 @@
 		AA0000000000000000000011 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000012 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA0000000000000000000029 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		AA000000000000000000002B /* DotDrop.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DotDrop.entitlements; sourceTree = "<group>"; };
 		AA0000000000000000000026 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		AA0000000000000000000013 /* DotDrop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DotDrop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000014 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -46,6 +48,7 @@
 		AA000000000000000000001A /* GameAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameAudio.swift; sourceTree = "<group>"; };
 		AA000000000000000000001B /* GameFx.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameFx.swift; sourceTree = "<group>"; };
 		AA000000000000000000001E /* MilestoneAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MilestoneAudio.swift; sourceTree = "<group>"; };
+		AA000000000000000000002D /* GameCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenter.swift; sourceTree = "<group>"; };
 		AA000000000000000000001F /* Records.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Records.swift; sourceTree = "<group>"; };
 		AA0000000000000000000022 /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
 		AA0000000000000000000024 /* RecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordsView.swift; sourceTree = "<group>"; };
@@ -90,6 +93,7 @@
 				AA000000000000000000001A /* GameAudio.swift */,
 				AA000000000000000000001B /* GameFx.swift */,
 				AA000000000000000000001E /* MilestoneAudio.swift */,
+				AA000000000000000000002D /* GameCenter.swift */,
 				AA000000000000000000001F /* Records.swift */,
 				AA0000000000000000000022 /* SettingsSheet.swift */,
 				AA0000000000000000000024 /* RecordsView.swift */,
@@ -104,6 +108,7 @@
 			children = (
 				AA0000000000000000000012 /* Assets.xcassets */,
 				AA0000000000000000000029 /* Localizable.xcstrings */,
+				AA000000000000000000002B /* DotDrop.entitlements */,
 				AA0000000000000000000026 /* PrivacyInfo.xcprivacy */,
 			);
 			path = Resources;
@@ -215,6 +220,7 @@
 				AA000000000000000000000B /* GameAudio.swift in Sources */,
 				AA000000000000000000000C /* GameFx.swift in Sources */,
 				AA000000000000000000000D /* MilestoneAudio.swift in Sources */,
+				AA000000000000000000002C /* GameCenter.swift in Sources */,
 				AA000000000000000000000E /* Records.swift in Sources */,
 				AA000000000000000000000F /* SettingsSheet.swift in Sources */,
 				AA0000000000000000000023 /* RecordsView.swift in Sources */,
@@ -274,6 +280,7 @@
 			baseConfigurationReference = AA000000000000000000001C /* Shared.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Resources/DotDrop.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
@@ -304,6 +311,7 @@
 			baseConfigurationReference = AA000000000000000000001C /* Shared.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Resources/DotDrop.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;

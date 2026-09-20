@@ -627,6 +627,8 @@ final class GameSession {
         records = DDStore.records()
         saveBest(score)
         personalBest = storedBest()
+        // 世界ランキングへ。失敗しても黙って捨てる（結果画面は必ず出す）
+        GameCenter.shared.submit(score)
         screen = .result
         busy = false
         bannerUp = false

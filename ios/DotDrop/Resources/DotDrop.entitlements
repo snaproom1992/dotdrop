@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 世界ランキングとチャレンジ（Game Center）。これ以外の権限は使わない -->
+	<key>com.apple.developer.game-center</key>
+	<true/>
+</dict>
+</plist>
