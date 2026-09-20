@@ -45,7 +45,7 @@ struct TitleView: View {
                 RecordsButton()
                     .contentShape(Circle())
             }
-            .accessibilityLabel("きろく。ランキングとこれまでの記録")
+            .accessibilityLabel(Text("きろく。ランキングとこれまでの記録"))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(.leading, 20)
             .padding(.top, safeTop + 8)
@@ -55,7 +55,7 @@ struct TitleView: View {
                 SettingsButton()          // 44×44。指で押せる大きさ
                     .contentShape(Circle())
             }
-            .accessibilityLabel("設定。音・振動・演出")
+            .accessibilityLabel(Text("設定。音・振動・演出"))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             // 端との空きは20。画面の中の数字（持ち玉・スコア）と同じ空け方にそろえる。
             // 8 だと画面のふちに貼りついて見える

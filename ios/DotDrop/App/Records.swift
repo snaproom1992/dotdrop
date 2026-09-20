@@ -15,13 +15,13 @@ enum DDStore {
 
     /// 本家の `REC_KEYS`。並び順もそのまま
     static let recordLabels: [(key: String, label: String)] = [
-        ("shotScore", "1回の最高スコア"),
-        ("shotBalls", "1回で増えた玉の最大数"),
-        ("shotHits", "1回の最多ヒット"),
-        ("ballGain", "1球の最高獲得スコア"),
-        ("gameScore", "1ゲームの最高スコア"),
-        ("peakMoney", "持ち玉の最高記録"),
-        ("stage", "到達したステージ"),
+        ("shotScore", String(localized: "1回の最高スコア")),
+        ("shotBalls", String(localized: "1回で増えた玉の最大数")),
+        ("shotHits", String(localized: "1回の最多ヒット")),
+        ("ballGain", String(localized: "1球の最高獲得スコア")),
+        ("gameScore", String(localized: "1ゲームの最高スコア")),
+        ("peakMoney", String(localized: "持ち玉の最高記録")),
+        ("stage", String(localized: "到達したステージ")),
     ]
 
     private static let rankKey = "dotdrop-ranking"

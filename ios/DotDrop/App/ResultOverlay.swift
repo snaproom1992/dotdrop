@@ -27,7 +27,7 @@ struct ResultOverlay: View {
     /// (文字, 赤いか)。1位は NEW RECORD（赤）、2位以下はマスタードの「◯位」
     private var rankBadge: (String, Bool)? {
         if session.rank == 0, session.rankingTop.count > 1 { return ("NEW RECORD", true) }
-        if session.rank >= 0 { return ("\(session.rank + 1)位", false) }
+        if session.rank >= 0 { return (String(localized: "\(session.rank + 1)位"), false) }
         if session.beatBest { return ("NEW RECORD", true) }
         return nil
     }

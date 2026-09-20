@@ -52,6 +52,10 @@ enum ScreenshotMode {
         case "title", "records":
             session.screen = .title
 
+        case "lessons":
+            // 8つのやることが並ぶ画面。英語にしたとき、行がいちばん伸びる所
+            session.openTutorialList()
+
         case "play", "aim", "fever":
             session.startFreePlay()
             session.engine.boardSeed = 7

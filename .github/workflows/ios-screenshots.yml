@@ -25,9 +25,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: screenshots
-          path: |
-            shots/*.png
-            shots/*.mov
+          path: shots
           if-no-files-found: error
       # 撮ったものを shots-latest ブランチに置く（毎回まるごと差し替え）。
       # Actions のアーティファクトは置き場所が別サーバーで、ここから取りに行けないため。

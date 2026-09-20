@@ -141,7 +141,7 @@ struct SettingsSheet: View {
         .clipShape(UnevenRoundedRectangle(topLeadingRadius: 20, topTrailingRadius: 20))
     }
 
-    private func row(_ title: String, _ value: Binding<Bool>) -> some View {
+    private func row(_ title: LocalizedStringKey, _ value: Binding<Bool>) -> some View {
         Toggle(isOn: value) {
             Text(title)
                 .font(DD.regular(15))

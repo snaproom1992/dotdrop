@@ -19,7 +19,7 @@ struct RecordsSections: View {
         }
     }
 
-    private func section<C: View>(_ title: String, @ViewBuilder content: () -> C) -> some View {
+    private func section<C: View>(_ title: LocalizedStringKey, @ViewBuilder content: () -> C) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(DD.bold(12))

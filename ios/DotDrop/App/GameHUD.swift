@@ -76,8 +76,8 @@ struct GameHUD: View {
                 VStack(spacing: 4) {
                     Text("あそびかた \((session.tutorialIndex ?? 0) + 1) / 8")
                         .font(DD.bold(10)).opacity(0.6)
-                    // Tutorial runs can enter FEVER; tint only the symbol, use the current foreground for text.
-                    (Text(step.symbol).foregroundColor(step.color) + Text(step.title).foregroundColor(fg))
+                    // フィーバー中も色が変わるので、文字は現在の前景色で描く（記号だけ元の色）
+                    step.titleText(fg)
                         .font(DD.bold(17)).lineLimit(1).minimumScaleFactor(0.7)
                     Text(session.tutorialSucceeded ? "CLEAR" : "\(min(session.tutorialValue, step.target)) / \(step.target)")
                         .font(DD.bold(session.tutorialSucceeded ? 14 : 26))

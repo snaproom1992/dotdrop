@@ -350,14 +350,14 @@ final class GameSession {
                 if count >= 9 { self.slowPulse = 0.35 }
                 if count >= self.engine.config.maxBalls, !self.maxShown {
                     self.maxShown = true
-                    self.showBanner("×\(self.engine.config.maxBalls)", "玉が最大まで増えました", DD.mustard)
+                    self.showBanner("×\(self.engine.config.maxBalls)", String(localized: "玉が最大まで増えました"), DD.mustard)
                     GameHaptics.pattern(5, intervalMs: 60)
                 }
                 if !self.triBonus {
                     let tris = self.engine.pegs.filter { $0.kind == .tri }
                     if tris.count == 3, tris.allSatisfy(\.triHit) {
                         self.triBonus = true
-                        self.showBanner("▲▲▲", "3つとも当てて +3玉", DD.mustard)
+                        self.showBanner("▲▲▲", String(localized: "3つとも当てて +3玉"), DD.mustard)
                         let mid = self.engine.field()
                         self.sendBalls(3, x: Engine.logicalWidth / 2, y: (mid.top + mid.bottom) / 2,
                                        color: GameFx.shapeColor(.tri, fever: self.engine.fever))
@@ -386,9 +386,9 @@ final class GameSession {
             } else {
                 if newShot && self.shots > 1 {
                     let points = self.engine.shotScore
-                    self.schedule(after: 0.5) { [weak self] in self?.showBanner("BEST", "1回の最高スコアを更新 \(points)", DD.paper) }
+                    self.schedule(after: 0.5) { [weak self] in self?.showBanner("BEST", String(localized: "1回の最高スコアを更新 \(points)"), DD.paper) }
                 } else if newBalls && self.shots > 1 {
-                    self.schedule(after: 0.5) { [weak self] in self?.showBanner("BEST", "1回で増えた玉の最多記録", DD.mustard) }
+                    self.schedule(after: 0.5) { [weak self] in self?.showBanner("BEST", String(localized: "1回で増えた玉の最多記録"), DD.mustard) }
                 }
                 self.afterShot()
             }
@@ -402,7 +402,7 @@ final class GameSession {
             self.perfectFx = .init()
             self.hitStop = max(self.hitStop, 0.45)
             self.shake = max(self.shake, 1.1)
-            self.showBanner("PERFECT", "ドットをすべて赤くした +\(bonus)", DD.red)
+            self.showBanner("PERFECT", String(localized: "ドットをすべて赤くした +\(bonus)"), DD.red)
             self.edge = .init(color: nil, width: 44)
             // The engine adds the bonus to shotScore; the UI ledger must receive it exactly once too.
             let f = self.engine.field()
@@ -481,7 +481,7 @@ final class GameSession {
         if v > 0 {
             floaters.append(.init(
                 x: ball.x, y: top - 50,
-                text: "+\(v)玉",
+                text: String(localized: "+\(v)玉"),
                 color: DD.fg(fever: fever),
                 life: 0.9, big: false
             ))
@@ -573,7 +573,7 @@ final class GameSession {
         } else if gauge >= engine.config.feverAt {
             engine.fever = true
             feverLeft = engine.config.feverShots
-            showBanner("FEVER", "\(engine.config.feverShots)回、ポイント2倍・玉が減らない", DD.red)
+            showBanner("FEVER", String(localized: "\(engine.config.feverShots)回、ポイント2倍・玉が減らない"), DD.red)
             GameAudio.shared.playFever(fever: true)
             GameHaptics.pattern(4, intervalMs: 80)
         }
@@ -602,7 +602,7 @@ final class GameSession {
             }
             let stage = engine.stage + 1
             schedule(after: 0.9) { [weak self] in
-                self?.showBanner("STAGE \(stage)", "ステージが上がりました", DD.paper)
+                self?.showBanner("STAGE \(stage)", String(localized: "ステージが上がりました"), DD.paper)
             }
         } else {
             engine.pickGold()
@@ -890,7 +890,7 @@ final class GameSession {
                     bumpScore()
                     if tutorial == nil, !beatBest, bestAtStart > 0, score > bestAtStart {
                         beatBest = true
-                        showBanner("NEW RECORD", "自己ベスト\(bestAtStart)を超えた", DD.red)
+                        showBanner("NEW RECORD", String(localized: "自己ベスト\(bestAtStart)を超えた"), DD.red)
                         GameAudio.shared.playNewRecord(fever: engine.fever)
                         GameHaptics.pattern(3, intervalMs: 80)
                     }

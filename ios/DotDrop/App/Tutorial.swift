@@ -1,6 +1,11 @@
 import SwiftUI
 import DotDropEngine
 
+/// 訳を引くだけ。`%@` を書式として処理させたくない文に使う（あそびかたのやること）
+private func locRaw(_ key: String) -> String {
+    Bundle.main.localizedString(forKey: key, value: key, table: nil)
+}
+
 /// The eight lessons from index.html STEPS. Tutorial records never enter free-play rankings.
 struct TutorialStep: Identifiable {
     enum Goal { case shots, multiplier, gain, hit(PegKind), balls, shotScore, fever }
@@ -15,9 +20,16 @@ struct TutorialStep: Identifiable {
     let target: Int
     let config: EngineConfig
 
-    var titleText: Text {
-        Text(symbol).foregroundColor(color) + Text(title).foregroundColor(DD.paper)
+    /// `title` は訳ずみの文。記号を置く場所に `%@` が入っている（英語は語順が逆になるため）
+    func titleText(_ base: Color = DD.paper) -> Text {
+        guard let slot = title.range(of: "%@") else { return Text(title).foregroundColor(base) }
+        return Text(String(title[..<slot.lowerBound])).foregroundColor(base)
+            + Text(symbol).foregroundColor(color)
+            + Text(String(title[slot.upperBound...])).foregroundColor(base)
     }
+
+    /// 読み上げ用。記号を文字のまま入れた1本の文
+    var plainTitle: String { title.replacingOccurrences(of: "%@", with: symbol) }
 
     static let all: [TutorialStep] = {
         func conf(_ start: Int, easy: Bool = false, plus: Bool = false,
@@ -30,14 +42,14 @@ struct TutorialStep: Identifiable {
             return c
         }
         return [
-            .init(id: "shot", title: "玉を打つ", symbol: "", color: DD.paper, hint: "画面を引っ張って、はなす", seed: 11, layout: 0, goal: .shots, target: 1, config: conf(3)),
-            .init(id: "mult3", title: " に入れる", symbol: "×3", color: DD.mustard, hint: "入ると、スコアが3倍になる", seed: 23, layout: 2, goal: .multiplier, target: 3, config: conf(5, easy: true)),
-            .init(id: "gain", title: "持ち玉を増やす", symbol: "", color: DD.paper, hint: "● の数だけ持ち玉が戻ってくる", seed: 31, layout: 0, goal: .gain, target: 3, config: conf(4, plus: true)),
-            .init(id: "square", title: " に当てる", symbol: "■", color: DD.red, hint: "赤い四角は強くはね返す", seed: 5, layout: 0, goal: .hit(.square), target: 1, config: conf(4, squares: 8, blues: 0, tris: 0)),
-            .init(id: "blue", title: " につかまる", symbol: "●", color: DD.blue, hint: "青い円は玉をつかまえて放す", seed: 7, layout: 0, goal: .hit(.blue), target: 1, config: conf(4, squares: 0, blues: 8, tris: 0)),
-            .init(id: "tri5", title: " で玉を5つにする", symbol: "▲", color: DD.mustard, hint: "黄色い三角に当たると3つに分かれる", seed: 13, layout: 0, goal: .balls, target: 5, config: conf(5, squares: 0, blues: 0, tris: 8)),
-            .init(id: "p100", title: "1回で100点", symbol: "", color: DD.paper, hint: "たくさん当てるほどポイントが増える", seed: 17, layout: 0, goal: .shotScore, target: 100, config: conf(6, easy: true, squares: 4, tris: 6)),
-            .init(id: "fever", title: "フィーバーに入る", symbol: "", color: DD.paper, hint: "ポイントがたまると入れる", seed: 19, layout: 2, goal: .fever, target: 1, config: conf(8, easy: true, squares: 4, tris: 6))
+            .init(id: "shot", title: String(localized: "玉を打つ"), symbol: "", color: DD.paper, hint: String(localized: "画面を引っ張って、はなす"), seed: 11, layout: 0, goal: .shots, target: 1, config: conf(3)),
+            .init(id: "mult3", title: locRaw("%@ に入れる"), symbol: "×3", color: DD.mustard, hint: String(localized: "入ると、スコアが3倍になる"), seed: 23, layout: 2, goal: .multiplier, target: 3, config: conf(5, easy: true)),
+            .init(id: "gain", title: String(localized: "持ち玉を増やす"), symbol: "", color: DD.paper, hint: String(localized: "● の数だけ持ち玉が戻ってくる"), seed: 31, layout: 0, goal: .gain, target: 3, config: conf(4, plus: true)),
+            .init(id: "square", title: locRaw("%@ に当てる"), symbol: "■", color: DD.red, hint: String(localized: "赤い四角は強くはね返す"), seed: 5, layout: 0, goal: .hit(.square), target: 1, config: conf(4, squares: 8, blues: 0, tris: 0)),
+            .init(id: "blue", title: locRaw("%@ につかまる"), symbol: "●", color: DD.blue, hint: String(localized: "青い円は玉をつかまえて放す"), seed: 7, layout: 0, goal: .hit(.blue), target: 1, config: conf(4, squares: 0, blues: 8, tris: 0)),
+            .init(id: "tri5", title: locRaw("%@ で玉を5つにする"), symbol: "▲", color: DD.mustard, hint: String(localized: "黄色い三角に当たると3つに分かれる"), seed: 13, layout: 0, goal: .balls, target: 5, config: conf(5, squares: 0, blues: 0, tris: 8)),
+            .init(id: "p100", title: String(localized: "1回で100点"), symbol: "", color: DD.paper, hint: String(localized: "たくさん当てるほどポイントが増える"), seed: 17, layout: 0, goal: .shotScore, target: 100, config: conf(6, easy: true, squares: 4, tris: 6)),
+            .init(id: "fever", title: String(localized: "フィーバーに入る"), symbol: "", color: DD.paper, hint: String(localized: "ポイントがたまると入れる"), seed: 19, layout: 2, goal: .fever, target: 1, config: conf(8, easy: true, squares: 4, tris: 6))
         ]
     }()
 }
@@ -95,7 +107,7 @@ struct TutorialOverlay: View {
                     .frame(width: 8, height: 8)
             }
         }
-        .accessibilityLabel("8項目中\(session.tutorialCleared.count)項目クリア")
+        .accessibilityLabel(Text("8項目中\(session.tutorialCleared.count)項目クリア"))
     }
 
     private func lessonRow(_ index: Int) -> some View {
@@ -105,7 +117,7 @@ struct TutorialOverlay: View {
             HStack(spacing: 10) {
                 Text("\(index + 1)").font(DD.bold(19)).kerning(-0.57)
                     .opacity(0.45).frame(width: 26, alignment: .leading)
-                step.titleText.font(DD.bold(16)).opacity(done ? 0.5 : 1)
+                step.titleText().font(DD.bold(16)).opacity(done ? 0.5 : 1)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Image(systemName: done && session.screen == .tutorialList ? "checkmark" : "chevron.right")
                     .font(.system(size: 18, weight: .bold)).foregroundStyle(DD.red).frame(width: 24)
@@ -114,7 +126,7 @@ struct TutorialOverlay: View {
             .overlay(alignment: .top) { Rectangle().fill(DD.paper.opacity(0.14)).frame(height: 1) }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(index + 1)。\(step.symbol)\(step.title)\(done ? "。クリア済み" : "")")
+        .accessibilityLabel(Text(verbatim: "\(index + 1). \(step.plainTitle)\(done ? String(localized: "。クリア済み") : "")"))
     }
 }
 

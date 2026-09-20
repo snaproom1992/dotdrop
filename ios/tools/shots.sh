@@ -3,6 +3,9 @@
 #
 #   ios/tools/shots.sh [出力先]
 #
+# 日本語と英語の両方を撮る（SHOT_LANGS で変えられる）。言語は起動引数で
+# 切り替えるので、シミュレータ自体の設定は触らない。
+#
 # UI テストは使わない。`-shot <名前>` を付けて起動すると、アプリ側
 # （ScreenshotMode.swift・DEBUG のみ）がその画面を作って止まるので、
 # あとは simctl で撮るだけでよい。指で操作する必要がない。
@@ -54,34 +57,49 @@ xcrun simctl bootstatus "$UDID" -b
 xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 2>/dev/null || true
 xcrun simctl install "$UDID" "$APP"
 
-shoot () {   # shoot <名前> <待つ秒数>
-  local name="$1" wait="${2:-2.5}"
+shoot () {   # shoot <言語> <名前> <待つ秒数>
+  local lang="$1" name="$2" wait="${3:-2.5}"
+  local dir="$OUT/$lang"
+  mkdir -p "$dir"
   xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true
-  xcrun simctl launch "$UDID" "$BUNDLE" -shot "$name" > /dev/null
+  # 端末の言語はアプリごとに起動引数で上書きできる（simctl の再起動が要らない）
+  xcrun simctl launch "$UDID" "$BUNDLE" \
+    -AppleLanguages "($lang)" -AppleLocale "$(locale_of "$lang")" -shot "$name" > /dev/null
   sleep "$wait"
-  xcrun simctl io "$UDID" screenshot --type=png "$OUT/$name.png" > /dev/null
-  echo "  ✓ $OUT/$name.png"
+  xcrun simctl io "$UDID" screenshot --type=png "$dir/$name.png" > /dev/null
+  echo "  ✓ $dir/$name.png"
 }
 
-echo "▶ 撮る"
-shoot title  3.0    # 玉が落ちてくるアニメが終わるのを待つ
-shoot play   2.0
-shoot aim    2.0
-shoot fever  2.0
-shoot result 3.0    # カウントアップが終わるのを待つ
-shoot records 3.0   # 板が出てベストスコアが回りきるのを待つ
+locale_of () { case "$1" in en) echo en_US;; *) echo ja_JP;; esac; }
 
-echo "▶ 動画（自分で打ち続けるデモを録る）"
-xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true
-xcrun simctl launch "$UDID" "$BUNDLE" -shot demo > /dev/null
-sleep 1.5
-xcrun simctl io "$UDID" recordVideo --codec h264 --force "$OUT/demo.mov" &
-REC=$!
-sleep "${SHOT_VIDEO_SECONDS:-28}"
-kill -INT "$REC" 2>/dev/null || true
-wait "$REC" 2>/dev/null || true
-echo "  ✓ $OUT/demo.mov"
+record () {  # record <言語>
+  local lang="$1" dir="$OUT/$lang"
+  mkdir -p "$dir"
+  xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true
+  xcrun simctl launch "$UDID" "$BUNDLE" \
+    -AppleLanguages "($lang)" -AppleLocale "$(locale_of "$lang")" -shot demo > /dev/null
+  sleep 1.5
+  xcrun simctl io "$UDID" recordVideo --codec h264 --force "$dir/demo.mov" &
+  local rec=$!
+  sleep "${SHOT_VIDEO_SECONDS:-28}"
+  kill -INT "$rec" 2>/dev/null || true
+  wait "$rec" 2>/dev/null || true
+  echo "  ✓ $dir/demo.mov"
+}
+
+for LANG_CODE in ${SHOT_LANGS:-ja en}; do
+  echo "▶ 撮る（$LANG_CODE）"
+  shoot "$LANG_CODE" title   3.0    # 玉が落ちてくるアニメが終わるのを待つ
+  shoot "$LANG_CODE" play    2.0
+  shoot "$LANG_CODE" aim     2.0
+  shoot "$LANG_CODE" fever   2.0
+  shoot "$LANG_CODE" result  3.0    # カウントアップが終わるのを待つ
+  shoot "$LANG_CODE" records 3.0    # 板が出てベストスコアが回りきるのを待つ
+  shoot "$LANG_CODE" lessons 2.0    # あそびかたの一覧（英語がいちばん伸びる画面）
+  echo "▶ 動画（$LANG_CODE）"
+  record "$LANG_CODE"
+done
 
 xcrun simctl shutdown "$UDID" 2>/dev/null || true
 echo "▶ 完了：$OUT"
-ls -la "$OUT"
+find "$OUT" -type f | sort
