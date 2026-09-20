@@ -1,7 +1,7 @@
 {
   "name": "DOT DROP",
   "short_name": "DOT DROP",
-  "description": "玉を打って点を集めるスマートボール。",
+  "description": "玉を弾いてドットに当てる。",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -1,7 +1,7 @@
 {
   "version": 2,
   "note": "Generated from index.html ENGINE by ios/tools/dump-fixtures.js. Math.random replaced with seeded(playSeed). Pegs snapshotted after setLayout+pickGold.",
-  "generatedAt": "2026-09-19T09:30:35.944Z",
+  "generatedAt": "2026-09-20T06:26:21.839Z",
   "maxPull": 130,
   "levels": 5,
   "seededSample42": [

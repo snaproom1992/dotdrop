@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>DOT DROP</title>
-<meta name="description" content="玉を打って点を集めるスマートボール。ブラウザですぐ遊べます。">
+<meta name="description" content="玉を弾いてドットに当てる。ブラウザですぐ遊べます。">
 <!-- ホーム画面に追加したときのアイコン -->
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -15,7 +15,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="DOT DROP">
 <meta property="og:title" content="DOT DROP">
-<meta property="og:description" content="玉を打って点を集めるスマートボール。">
+<meta property="og:description" content="玉を弾いてドットに当てる。">
 <meta property="og:url" content="https://snaproom1992.github.io/dotdrop/">
 <meta property="og:image" content="https://snaproom1992.github.io/dotdrop/ogp.png">
 <meta property="og:image:width" content="1200">
@@ -423,7 +423,7 @@ function pickGold() {
 
 const newBall = (x, y, vx, vy) => ({x, y, vx, vy, state: 'fly', age: 0, trail: [], slot: -1, landT: 0, holdCool: 0, pts: 0, pay: 0});
 const LAUNCH = {x: LW / 2, y: 140};
-// パチンコのように引いた方向の反対へ飛ばす。わずかにブレるのでまったく同じ軌道にはならない
+// 引いた方向の反対へ飛ばす（ゴムで弾く要領）。わずかにブレるのでまったく同じ軌道にはならない
 function launchVelocity(pullX, pullY, exact = false) {
   const k = 3.2, jitter = exact ? 1 : 1 + (Math.random() - .5) * .08, ang = exact ? 0 : (Math.random() - .5) * .07;
   // 打ち出しは水平より上だけ（上向きに引いても水平で打つ）
