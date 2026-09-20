@@ -19,5 +19,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: screenshots
-          path: shots/*.png
+          path: |
+            shots/*.png
+            shots/*.mov
           if-no-files-found: error

@@ -86,8 +86,47 @@ enum ScreenshotMode {
             session.shots = 31
             session.finishGame()
 
+        case "demo":
+            // 動画用。**自分で打ち続ける。**simctl から指で触ることはできないので、
+            // アプリ側で打つしかない。角度と強さは決め打ちの並びで、毎回同じ動きになる
+            session.startFreePlay()
+            playByItself(session)
+
         default:
             break
+        }
+    }
+
+    /// 決め打ちの並びで打ち続ける。引く→ためる→はなす、を繰り返す
+    @MainActor
+    private static func playByItself(_ session: GameSession) {
+        // (横に引く量, 下に引く量)。下に引くほど強い（上限130）
+        let shots: [(Double, Double)] = [
+            (-38, 118), (26, 124), (-8, 96), (44, 110), (-52, 128),
+            (14, 86), (-24, 130), (36, 100), (-44, 112), (6, 122),
+            (-16, 104), (48, 126), (-34, 92), (20, 116), (-6, 130),
+        ]
+        Task { @MainActor in
+            var i = 0
+            while i < 40, !Task.isCancelled {
+                // 打てるようになるまで待つ
+                var waited = 0
+                while !(session.screen == .playing && session.canShoot), waited < 60 {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    waited += 1
+                }
+                guard session.screen == .playing else { return }
+                let s = shots[i % shots.count]
+                // 少しずつ引いて、弧が増えていくところを見せる
+                for k in 1...5 {
+                    session.setPull(dx: s.0 * Double(k) / 5, dy: s.1 * Double(k) / 5)
+                    try? await Task.sleep(for: .milliseconds(70))
+                }
+                try? await Task.sleep(for: .milliseconds(250))
+                session.releasePull()
+                i += 1
+                try? await Task.sleep(for: .milliseconds(500))
+            }
         }
     }
 }

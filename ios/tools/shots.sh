@@ -71,6 +71,17 @@ shoot fever  2.0
 shoot result 3.0    # カウントアップが終わるのを待つ
 shoot records 3.0   # 板が出てベストスコアが回りきるのを待つ
 
+echo "▶ 動画（自分で打ち続けるデモを録る）"
+xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true
+xcrun simctl launch "$UDID" "$BUNDLE" -shot demo > /dev/null
+sleep 1.5
+xcrun simctl io "$UDID" recordVideo --codec h264 --force "$OUT/demo.mov" &
+REC=$!
+sleep "${SHOT_VIDEO_SECONDS:-28}"
+kill -INT "$REC" 2>/dev/null || true
+wait "$REC" 2>/dev/null || true
+echo "  ✓ $OUT/demo.mov"
+
 xcrun simctl shutdown "$UDID" 2>/dev/null || true
 echo "▶ 完了：$OUT"
 ls -la "$OUT"
