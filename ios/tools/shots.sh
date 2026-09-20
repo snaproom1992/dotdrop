@@ -5,6 +5,7 @@
 #
 # 出来上がりは 出力先/<インチ>/<言語>/<画面>.png
 #   6.9 … 1320×2868（iPhone 16 Pro Max）。App Store でいま求められるサイズ
+#   demo.mov は録画そのまま、preview.mp4 は App Store のプレビュー用（886×1920）
 #   6.5 … 1284×2778（iPhone 14 Plus）。古い枠に入れたいとき用
 # 動画は 6.9 だけ。プレビューは任意なので、2つ作っても使い道がない。
 #
@@ -21,7 +22,7 @@ PROJ="ios/DotDrop/DotDrop.xcodeproj"
 # 「インチ:シミュレータ名」を ; で並べる。先頭のものだけ動画も撮る
 DEVICES="${SHOT_DEVICES:-6.9:iPhone 16 Pro Max;6.5:iPhone 14 Plus}"
 LANGS="${SHOT_LANGS:-ja en}"
-SCREENS="title play aim fever result records lessons"
+SCREENS="title play aim fever result records lessons split"
 
 mkdir -p "$OUT"
 echo "▶ 使えるシミュレータ"
@@ -122,6 +123,10 @@ printf '%s\n' "$DEVICES" | tr ';' '\n' | while IFS= read -r entry; do
       kill -INT "$rec" 2>/dev/null || true
       wait "$rec" 2>/dev/null || true
       echo "  ✓ $dir/demo.mov"
+      # App Store のプレビューは 886×1920 しか受け付けない。録画は端末そのままの
+      # 大きさなので、ここで直しておく（そのままだと寸法違いで弾かれる）
+      swift ios/tools/preview.swift "$dir/demo.mov" "$dir/preview.mp4" 886 1920 \
+        || echo "  ※ プレビューへの変換に失敗（録画そのものは残っている）"
     fi
   done
 

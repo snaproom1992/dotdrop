@@ -19,6 +19,19 @@ enum ScreenshotMode {
 
     static var isOn: Bool { name != nil }
 
+    /// ここが true を返した瞬間に時間を止める。玉が増えきった1枚を撮るために使う
+    @MainActor static var freezeWhen: ((GameSession) -> Bool)?
+    @MainActor private static var frozen = false
+
+    /// `GameSession.tickFrame` から毎フレーム呼ぶ。止めたあとはずっと止めたまま
+    @MainActor
+    static func freeze(_ session: GameSession) -> Bool {
+        guard let test = freezeWhen else { return false }
+        if frozen { return true }
+        if test(session) { frozen = true }
+        return frozen
+    }
+
     /// 撮るときは、毎回まったく同じ盤面・同じ記録にする。
     /// そうしないと差分を見ても、変えた所のせいなのか運のせいなのか分からない
     static func seedStore() {
@@ -90,10 +103,23 @@ enum ScreenshotMode {
             session.shots = 31
             session.finishGame()
 
-        case "demo":
+        case "demo", "split":
             // 動画用。**自分で打ち続ける。**simctl から指で触ることはできないので、
-            // アプリ側で打つしかない。角度と強さは決め打ちの並びで、毎回同じ動きになる
+            // アプリ側で打つしかない。
+            //
+            // 台と打ち方は当てずっぽうではなく、エンジンで総当たりして選んだもの。
+            // 種9・ステージ1（千鳥）で 83〜99度・強さ3〜4 だと、**必ず▲に当たって**
+            // 玉が9〜11個まで増える（中央値）。フィーバー中は1回140〜170点になる。
             session.startFreePlay()
+            session.engine.boardSeed = 9
+            session.engine.setLayout(0, animate: false)
+            // 1回目でフィーバーに入るところまで溜めておく。黄色い画面と2倍の点が
+            // 見せ場なので、28秒の中に必ず入れたい（120で突入、1回で60〜80たまる）
+            session.gauge = 105
+            if name == "split" {
+                // ▲で増えたところで時間を止めて、その1枚を撮る
+                freezeWhen = { $0.engine.balls.count >= 6 }
+            }
             playByItself(session)
 
         default:
@@ -104,11 +130,18 @@ enum ScreenshotMode {
     /// 決め打ちの並びで打ち続ける。引く→ためる→はなす、を繰り返す
     @MainActor
     private static func playByItself(_ session: GameSession) {
-        // (横に引く量, 下に引く量)。下に引くほど強い（上限130）
+        // (横に引く量, 下に引く量)。下に引くほど強い（上限130）。
+        // 種9の台で総当たりして、▲に当たって玉がいちばん増えるものだけを残した。
+        // 強さの段（1〜5）の境目ちょうどだと1つ上に転びかねないので、わずかに内側にしてある
         let shots: [(Double, Double)] = [
-            (-38, 118), (26, 124), (-8, 96), (44, 110), (-52, 128),
-            (14, 86), (-24, 130), (36, 100), (-44, 112), (6, 122),
-            (-16, 104), (48, 126), (-34, 92), (20, 116), (-6, 130),
+            (-12.1, 76.5),   // 99° 強さ3　中央値96点・玉11
+            (5.4, 103.4),    // 87° 強さ4　中央値83点・玉9
+            (-9.0, 103.1),   // 95° 強さ4　中央値80点・玉9
+            (6.8, 129.3),    // 87° 強さ5　中央値89点・玉11
+            (9.4, 76.9),     // 83° 強さ3　中央値82点・玉9
+            (-1.8, 103.5),   // 91° 強さ4
+            (-17.4, 75.5),   // 103° 強さ3
+            (19.7, 101.6),   // 79° 強さ4
         ]
         Task { @MainActor in
             var i = 0

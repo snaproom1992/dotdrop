@@ -745,6 +745,10 @@ final class GameSession {
         lastDate = now
         guard !isPaused, !showResetSheet, screen == .playing else { return }
         guard real > 0 else { return }
+        #if DEBUG
+        // 撮影のときだけ、決めた瞬間で時間を止める（製品のビルドには入らない）
+        if ScreenshotMode.freeze(self) { return }
+        #endif
         backgroundMix += ((engine.fever ? 1 : 0) - backgroundMix) * min(1, real * 5)
         let jobs = scheduled
         scheduled.removeAll()
