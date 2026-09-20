@@ -27,6 +27,23 @@ mkdir -p "$OUT"
 echo "▶ 使えるシミュレータ"
 xcrun simctl list devices available | sed -n '/iOS/,$p' | head -30
 
+# 端末が無ければ作る。ランナーに置いてあるのは 16 系と SE だけなので、
+# 6.5インチを撮るには自分で作る必要がある
+make_device () {  # make_device <シミュレータ名>
+  xcrun simctl list -j | python3 -c "
+import sys, json
+want = sys.argv[1]
+d = json.load(sys.stdin)
+dt = next((t['identifier'] for t in d['devicetypes'] if t['name'] == want), None)
+rts = [r for r in d['runtimes'] if r.get('isAvailable') and 'iOS' in r['name']]
+if not dt or not rts:
+    sys.stderr.write('※ 「%s」は作れない\\n' % want); raise SystemExit(1)
+rts.sort(key=lambda r: [int(x) for x in r['version'].split('.')])
+print(dt); print(rts[-1]['identifier'])
+" "$1" > /tmp/dt.txt || return 1
+  xcrun simctl create "$1" "$(sed -n 1p /tmp/dt.txt)" "$(sed -n 2p /tmp/dt.txt)" > /dev/null
+}
+
 udid_of () {  # udid_of <シミュレータ名>
   xcrun simctl list devices available -j | python3 -c "
 import sys, json
@@ -44,7 +61,7 @@ locale_of () { case "$1" in en) echo en_US;; *) echo ja_JP;; esac; }
 FIRST_ENTRY="${DEVICES%%;*}"
 FIRST_NAME="${FIRST_ENTRY#*:}"
 FIRST_UDID=$(udid_of "$FIRST_NAME" || true)
-[ -n "$FIRST_UDID" ] || { echo "「$FIRST_NAME」が見つからない"; exit 1; }
+[ -n "$FIRST_UDID" ] || { echo "「${FIRST_NAME}」が見つからない"; exit 1; }
 
 echo "▶ ビルド"
 DERIVED=$(mktemp -d)
@@ -68,9 +85,14 @@ printf '%s\n' "$DEVICES" | tr ';' '\n' | while IFS= read -r entry; do
   inch="${entry%%:*}"
   name="${entry#*:}"
   udid=$(udid_of "$name" || true)
-  if [ -z "$udid" ]; then echo "※ 「$name」が無いので飛ばす"; continue; fi
+  if [ -z "$udid" ]; then
+    echo "  「${name}」が無いので作る"
+    make_device "$name" || true
+    udid=$(udid_of "$name" || true)
+  fi
+  if [ -z "$udid" ]; then echo "※ 「${name}」を用意できないので飛ばす"; continue; fi
 
-  echo "▶ $inch インチ（$name）"
+  echo "▶ $inch インチ（${name}）"
   xcrun simctl boot "$udid" 2>/dev/null || true
   xcrun simctl bootstatus "$udid" -b
   # 時刻などを固定して、撮るたびに差分が出ないようにする
@@ -91,7 +113,7 @@ printf '%s\n' "$DEVICES" | tr ';' '\n' | while IFS= read -r entry; do
     done
 
     if [ "$FIRST" = 1 ]; then
-      echo "▶ 動画（$inch / $lang）"
+      echo "▶ 動画（$inch / ${lang}）"
       launch "$udid" "$lang" demo
       sleep 1.5
       xcrun simctl io "$udid" recordVideo --codec h264 --force "$dir/demo.mov" &

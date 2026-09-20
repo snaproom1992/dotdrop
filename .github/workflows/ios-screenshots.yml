@@ -20,6 +20,14 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      # 20分のビルドを始める前に、数秒で分かる間違いを弾く。
+      # $VAR の直後に全角文字があると、bash が名前の一部として読んでしまう
+      - name: Check the script
+        run: |
+          bash -n ios/tools/shots.sh
+          if LC_ALL=C grep -nP '\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7f]' ios/tools/shots.sh; then
+            echo "↑ \${VAR} と書くこと（全角文字が変数名に食われる）"; exit 1
+          fi
       - name: Take screenshots
         run: ios/tools/shots.sh shots
       - uses: actions/upload-artifact@v4
