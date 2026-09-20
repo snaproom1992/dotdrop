@@ -1,0 +1,23 @@
+name: iOS screenshots
+
+# 毎 push では回さない（macOS のランナーは高い）。
+# 必要なときに Actions から手で走らせるか、API で起動する
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shots:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Take screenshots
+        run: ios/tools/shots.sh shots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: shots/*.png
+          if-no-files-found: error

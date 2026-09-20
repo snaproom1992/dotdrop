@@ -12,6 +12,7 @@ struct TitleView: View {
 
     @State private var showSettings = false
     @State private var showRecords = false
+    @State private var shotApplied = false
 
     var body: some View {
         ZStack {
@@ -75,6 +76,17 @@ struct TitleView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .task {
+            // スクショ撮影モードのときだけ、板を開いた状態にする（DEBUG のみ）
+            #if DEBUG
+            guard !shotApplied else { return }
+            shotApplied = true
+            if ScreenshotMode.name == "records" {
+                try? await Task.sleep(for: .milliseconds(300))
+                showRecords = true
+            }
+            #endif
+        }
     }
 
     private var titleBlock: some View {

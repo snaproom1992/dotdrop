@@ -28,8 +28,10 @@ App Store に出すまでにやること。**済んだら印をつける。**
 
 - [ ] Apple Developer Program に登録（年 $99）
 - [ ] App Store Connect でアプリを作る（バンドル ID を先に登録）
-- [ ] **スクリーンショット。**6.9インチ（iPhone 16 Pro Max など）が必須。
-      タイトル／遊んでいるところ／フィーバー中／結果画面／きろく、の5枚が素直
+- [ ] **スクリーンショット。**6.9インチ（iPhone 16 Pro Max）が必須。
+      **手で撮らなくてよい。**GitHub の Actions から `iOS screenshots` を手で走らせると、
+      シミュレータで6枚撮って成果物として残る（title / play / aim / fever / result / records）。
+      Mac があるなら手元でも `ios/tools/shots.sh` で同じものが撮れる
 - [ ] 説明文・キーワード・サポート URL
 - [ ] Xcode から Archive → App Store Connect へアップロード
 - [ ] TestFlight で自分の端末に入れて、最後に一度通しで遊ぶ

@@ -25,6 +25,7 @@
 		AA000000000000000000000E /* Records.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001F /* Records.swift */; };
 		AA000000000000000000000F /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000022 /* SettingsSheet.swift */; };
 		AA0000000000000000000023 /* RecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000024 /* RecordsView.swift */; };
+		AA0000000000000000000027 /* ScreenshotMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000028 /* ScreenshotMode.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +47,7 @@
 		AA000000000000000000001F /* Records.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Records.swift; sourceTree = "<group>"; };
 		AA0000000000000000000022 /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
 		AA0000000000000000000024 /* RecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordsView.swift; sourceTree = "<group>"; };
+		AA0000000000000000000028 /* ScreenshotMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotMode.swift; sourceTree = "<group>"; };
 		AA000000000000000000001C /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Shared.xcconfig; path = Config/Shared.xcconfig; sourceTree = "<group>"; };
 		AA000000000000000000001D /* Signing.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Signing.xcconfig.example; path = Config/Signing.xcconfig.example; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -89,6 +91,7 @@
 				AA000000000000000000001F /* Records.swift */,
 				AA0000000000000000000022 /* SettingsSheet.swift */,
 				AA0000000000000000000024 /* RecordsView.swift */,
+				AA0000000000000000000028 /* ScreenshotMode.swift */,
                 AB0000000000000000000002 /* Tutorial.swift */,
 			);
 			path = App;
@@ -211,6 +214,7 @@
 				AA000000000000000000000E /* Records.swift in Sources */,
 				AA000000000000000000000F /* SettingsSheet.swift in Sources */,
 				AA0000000000000000000023 /* RecordsView.swift in Sources */,
+				AA0000000000000000000027 /* ScreenshotMode.swift in Sources */,
                 AB0000000000000000000001 /* Tutorial.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

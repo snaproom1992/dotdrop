@@ -86,6 +86,7 @@ struct RootView: View {
                         updateSize(geo.size)
                         refreshSafeArea()
                         applyCurrentFit()
+                        applyScreenshotModeIfNeeded()
                     }
             }
         }
@@ -131,6 +132,15 @@ struct RootView: View {
         guard size.width > 0, size.height > 0 else { return }
         guard abs(size.width - viewSize.width) > 0.5 || abs(size.height - viewSize.height) > 0.5 else { return }
         viewSize = size
+    }
+
+    /// スクショ撮影モード。DEBUG のときだけ存在する
+    private func applyScreenshotModeIfNeeded() {
+        #if DEBUG
+        guard let name = ScreenshotMode.name else { return }
+        ScreenshotMode.seedStore()
+        ScreenshotMode.apply(to: session, name: name)
+        #endif
     }
 
     private func refreshSafeArea() {
