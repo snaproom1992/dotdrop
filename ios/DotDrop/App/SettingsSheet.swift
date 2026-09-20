@@ -60,6 +60,7 @@ struct SettingsSheet: View {
     @State private var drag: CGFloat = 0
     /// 6pt 以上引いたら、指を離してもボタンを押したことにしない
     @State private var moved = false
+    @State private var showHelp = false
     @State private var closing = false
     @AppStorage("dotdrop-sound") private var soundEnabled = true
     @AppStorage("dotdrop-haptics") private var hapticsEnabled = true
@@ -145,26 +146,45 @@ struct SettingsSheet: View {
 
     /// Game Center の状態。
     ///
+    /// **「世界ランキング」という見出しにしないこと。**ここにランキングは出ないし、
+    /// きろくの板の切り替えと同じ名前になって紛らわしい。ここはサインインの状態だけ
+    ///
     /// **サインアウトはここに置けない。**GameKit にその API が無く、アプリからは
     /// サインアウトさせられない（iPhone の「設定 → Game Center」からだけ）。
-    /// そのことを書き添えるのもくどいので、名前だけ出す
+    /// 常に書いておくとくどいので、はてなを押したときだけ出す
     private var gameCenter: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("世界ランキング")
-                .font(DD.bold(12))
-                .tracking(0.48)
-                .foregroundStyle(DD.paper.opacity(0.6))
-
             if GameCenter.shared.signedIn {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text("サインイン中")
+                        .font(DD.bold(12))
+                        .tracking(0.48)
+                        .foregroundStyle(DD.paper.opacity(0.6))
+                    Button { withAnimation(.easeOut(duration: 0.15)) { showHelp.toggle() } } label: {
+                        Image(systemName: "questionmark.circle")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(DD.paper.opacity(showHelp ? 0.85 : 0.45))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("サインアウトのしかた")
+                    Spacer(minLength: 0)
+                }
                 Text(verbatim: GameCenter.shared.playerName)
                     .font(DD.bold(15))
                     .foregroundStyle(DD.paper)
                     .padding(.top, 6)
+                if showHelp {
+                    Text("サインアウトするには、iPhone の「設定」→ Game Center をひらいてください")
+                        .font(DD.regular(11))
+                        .foregroundStyle(DD.paper.opacity(0.5))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 8)
+                }
             } else {
                 Text("サインインしていません")
-                    .font(DD.regular(14))
-                    .foregroundStyle(DD.paper.opacity(0.7))
-                    .padding(.top, 6)
+                    .font(DD.bold(12))
+                    .tracking(0.48)
+                    .foregroundStyle(DD.paper.opacity(0.6))
                 Button { GameCenter.shared.signIn() } label: {
                     Text("サインイン")
                         .font(DD.bold(13))
