@@ -59,7 +59,12 @@ struct RecordsSections: View {
     var body: some View {
         VStack(spacing: 0) {
             section("ランキング") {
-                if showsSwitch { ScopeSwitch(scope: $scope).padding(.top, 2).padding(.bottom, 8) }
+                if showsSwitch {
+                    ScopeSwitch(scope: $scope)
+                        .frame(height: 38)
+                        .padding(.top, 2)
+                        .padding(.bottom, 8)
+                }
                 if scope == .local { ranking } else { worldRanking }
             }
             // 空の箱を2つ並べるとかえって散らかるので、記録が無いときは見出しごと出さない
@@ -367,21 +372,21 @@ struct RecordsSheet: View {
 
     private var card: some View {
         VStack(spacing: 0) {
-            // ここだけ指で引ける。下の一覧はスクロールさせたいので、板ごとは引かない
-            header
-                .simultaneousGesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { v in
-                            drag = max(0, v.translation.height)
-                            if drag > 6 { moved = true }
-                        }
-                        .onEnded { _ in
-                            let far = drag > 70
-                            withAnimation(reduceMotion ? nil : Self.slideIn) { drag = 0 }
-                            if far { close() }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) { moved = false }
-                        }
-                )
+            // つまみと大きな数字は指で引ける。下の一覧はスクロールさせたいので、板ごとは引かない。
+            // **切り替えはこの外に出す。**minimumDistance:0 の引っ張りがタップを吸って、
+            // 世界ランキングを押しても切り替わらなかった
+            grabber
+                .simultaneousGesture(dragToClose)
+
+            ScopeSwitch(scope: $scope)
+                .frame(height: 38)
+                .frame(maxWidth: 320)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 24)
+                .padding(.top, 14)
+
+            hero0
+                .simultaneousGesture(dragToClose)
 
             ScrollView {
                 VStack(spacing: 0) {
@@ -416,17 +421,35 @@ struct RecordsSheet: View {
         .clipShape(UnevenRoundedRectangle(topLeadingRadius: 20, topTrailingRadius: 20))
     }
 
-    private var header: some View {
+    /// 下に引いて閉じる。つまみと大きな数字のところだけに付ける
+    private var dragToClose: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { v in
+                drag = max(0, v.translation.height)
+                if drag > 6 { moved = true }
+            }
+            .onEnded { _ in
+                let far = drag > 70
+                withAnimation(reduceMotion ? nil : Self.slideIn) { drag = 0 }
+                if far { close() }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) { moved = false }
+            }
+    }
+
+    /// つまみ。ここを引くと閉じる
+    private var grabber: some View {
+        Capsule()
+            .fill(DD.paper.opacity(0.3))
+            .frame(width: 40, height: 4)
+            .padding(.top, 10)
+            .padding(.bottom, 4)
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+    }
+
+    /// 大きな数字のところ。ここも引ける
+    private var hero0: some View {
         VStack(spacing: 0) {
-            Capsule()
-                .fill(DD.paper.opacity(0.3))
-                .frame(width: 40, height: 4)
-                .padding(.top, 10)
-
-            // **切り替えは一番上。**下にあるもの全部が切り替わる、という意味になる
-            ScopeSwitch(scope: $scope)
-                .padding(.top, 16)
-
             if hero > 0 {
                 Text(heroTitle)
                     .font(DD.bold(13))
