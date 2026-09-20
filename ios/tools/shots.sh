@@ -73,7 +73,8 @@ shoot () {   # shoot <言語> <名前> <待つ秒数>
 locale_of () { case "$1" in en) echo en_US;; *) echo ja_JP;; esac; }
 
 record () {  # record <言語>
-  local lang="$1" dir="$OUT/$lang"
+  local lang="$1"
+  local dir="$OUT/$lang"
   mkdir -p "$dir"
   xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true
   xcrun simctl launch "$UDID" "$BUNDLE" \

@@ -23,6 +23,7 @@ jobs:
       - name: Take screenshots
         run: ios/tools/shots.sh shots
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: screenshots
           path: shots
@@ -30,7 +31,9 @@ jobs:
       # 撮ったものを shots-latest ブランチに置く（毎回まるごと差し替え）。
       # Actions のアーティファクトは置き場所が別サーバーで、ここから取りに行けないため。
       - name: Publish to shots-latest
+        if: always()
         run: |
+          [ -d shots ] || exit 0
           cd shots
           git init -q
           git config user.name "github-actions[bot]"
