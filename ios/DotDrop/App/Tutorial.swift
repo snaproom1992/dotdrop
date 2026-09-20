@@ -115,7 +115,7 @@ struct TutorialOverlay: View {
         let done = session.tutorialCleared.contains(step.id)
         return Button { session.startTutorial(index) } label: {
             HStack(spacing: 10) {
-                Text("\(index + 1)").font(DD.bold(19)).kerning(-0.57)
+                Text(verbatim: "\(index + 1)").font(DD.bold(19)).kerning(-0.57)
                     .opacity(0.45).frame(width: 26, alignment: .leading)
                 step.titleText().font(DD.bold(16)).opacity(done ? 0.5 : 1)
                     .frame(maxWidth: .infinity, alignment: .leading)

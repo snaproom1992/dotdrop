@@ -43,11 +43,11 @@ struct RecordsSections: View {
                 ForEach(Array(entries.prefix(limit).enumerated()), id: \.offset) { i, r in
                     let me = highlight != nil && r == highlight
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text("\(i + 1)")
+                        Text(verbatim: "\(i + 1)")
                             .font(DD.bold(14))
                             .opacity(0.7)
                             .frame(width: 28, alignment: .leading)
-                        Text("\(r.score)")
+                        Text(verbatim: "\(r.score)")
                             .font(DD.bold(20))
                             .kerning(-0.6)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -74,7 +74,7 @@ struct RecordsSections: View {
             ForEach(items, id: \.key) { item in
                 let isNew = newKeys.contains(item.key)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(records[item.key] ?? 0)")
+                    Text(verbatim: "\(records[item.key] ?? 0)")
                         .font(DD.bold(22))
                         .kerning(-0.66)
                         .foregroundStyle(DD.paper)

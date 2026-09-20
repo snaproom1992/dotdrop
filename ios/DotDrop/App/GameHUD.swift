@@ -91,7 +91,7 @@ struct GameHUD: View {
                     .font(DD.bold(10))
                     .tracking(1.2)
                     .opacity(0.6)
-                Text("\(session.engine.stage + 1)")
+                Text(verbatim: "\(session.engine.stage + 1)")
                     .font(DD.bold(22))
                     .tracking(-0.88)
                     .padding(.top, 1)
@@ -141,7 +141,7 @@ struct GameHUD: View {
                             .background(DD.red)
                             .clipShape(RoundedRectangle(cornerRadius: 3))
                     } else if session.personalBest > 0 {
-                        Text("自己ベスト \(session.personalBest)")
+                        Text("自己ベスト \(String(session.personalBest))")
                             .font(DD.regular(11))
                             .foregroundStyle(fg.opacity(0.75))
                     }
@@ -271,7 +271,7 @@ private struct ReelFace: View, Animatable {
                 let digit = (n % 10 + 10) % 10
                 // 枠の中心からどれだけずれているか（0＝ぴたり、1＝1枠ぶん外）
                 let off = abs(Double(n) - position)
-                let text = ctx.resolve(Text("\(digit)").font(DD.bold(size)))
+                let text = ctx.resolve(Text(verbatim: "\(digit)").font(DD.bold(size)))
                 var layer = ctx
                 // **ずれている数字ほど薄く、そしてぼかす。**
                 // 止まっているときは off が 0 なのでそのまま。回っている間だけ効く。

@@ -28,7 +28,7 @@ enum ScreenshotMode {
             cal.date(byAdding: .day, value: -ago, to: Date()) ?? Date()
         }
         let ranking = [
-            DDStore.RankEntry(score: 5796, stage: 10, shots: 31, date: day(0)),
+            DDStore.RankEntry(score: 6420, stage: 11, shots: 33, date: day(0)),
             DDStore.RankEntry(score: 4120, stage: 8, shots: 28, date: day(1)),
             DDStore.RankEntry(score: 3040, stage: 7, shots: 26, date: day(3)),
             DDStore.RankEntry(score: 2010, stage: 6, shots: 25, date: day(6)),
@@ -39,9 +39,9 @@ enum ScreenshotMode {
         }
         d.set([
             "shotScore": 1010, "shotBalls": 9, "shotHits": 34, "ballGain": 240,
-            "gameScore": 5796, "peakMoney": 41, "stage": 10,
+            "gameScore": 6420, "peakMoney": 41, "stage": 11,
         ], forKey: "dotdrop-records")
-        d.set(5796, forKey: "dotdrop-best-game")
+        d.set(6420, forKey: "dotdrop-best-game")
         d.set(["shoot", "mult3", "money", "square"], forKey: "dotdrop-tutorial")
     }
 

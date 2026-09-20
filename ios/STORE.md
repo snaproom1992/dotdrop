@@ -129,3 +129,100 @@ DOT DROP
 余裕があれば6枚目に結果画面（`記録は端末の中だけに残ります`）。
 
 **撮るときは記録を入れてから。**空のままだときろくや結果画面が寂しい。
+
+---
+
+# English (U.S.)
+
+App Store Connect で「英語（米国）」のローカリゼーションを足して、ここを貼る。
+**アプリ自体も端末の言語が英語なら英語で動く**（`Localizable.xcstrings`）。
+
+## Name (max 30)
+
+```
+DOT DROP
+```
+
+## Subtitle (max 30)
+
+```
+Pull, release, bounce the dots
+```
+
+控え案：
+- `Drop it. Bounce it. Grow it.`
+- `Turn every dot red`
+
+## Promotional text (max 170)
+
+```
+Pull from anywhere and let go. Every dot raises the pitch, and every 100 points throws a huge number across the screen. No ads, no purchases, no network. Plays offline.
+```
+
+## Description (max 4000)
+
+```
+Flick a ball and hit the dots. That is the whole game.
+
+Pull from anywhere on the screen and let go. The ball flies the opposite way.
+There are five power levels, and the pitch rises as you pull, so you can feel it without looking.
+
+■ Red squares bounce the ball hard
+● Blue circles hold the ball for a moment, then let it go somewhere you did not expect
+▲ Yellow triangles split the ball into three. Split balls can split again
+
+Land in the slots sliding along the bottom to score. The ×5 slot pays big, but the one next to it takes balls away.
+The slots keep moving, so where you land is half skill, half luck.
+
+Keep hitting and the notes climb higher and higher. Every 100 points, a huge number comes flying in.
+Fill the gauge and FEVER starts: double points, no balls lost, and the whole screen turns yellow.
+
+And if you turn every single dot on one board red, that is a PERFECT.
+You will not get there in one shot. It takes all six shots on that board, and it still barely happens.
+
+The board changes every six shots and gets harder as you go. When you run out of balls, the game ends.
+
+——
+
+・No ads
+・No in-app purchases
+・No internet connection. Plays in airplane mode
+・Records stay on your device
+
+・Sound, haptics, and flashing can each be turned off (gear icon, top right)
+・Eight short lessons teach you by playing, not by reading
+・One hand is enough
+```
+
+## Keywords (max 100, comma separated, no spaces)
+
+```
+pinball,arcade,onehanded,offline,noads,dots,highscore,minigame,casual,simple,free,bounce
+```
+
+## What's New in 1.0.0
+
+```
+First release.
+```
+
+## Screenshots
+
+日本語と同じ5枚を、英語で撮ったものに差し替える。見出しも英語にする。
+
+1. Title … `Pull and release`
+2. Aiming (five arcs) … `Five levels of power`
+3. ▲ splitting the ball … `Triangles split the ball in three`
+4. A big number landing … `A huge number every 100 points`
+5. FEVER (yellow screen) … `FEVER: double points, nothing lost`
+
+撮影は `ios/tools/shots.sh` が日本語と英語の両方を出す（`shots/ja/` と `shots/en/`）。
+
+## 訳で気をつけたこと
+
+- **「スマートボール」「パチンコ」に当たる語は英語でも使わない**（`pachinko` は賭け事に
+  結びつくので、キーワードにも説明にも入れない）。`pinball` は機械式ゲームとして通る
+- 画面の中の言葉（STAGE / FEVER / NEW RECORD / CLEAR）はもともと英語なので、
+  日本語版と英語版でスクショの見た目はほとんど変わらない
+- 「受け皿」は英語で `slot`。「釘」は `dot`（プレイヤーに見える言葉は ■ ● ▲ だけ、
+  という決めごとは英語でも同じ）

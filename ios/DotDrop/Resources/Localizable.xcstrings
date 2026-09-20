@@ -768,13 +768,13 @@
         }
       }
     },
-    "自己ベスト %lld": {
+    "自己ベスト %@": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "BEST %lld"
+            "value": "BEST %@"
           }
         }
       },

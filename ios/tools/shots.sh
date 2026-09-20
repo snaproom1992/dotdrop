@@ -88,7 +88,7 @@ record () {  # record <言語>
 }
 
 for LANG_CODE in ${SHOT_LANGS:-ja en}; do
-  echo "▶ 撮る（$LANG_CODE）"
+  echo "▶ 撮る（${LANG_CODE}）"
   shoot "$LANG_CODE" title   3.0    # 玉が落ちてくるアニメが終わるのを待つ
   shoot "$LANG_CODE" play    2.0
   shoot "$LANG_CODE" aim     2.0
@@ -96,7 +96,7 @@ for LANG_CODE in ${SHOT_LANGS:-ja en}; do
   shoot "$LANG_CODE" result  3.0    # カウントアップが終わるのを待つ
   shoot "$LANG_CODE" records 3.0    # 板が出てベストスコアが回りきるのを待つ
   shoot "$LANG_CODE" lessons 2.0    # あそびかたの一覧（英語がいちばん伸びる画面）
-  echo "▶ 動画（$LANG_CODE）"
+  echo "▶ 動画（${LANG_CODE}）"
   record "$LANG_CODE"
 done
 

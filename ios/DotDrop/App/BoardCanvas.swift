@@ -105,7 +105,7 @@ struct BoardCanvas: View {
             var layer = ctx
             layer.opacity = bgNumAlpha
             layer.draw(
-                Text("\(Int(session.potShow.rounded()))")
+                Text(verbatim: "\(Int(session.potShow.rounded()))")
                     .font(DD.bold(fontSize))
                     .foregroundColor(DD.big(fever: fever)),
                 at: pt(Engine.logicalWidth / 2, landed ? cy - 100 : cy),
@@ -379,14 +379,14 @@ struct BoardCanvas: View {
         layer.translateBy(x: center.x, y: center.y)
         layer.scaleBy(x: calm ? 1 : sc, y: calm ? 1 : sc)
         layer.draw(
-            Text("\(m.level * 100)")
+            Text(verbatim: "\(m.level * 100)")
                 .font(DD.bold(sizePt))
                 .foregroundColor(Color(hex: 0x1C1716, opacity: 0.55)),
             at: CGPoint(x: 4 * s, y: 6 * s),
             anchor: .center
         )
         layer.draw(
-            Text("\(m.level * 100)")
+            Text(verbatim: "\(m.level * 100)")
                 .font(DD.bold(sizePt))
                 .foregroundColor(col),
             at: .zero,
@@ -441,8 +441,10 @@ struct BoardCanvas: View {
                 Text("引っ張ってはなす")
                     .font(DD.regular(13 * Double(s)))
                     .foregroundColor(DD.fg(fever: fever).opacity(0.7)),
-                at: pt(Engine.logicalWidth / 2, L.y + 48),
-                anchor: .center
+                // 本家はベースラインを玉の48下に置いている（釘の上端は60下）。
+                // 中央ぞろえにすると6ptぶん下がって、いちばん上の釘に触る
+                at: pt(Engine.logicalWidth / 2, L.y + 51),
+                anchor: .bottom
             )
         }
     }

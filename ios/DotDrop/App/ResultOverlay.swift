@@ -67,7 +67,7 @@ struct ResultOverlay: View {
 
                 HStack(spacing: 0) {
                     VStack(spacing: 0) {
-                        Text("\(session.engine.stage + 1)")
+                        Text(verbatim: "\(session.engine.stage + 1)")
                             .font(DD.bold(30))
                             .kerning(-1.2).frame(height: DD.lineBox(30) * 0.8)
                         Text("ステージ")
@@ -80,7 +80,7 @@ struct ResultOverlay: View {
                         .fill(DD.paper.opacity(0.2))
                         .frame(width: 1.5)
                     VStack(spacing: 0) {
-                        Text("\(session.gameBestShot)")
+                        Text(verbatim: "\(session.gameBestShot)")
                             .font(DD.bold(30))
                             .kerning(-1.2).frame(height: DD.lineBox(30) * 0.8)
                         Text("1回の最高")
