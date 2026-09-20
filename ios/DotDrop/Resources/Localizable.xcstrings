@@ -107,6 +107,28 @@
         }
       }
     },
+    "1ゲーム遊ぶと、あなたが1位です": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play one game and you are number one"
+          }
+        }
+      }
+    },
+    "1ゲーム遊ぶと、ここに残ります": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play one game and it shows up here"
+          }
+        }
+      }
+    },
     "1回で100点": {
       "comment": "Lesson 7 title",
       "extractionState": "manual",
@@ -220,13 +242,13 @@
         }
       }
     },
-    "Game Center にサインインすると、世界のスコアが見られます": {
+    "Game Center に入ると、世界のスコアと並びます": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign in to Game Center to see scores from around the world"
+            "value": "Sign in to Game Center to stand beside the world"
           }
         }
       }
@@ -453,6 +475,39 @@
         }
       }
     },
+    "サインアウトは、iPhone の「設定」→ Game Center から": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To sign out, go to Settings › Game Center on your iPhone"
+          }
+        }
+      }
+    },
+    "サインイン": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in"
+          }
+        }
+      }
+    },
+    "サインインしていません": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not signed in"
+          }
+        }
+      }
+    },
     "サウンド": {
       "extractionState": "manual",
       "localizations": {
@@ -652,7 +707,7 @@
       }
     },
     "世界ランキング": {
-      "comment": "Ranking scope: Game Center global leaderboard",
+      "comment": "Ranking scope, and the settings heading",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -903,6 +958,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Close"
+          }
+        }
+      }
+    },
+    "電波の届くところで、もう一度ひらいてください": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open this again where you have a connection"
           }
         }
       }

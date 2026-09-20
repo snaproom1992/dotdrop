@@ -23,7 +23,10 @@ struct RecordsSections: View {
                 scopeSwitch
                 if scope == .local { ranking } else { worldRanking }
             }
-            section("これまでの記録") { recordGrid }
+            // 空の箱を2つ並べるとかえって散らかるので、記録が無いときは見出しごと出さない
+            if !filledRecords.isEmpty {
+                section("これまでの記録") { recordGrid }
+            }
         }
         .onAppear { Self.styleSegments() }
     }
@@ -80,14 +83,19 @@ struct RecordsSections: View {
     private var worldRanking: some View {
         VStack(spacing: 0) {
             if !GameCenter.shared.signedIn {
-                note("Game Center にサインインすると、世界のスコアが見られます")
+                EmptyBox(title: "サインインしていません",
+                         sub: "Game Center に入ると、世界のスコアと並びます") {
+                    GameCenter.shared.signIn()
+                }
             } else {
                 switch GameCenter.shared.state {
                 case .loading, .idle: note("読み込んでいます")
-                case .failed: note("いまは読み込めません")
+                case .failed: EmptyBox(title: "いまは読み込めません",
+                                       sub: "電波の届くところで、もう一度ひらいてください")
                 case .ready:
                     if GameCenter.shared.entries.isEmpty {
-                        note("まだ誰も載っていません")
+                        EmptyBox(title: "まだ誰も載っていません",
+                                 sub: "1ゲーム遊ぶと、あなたが1位です")
                     } else {
                         ForEach(GameCenter.shared.entries.prefix(limit)) { e in worldRow(e) }
                         // 上位に入っていなくても、自分の順位は見せる
@@ -136,11 +144,7 @@ struct RecordsSections: View {
     private var ranking: some View {
         VStack(spacing: 0) {
             if entries.isEmpty {
-                Text("まだ記録がありません")
-                    .font(DD.regular(13))
-                    .foregroundStyle(DD.paper.opacity(0.55))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 7)
+                EmptyBox(title: "まだ記録がありません", sub: "1ゲーム遊ぶと、ここに残ります")
             } else {
                 ForEach(Array(entries.prefix(limit).enumerated()), id: \.offset) { i, r in
                     let me = highlight != nil && r == highlight
@@ -170,8 +174,12 @@ struct RecordsSections: View {
         }
     }
 
+    private var filledRecords: [(key: String, label: String)] {
+        DDStore.recordLabels.filter { (records[$0.key] ?? 0) > 0 }
+    }
+
     private var recordGrid: some View {
-        let items = DDStore.recordLabels.filter { (records[$0.key] ?? 0) > 0 }
+        let items = filledRecords
         return LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
             ForEach(items, id: \.key) { item in
                 let isNew = newKeys.contains(item.key)
@@ -209,6 +217,71 @@ struct RecordsSections: View {
 
     private func month(_ d: Date) -> Int { Calendar.current.component(.month, from: d) }
     private func day(_ d: Date) -> Int { Calendar.current.component(.day, from: d) }
+}
+
+/// 中身が無いときの見せ方。
+///
+/// **「まだ記録がありません」の一行だけだと、作りかけの画面に見える。**
+/// このゲームの印（■ ● ▲）を置いて、見出しと、次に何をすればいいかを添える。
+/// 形は丸と四角と三角だけ、という決まりの中でできる
+struct EmptyBox: View {
+    var title: LocalizedStringKey
+    var sub: LocalizedStringKey
+    /// 押せることがあるときだけボタンを出す（サインインなど）
+    var action: (() -> Void)?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            marks
+            Text(title)
+                .font(DD.bold(15))
+                .foregroundStyle(DD.paper.opacity(0.85))
+                .padding(.top, 16)
+            Text(sub)
+                .font(DD.regular(12))
+                .foregroundStyle(DD.paper.opacity(0.5))
+                .multilineTextAlignment(.center)
+                .padding(.top, 5)
+            if let action {
+                Button(action: action) {
+                    Text("サインイン")
+                        .font(DD.bold(14))
+                        .foregroundStyle(DD.paper)
+                        .padding(.horizontal, 26)
+                        .padding(.vertical, 11)
+                        .background(DD.red)
+                        .clipShape(Capsule())
+                }
+                .padding(.top, 16)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 26)
+        .background(DD.paper.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// ■ ● ▲。薄くして、飾りではなく「ここに入るもの」の予告に見せる
+    private var marks: some View {
+        HStack(spacing: 12) {
+            Rectangle().fill(DD.red).frame(width: 13, height: 13)
+            Circle().fill(DD.blue).frame(width: 14, height: 14)
+            Triangle().fill(DD.mustard).frame(width: 15, height: 13)
+        }
+        .opacity(0.55)
+    }
+}
+
+/// 三角。SwiftUI に無いので自分で描く
+struct Triangle: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.midX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.minX, y: r.maxY))
+        p.closeSubpath()
+        return p
+    }
 }
 
 /// タイトルから開く「きろく」。下から出る板。
@@ -321,16 +394,26 @@ struct RecordsSheet: View {
                 .frame(width: 40, height: 4)
                 .padding(.top, 10)
 
-            Text("ベストスコア")
-                .font(DD.bold(13))
-                .tracking(0.52)
-                .foregroundStyle(DD.paper.opacity(0.7))
-                .padding(.top, 18)
+            if best > 0 {
+                Text("ベストスコア")
+                    .font(DD.bold(13))
+                    .tracking(0.52)
+                    .foregroundStyle(DD.paper.opacity(0.7))
+                    .padding(.top, 18)
 
-            // ゲーム中・結果画面と同じリールで回す
-            RollingNumber(value: displayedBest, size: bestSize)
-                .foregroundStyle(DD.paper)
-                .padding(.top, 4)
+                // ゲーム中・結果画面と同じリールで回す
+                RollingNumber(value: displayedBest, size: bestSize)
+                    .foregroundStyle(DD.paper)
+                    .padding(.top, 4)
+            } else {
+                // **まだ何も無いときに大きな 0 を出さない。**壊れて見える。
+                // 板の名前だけ出して、中身は下の空の箱に任せる
+                Text("きろく")
+                    .font(DD.bold(17))
+                    .foregroundStyle(DD.paper)
+                    .padding(.top, 14)
+                    .padding(.bottom, 2)
+            }
         }
         .frame(maxWidth: .infinity)
         .contentShape(Rectangle())

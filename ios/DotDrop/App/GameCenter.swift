@@ -22,6 +22,8 @@ final class GameCenter {
     static let leaderboardID = "com.snaproom.dotdrop.highscore"
 
     private(set) var signedIn = false
+    /// Game Center の表示名。**アプリで名前を聞かないこと**（聞くと申告が変わる）
+    private(set) var playerName = ""
     private(set) var entries: [Entry] = []
     private(set) var myEntry: Entry?
     private(set) var state: State = .idle
@@ -48,7 +50,11 @@ final class GameCenter {
         // 撮影中にサインインの帯が降りてくると画面が写り込む
         if ScreenshotMode.isOn { return }
         #endif
-        guard !GKLocalPlayer.local.isAuthenticated else { signedIn = true; return }
+        if GKLocalPlayer.local.isAuthenticated {
+            signedIn = true
+            playerName = GKLocalPlayer.local.displayName
+            return
+        }
         GKLocalPlayer.local.authenticateHandler = { [weak self] viewController, _ in
             Task { @MainActor in
                 guard let self else { return }
@@ -58,8 +64,24 @@ final class GameCenter {
                     return
                 }
                 self.signedIn = GKLocalPlayer.local.isAuthenticated
+                self.playerName = GKLocalPlayer.local.displayName
             }
         }
+    }
+
+    /// サインインをもう一度だけ促す。すでに入っていれば何もしない。
+    ///
+    /// **アプリからサインアウトはできない。**GameKit にその API が無い。
+    /// サインアウトは iPhone の「設定 → Game Center」からだけ
+    func signIn() {
+        guard !GKLocalPlayer.local.isAuthenticated else {
+            signedIn = true
+            playerName = GKLocalPlayer.local.displayName
+            return
+        }
+        // handler を入れ直すと、iOS がもう一度サインインの画面を出す。
+        // ただし何度も断られたあとは、iOS 側が出さなくなる（アプリからは操作できない）
+        start()
     }
 
     // MARK: - スコアを送る

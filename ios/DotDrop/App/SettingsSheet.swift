@@ -123,6 +123,8 @@ struct SettingsSheet: View {
             }
             .padding(.top, 18)
 
+            gameCenter.padding(.top, 26)
+
             Button { if !moved { close() } } label: {
                 Text("閉じる")
                     .font(DD.bold(14))
@@ -139,6 +141,47 @@ struct SettingsSheet: View {
         .padding(.bottom, safeBottom + 26)
         .background(DD.brown)
         .clipShape(UnevenRoundedRectangle(topLeadingRadius: 20, topTrailingRadius: 20))
+    }
+
+    /// Game Center の状態。
+    ///
+    /// **サインアウトはここに置けない。**GameKit にその API が無く、アプリからは
+    /// サインアウトさせられない。iPhone の「設定 → Game Center」からだけなので、
+    /// そう書いておく（ボタンを置いて何も起きないほうが不親切）
+    private var gameCenter: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("世界ランキング")
+                .font(DD.bold(12))
+                .tracking(0.48)
+                .foregroundStyle(DD.paper.opacity(0.6))
+
+            if GameCenter.shared.signedIn {
+                Text(verbatim: GameCenter.shared.playerName)
+                    .font(DD.bold(15))
+                    .foregroundStyle(DD.paper)
+                    .padding(.top, 6)
+                Text("サインアウトは、iPhone の「設定」→ Game Center から")
+                    .font(DD.regular(11))
+                    .foregroundStyle(DD.paper.opacity(0.5))
+                    .padding(.top, 4)
+            } else {
+                Text("サインインしていません")
+                    .font(DD.regular(14))
+                    .foregroundStyle(DD.paper.opacity(0.7))
+                    .padding(.top, 6)
+                Button { GameCenter.shared.signIn() } label: {
+                    Text("サインイン")
+                        .font(DD.bold(13))
+                        .foregroundStyle(DD.paper)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 9)
+                        .background(DD.red)
+                        .clipShape(Capsule())
+                }
+                .padding(.top, 10)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func row(_ title: LocalizedStringKey, _ value: Binding<Bool>) -> some View {
