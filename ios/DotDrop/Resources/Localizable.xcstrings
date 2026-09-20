@@ -2,6 +2,7 @@
   "sourceLanguage": "ja",
   "strings": {
     "%@ で玉を5つにする": {
+      "comment": "Lesson 6 title",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -10,10 +11,10 @@
             "value": "Make 5 balls with %@"
           }
         }
-      },
-      "comment": "Lesson 6 title"
+      }
     },
     "%@ につかまる": {
+      "comment": "Lesson 5 title",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -22,10 +23,10 @@
             "value": "Get caught by %@"
           }
         }
-      },
-      "comment": "Lesson 5 title"
+      }
     },
     "%@ に入れる": {
+      "comment": "Lesson 2 title",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -34,10 +35,10 @@
             "value": "Land it in %@"
           }
         }
-      },
-      "comment": "Lesson 2 title"
+      }
     },
     "%@ に当てる": {
+      "comment": "Lesson 4 title",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -46,10 +47,10 @@
             "value": "Hit %@"
           }
         }
-      },
-      "comment": "Lesson 4 title"
+      }
     },
     "%lld位": {
+      "comment": "Ranking place on the result screen",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -58,8 +59,7 @@
             "value": "#%lld"
           }
         }
-      },
-      "comment": "Ranking place on the result screen"
+      }
     },
     "%lld回、ポイント2倍・玉が減らない": {
       "extractionState": "manual",
@@ -108,6 +108,7 @@
       }
     },
     "1回で100点": {
+      "comment": "Lesson 7 title",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -116,8 +117,7 @@
             "value": "100 points in one shot"
           }
         }
-      },
-      "comment": "Lesson 7 title"
+      }
     },
     "1回で増えた玉の最多記録": {
       "extractionState": "manual",
@@ -153,6 +153,7 @@
       }
     },
     "1回の最高": {
+      "comment": "Result screen stat",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -161,8 +162,7 @@
             "value": "BEST SHOT"
           }
         }
-      },
-      "comment": "Result screen stat"
+      }
     },
     "1回の最高スコア": {
       "extractionState": "manual",
@@ -209,6 +209,7 @@
       }
     },
     "8項目中%lld項目クリア": {
+      "comment": "VoiceOver: progress dots",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -217,8 +218,7 @@
             "value": "%lld of 8 done"
           }
         }
-      },
-      "comment": "VoiceOver: progress dots"
+      }
     },
     "Game Center にサインインすると、世界のスコアが見られます": {
       "extractionState": "manual",
@@ -232,6 +232,7 @@
       }
     },
     "● の数だけ持ち玉が戻ってくる": {
+      "comment": "Lesson 3 hint",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -240,10 +241,10 @@
             "value": "You get back one ball per ●"
           }
         }
-      },
-      "comment": "Lesson 3 hint"
+      }
     },
     "。クリア済み": {
+      "comment": "VoiceOver: appended to a cleared lesson row",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -252,10 +253,10 @@
             "value": ". Done"
           }
         }
-      },
-      "comment": "VoiceOver: appended to a cleared lesson row"
+      }
     },
     "あそびかた": {
+      "comment": "Tutorial list heading, and the title-screen button",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -264,10 +265,10 @@
             "value": "HOW TO PLAY"
           }
         }
-      },
-      "comment": "Tutorial list heading, and the title-screen button"
+      }
     },
     "あそびかた %lld / 8": {
+      "comment": "HUD during a lesson",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -276,8 +277,7 @@
             "value": "LESSON %lld / 8"
           }
         }
-      },
-      "comment": "HUD during a lesson"
+      }
     },
     "いまのスコアはランキングに残りません": {
       "extractionState": "manual",
@@ -302,6 +302,7 @@
       }
     },
     "きろく。ランキングとこれまでの記録": {
+      "comment": "VoiceOver: records button",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -310,10 +311,10 @@
             "value": "Records. Ranking and personal bests"
           }
         }
-      },
-      "comment": "VoiceOver: records button"
+      }
     },
     "この端末": {
+      "comment": "Ranking scope: records stored on this device",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -322,8 +323,7 @@
             "value": "THIS PHONE"
           }
         }
-      },
-      "comment": "Ranking scope: records stored on this device"
+      }
     },
     "これまでの記録": {
       "extractionState": "manual",
@@ -337,6 +337,7 @@
       }
     },
     "たくさん当てるほどポイントが増える": {
+      "comment": "Lesson 7 hint",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -345,10 +346,10 @@
             "value": "More hits, more points"
           }
         }
-      },
-      "comment": "Lesson 7 hint"
+      }
     },
     "つづける": {
+      "comment": "Returning from a sheet",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -357,10 +358,10 @@
             "value": "Resume"
           }
         }
-      },
-      "comment": "Returning from a sheet"
+      }
     },
     "とじる": {
+      "comment": "Records sheet",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -369,10 +370,10 @@
             "value": "Close"
           }
         }
-      },
-      "comment": "Records sheet"
+      }
     },
     "はじめる": {
+      "comment": "Title screen primary button",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -381,8 +382,7 @@
             "value": "PLAY"
           }
         }
-      },
-      "comment": "Title screen primary button"
+      }
     },
     "まだ記録がありません": {
       "extractionState": "manual",
@@ -407,6 +407,7 @@
       }
     },
     "もう一度": {
+      "comment": "Retry a lesson / play another game",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -415,10 +416,10 @@
             "value": "TRY AGAIN"
           }
         }
-      },
-      "comment": "Retry a lesson / play another game"
+      }
     },
     "もどる": {
+      "comment": "Back to the title screen",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -427,8 +428,7 @@
             "value": "BACK"
           }
         }
-      },
-      "comment": "Back to the title screen"
+      }
     },
     "キャンセル": {
       "extractionState": "manual",
@@ -442,6 +442,7 @@
       }
     },
     "ゲームをはじめる": {
+      "comment": "After the last lesson",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -450,8 +451,7 @@
             "value": "PLAY THE GAME"
           }
         }
-      },
-      "comment": "After the last lesson"
+      }
     },
     "サウンド": {
       "extractionState": "manual",
@@ -465,6 +465,7 @@
       }
     },
     "スコア": {
+      "comment": "HUD",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -473,10 +474,10 @@
             "value": "SCORE"
           }
         }
-      },
-      "comment": "HUD"
+      }
     },
     "ステージ": {
+      "comment": "Result screen stat",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -485,10 +486,10 @@
             "value": "STAGE"
           }
         }
-      },
-      "comment": "Result screen stat"
+      }
     },
     "ステージ%lld・%lld/%lld": {
+      "comment": "Ranking row: stage and date",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -497,8 +498,7 @@
             "value": "Stage %1$lld · %2$lld/%3$lld"
           }
         }
-      },
-      "comment": "Ranking row: stage and date"
+      }
     },
     "ステージが上がりました": {
       "extractionState": "manual",
@@ -523,6 +523,7 @@
       }
     },
     "タイトルへ": {
+      "comment": "Back to the title screen",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -531,8 +532,7 @@
             "value": "TITLE"
           }
         }
-      },
-      "comment": "Back to the title screen"
+      }
     },
     "ドットをすべて赤くした +%lld": {
       "extractionState": "manual",
@@ -546,6 +546,7 @@
       }
     },
     "フィーバーに入る": {
+      "comment": "Lesson 8 title",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -554,10 +555,10 @@
             "value": "Reach FEVER"
           }
         }
-      },
-      "comment": "Lesson 8 title"
+      }
     },
     "ベストスコア": {
+      "comment": "Hero number on the records sheet",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -566,10 +567,10 @@
             "value": "BEST SCORE"
           }
         }
-      },
-      "comment": "Hero number on the records sheet"
+      }
     },
     "ポイントがたまると入れる": {
+      "comment": "Lesson 8 hint",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -578,8 +579,7 @@
             "value": "Fill the gauge to get in"
           }
         }
-      },
-      "comment": "Lesson 8 hint"
+      }
     },
     "ランキング": {
       "extractionState": "manual",
@@ -593,6 +593,7 @@
       }
     },
     "リセット": {
+      "comment": "HUD button and the reset sheet's button",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -601,8 +602,7 @@
             "value": "RESET"
           }
         }
-      },
-      "comment": "HUD button and the reset sheet's button"
+      }
     },
     "リセットしますか？": {
       "extractionState": "manual",
@@ -616,6 +616,7 @@
       }
     },
     "一覧": {
+      "comment": "Back to the lesson list",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -624,10 +625,10 @@
             "value": "LESSONS"
           }
         }
-      },
-      "comment": "Back to the lesson list"
+      }
     },
     "一覧へ": {
+      "comment": "HUD button during a lesson",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -636,10 +637,10 @@
             "value": "LESSONS"
           }
         }
-      },
-      "comment": "HUD button during a lesson"
+      }
     },
     "世界": {
+      "comment": "Ranking scope: Game Center global leaderboard",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -648,10 +649,10 @@
             "value": "WORLD"
           }
         }
-      },
-      "comment": "Ranking scope: Game Center global leaderboard"
+      }
     },
     "入ると、スコアが3倍になる": {
+      "comment": "Lesson 2 hint",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -660,8 +661,7 @@
             "value": "Landing there triples your points"
           }
         }
-      },
-      "comment": "Lesson 2 hint"
+      }
     },
     "到達したステージ": {
       "extractionState": "manual",
@@ -675,6 +675,7 @@
       }
     },
     "引っ張ってはなす": {
+      "comment": "Hint under the first ball",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -683,10 +684,10 @@
             "value": "Pull and release"
           }
         }
-      },
-      "comment": "Hint under the first ball"
+      }
     },
     "持ち玉": {
+      "comment": "HUD: balls in hand",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -695,8 +696,7 @@
             "value": "BALLS"
           }
         }
-      },
-      "comment": "HUD: balls in hand"
+      }
     },
     "持ち玉の最高記録": {
       "extractionState": "manual",
@@ -710,6 +710,7 @@
       }
     },
     "持ち玉を増やす": {
+      "comment": "Lesson 3 title",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -718,8 +719,7 @@
             "value": "Get balls back"
           }
         }
-      },
-      "comment": "Lesson 3 title"
+      }
     },
     "振動": {
       "extractionState": "manual",
@@ -733,6 +733,7 @@
       }
     },
     "更新": {
+      "comment": "Badge on a record just beaten",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -741,10 +742,10 @@
             "value": "NEW"
           }
         }
-      },
-      "comment": "Badge on a record just beaten"
+      }
     },
     "残り%lld": {
+      "comment": "HUD: fever shots remaining",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -753,8 +754,7 @@
             "value": "%lld LEFT"
           }
         }
-      },
-      "comment": "HUD: fever shots remaining"
+      }
     },
     "点滅・揺れを抑える": {
       "extractionState": "manual",
@@ -779,6 +779,7 @@
       }
     },
     "玉を打つ": {
+      "comment": "Lesson 1 title",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -787,10 +788,10 @@
             "value": "Take a shot"
           }
         }
-      },
-      "comment": "Lesson 1 title"
+      }
     },
     "玉切れ": {
+      "comment": "Shown instead of CLEAR when a lesson fails",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -799,10 +800,10 @@
             "value": "OUT OF BALLS"
           }
         }
-      },
-      "comment": "Shown instead of CLEAR when a lesson fails"
+      }
     },
     "画面を引っ張って、はなす": {
+      "comment": "Lesson 1 hint",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -811,8 +812,7 @@
             "value": "Pull anywhere, then let go"
           }
         }
-      },
-      "comment": "Lesson 1 hint"
+      }
     },
     "総合スコア": {
       "extractionState": "manual",
@@ -826,6 +826,7 @@
       }
     },
     "自己ベスト %@": {
+      "comment": "HUD: personal best",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -834,8 +835,7 @@
             "value": "BEST %@"
           }
         }
-      },
-      "comment": "HUD: personal best"
+      }
     },
     "自己ベスト%lldを超えた": {
       "extractionState": "manual",
@@ -849,6 +849,7 @@
       }
     },
     "設定。音・振動・演出": {
+      "comment": "VoiceOver: settings button",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -857,8 +858,7 @@
             "value": "Settings. Sound, haptics and effects"
           }
         }
-      },
-      "comment": "VoiceOver: settings button"
+      }
     },
     "読み込んでいます": {
       "extractionState": "manual",
@@ -872,6 +872,7 @@
       }
     },
     "赤い四角は強くはね返す": {
+      "comment": "Lesson 4 hint",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -880,10 +881,10 @@
             "value": "Red squares bounce the ball hard"
           }
         }
-      },
-      "comment": "Lesson 4 hint"
+      }
     },
     "閉じる": {
+      "comment": "Settings sheet",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -892,10 +893,10 @@
             "value": "Close"
           }
         }
-      },
-      "comment": "Settings sheet"
+      }
     },
     "青い円は玉をつかまえて放す": {
+      "comment": "Lesson 5 hint",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -904,10 +905,10 @@
             "value": "Blue circles hold the ball, then let it go"
           }
         }
-      },
-      "comment": "Lesson 5 hint"
+      }
     },
     "音・振動・演出": {
+      "comment": "Settings sheet heading",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -916,10 +917,10 @@
             "value": "SOUND & EFFECTS"
           }
         }
-      },
-      "comment": "Settings sheet heading"
+      }
     },
     "黄色い三角に当たると3つに分かれる": {
+      "comment": "Lesson 6 hint",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -928,8 +929,7 @@
             "value": "Yellow triangles split the ball into three"
           }
         }
-      },
-      "comment": "Lesson 6 hint"
+      }
     }
   },
   "version": "1.0"
