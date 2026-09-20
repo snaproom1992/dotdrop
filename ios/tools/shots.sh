@@ -106,7 +106,8 @@ printf '%s\n' "$DEVICES" | tr ';' '\n' | while IFS= read -r entry; do
     mkdir -p "$dir"
     for screen in $SCREENS; do
       # タイトルは玉が落ちきるのを、結果ときろくは数字が回りきるのを待つ
-      case "$screen" in title|result|records) wait=3.0;; *) wait=2.0;; esac
+      # split は▲で分裂しきるまで待つ（打ってから落ちきるまで約6秒）
+      case "$screen" in split) wait=6.5;; title|result|records) wait=3.0;; *) wait=2.0;; esac
       launch "$udid" "$lang" "$screen"
       sleep "$wait"
       xcrun simctl io "$udid" screenshot --type=png "$dir/$screen.png" > /dev/null
@@ -119,7 +120,7 @@ printf '%s\n' "$DEVICES" | tr ';' '\n' | while IFS= read -r entry; do
       sleep 1.5
       xcrun simctl io "$udid" recordVideo --codec h264 --force "$dir/demo.mov" &
       rec=$!
-      sleep "${SHOT_VIDEO_SECONDS:-28}"
+      sleep "${SHOT_VIDEO_SECONDS:-26}"
       kill -INT "$rec" 2>/dev/null || true
       wait "$rec" 2>/dev/null || true
       echo "  ✓ $dir/demo.mov"

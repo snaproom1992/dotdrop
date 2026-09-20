@@ -117,8 +117,16 @@ enum ScreenshotMode {
             // 見せ場なので、28秒の中に必ず入れたい（120で突入、1回で60〜80たまる）
             session.gauge = 105
             if name == "split" {
-                // ▲で増えたところで時間を止めて、その1枚を撮る
-                freezeWhen = { $0.engine.balls.count >= 6 }
+                // ▲で増えたところで時間を止めて、その1枚を撮る。
+                // **飛んでいる玉だけ数える。**`balls` には落ちきった玉も残っているので、
+                // そのまま数えると3つしか飛んでいないのに6と出て、早く止まりすぎた
+                session.money = 9; session.moneyShown = 9
+                session.score = 1240; session.scoreShown = 1240
+                session.engine.stage = 3
+                session.boardShots = 2
+                freezeWhen = { s in
+                    s.engine.balls.filter { $0.state == .fly }.count >= 6 && s.potShow >= 25
+                }
             }
             playByItself(session)
 
