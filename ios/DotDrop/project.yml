@@ -13,7 +13,9 @@ settings:
     INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
     INFOPLIST_KEY_UIStatusBarHidden: YES
     INFOPLIST_KEY_CFBundleDisplayName: DOT DROP
-    MARKETING_VERSION: "0.1.0"
+    # 暗号化は使っていない。書き出しのたびに聞かれるのを止める
+    INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+    MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
 packages:
   DotDropEngine:
