@@ -353,17 +353,17 @@ struct RecordsSheet: View {
             records = DDStore.records()
             withAnimation(reduceMotion ? nil : Self.slideIn) { shown = true }
         }
-        // **切り替えるたびに回し直す。**数字が変わったことが、動きで分かる
-        .task(id: hero) {
-            let from = displayedBest
+        // **切り替えるたびに0から回し直す。**
+        // 「いまの値から新しい値へ」だと、両方が同じ数字のとき（自分が世界1位のとき）
+        // 何も動かず、切り替わったことが分からない
+        .task(id: [scope == .local ? 0 : 1, hero]) {
             let target = hero
-            let gap = Double(abs(target - from))
-            let duration = reduceMotion ? 0 : min(1.2, 0.3 + gap * 0.0015)
+            displayedBest = 0
+            let duration = reduceMotion ? 0 : min(1.2, 0.3 + Double(target) * 0.0015)
             let began = Date()
             while !Task.isCancelled {
                 let p = duration == 0 ? 1 : min(1, Date().timeIntervalSince(began) / duration)
-                let eased = 1 - pow(1 - p, 3)
-                displayedBest = Int((Double(from) + (Double(target) - Double(from)) * eased).rounded())
+                displayedBest = Int((Double(target) * (1 - pow(1 - p, 3))).rounded())
                 if p >= 1 { break }
                 try? await Task.sleep(for: .milliseconds(30))
             }
@@ -419,6 +419,22 @@ struct RecordsSheet: View {
         .frame(maxHeight: maxHeight, alignment: .top)
         .background(DD.brown)
         .clipShape(UnevenRoundedRectangle(topLeadingRadius: 20, topTrailingRadius: 20))
+        .simultaneousGesture(swipeScope)
+    }
+
+    /// 横に払っても切り替わる。
+    ///
+    /// **縦より横に大きく動いたときだけ。**そうしないと、一覧の縦スクロールや
+    /// つまみの引き下げと取り合いになる
+    private var swipeScope: some Gesture {
+        DragGesture(minimumDistance: 24)
+            .onEnded { v in
+                let dx = v.translation.width, dy = v.translation.height
+                guard abs(dx) > abs(dy) * 1.5 else { return }
+                let next: RankScope = dx < 0 ? .world : .local
+                guard next != scope else { return }
+                scope = next
+            }
     }
 
     /// 下に引いて閉じる。つまみと大きな数字のところだけに付ける
