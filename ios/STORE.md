@@ -28,7 +28,7 @@ DOT DROP
 **審査なしでいつでも書き換えられる。**更新のお知らせに使うとよい。
 
 ```
-どこからでも引っ張って、はなす。ドットに当たるほど音が上がり、100点ごとに数字が飛び込む。広告も課金も通信もありません。オフラインでそのまま遊べます。
+どこからでも引っ張って、はなす。ドットに当たるほど音が上がり、100点ごとに数字が飛び込む。広告も課金もありません。遊ぶだけならオフラインのまま。世界ランキングで競うこともできます。
 ```
 
 ## 説明（上限4000）
@@ -58,7 +58,8 @@ DOT DROP
 
 ・広告はありません
 ・課金はありません
-・インターネットに接続しません。機内モードでも遊べます
+・遊ぶだけなら通信しません。機内モードでも最後まで遊べます
+・世界ランキングを見るときだけ通信します（Game Center）
 ・記録は端末の中だけに残ります
 
 ・音、振動、点滅と揺れは、それぞれ切れます（右上の歯車から）
@@ -169,7 +170,7 @@ Pull, release, bounce the dots
 ## Promotional text (max 170)
 
 ```
-Pull from anywhere and let go. Every dot raises the pitch, and every 100 points throws a huge number across the screen. No ads, no purchases, no network. Plays offline.
+Pull from anywhere and let go. Every dot raises the pitch, and every 100 points throws a huge number in. No ads, no purchases. Plays offline, or take on the world board.
 ```
 
 ## Description (max 4000)
@@ -199,7 +200,8 @@ The board changes every six shots and gets harder as you go. When you run out of
 
 ・No ads
 ・No in-app purchases
-・No internet connection. Plays in airplane mode
+・Playing needs no connection. Works in airplane mode
+・Only the world leaderboard goes online (Game Center)
 ・Records stay on your device
 
 ・Sound, haptics, and flashing can each be turned off (gear icon, top right)

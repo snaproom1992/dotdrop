@@ -15,7 +15,6 @@ struct RecordsSections: View {
     /// この端末の記録か、世界ランキングか
     enum Scope { case local, world }
     @State private var scope: Scope = .local
-    private var gc = GameCenter.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -62,7 +61,7 @@ struct RecordsSections: View {
         let on = scope == value
         return Button {
             scope = value
-            if value == .world { gc.load() }
+            if value == .world { GameCenter.shared.load() }
         } label: {
             Text(title)
                 .font(DD.bold(10))
@@ -79,19 +78,19 @@ struct RecordsSections: View {
 
     private var worldRanking: some View {
         VStack(spacing: 0) {
-            if !gc.signedIn {
+            if !GameCenter.shared.signedIn {
                 note("Game Center にサインインすると、世界のスコアが見られます")
             } else {
-                switch gc.state {
+                switch GameCenter.shared.state {
                 case .loading, .idle: note("読み込んでいます")
                 case .failed: note("いまは読み込めません")
                 case .ready:
-                    if gc.entries.isEmpty {
+                    if GameCenter.shared.entries.isEmpty {
                         note("まだ誰も載っていません")
                     } else {
-                        ForEach(gc.entries.prefix(limit)) { e in worldRow(e) }
+                        ForEach(GameCenter.shared.entries.prefix(limit)) { e in worldRow(e) }
                         // 上位に入っていなくても、自分の順位は見せる
-                        if let me = gc.myEntry, !gc.entries.prefix(limit).contains(me) {
+                        if let me = GameCenter.shared.myEntry, !GameCenter.shared.entries.prefix(limit).contains(me) {
                             worldRow(me)
                         }
                     }

@@ -15,7 +15,19 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      # 失敗したとき、ログの最後に error: の行だけをまとめて出す。
+      # そうしないと数千行のビルドログに埋もれて、原因を探すのに時間がかかる
       - name: Build for iOS Simulator
-        run: xcodebuild -project ios/DotDrop/DotDrop.xcodeproj -scheme DotDrop -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/DotDrop/DotDrop.xcodeproj -scheme DotDrop \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tee /tmp/build.log \
+          || {
+            echo "::group::エラーだけ"
+            grep -E "(error|warning): " /tmp/build.log | sort -u | head -40
+            echo "::endgroup::"
+            exit 1
+          }
       - name: Test engine
         run: swift test --package-path ios/DotDropEngine
