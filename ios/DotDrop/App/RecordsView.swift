@@ -144,7 +144,8 @@ struct RecordsSections: View {
     private var ranking: some View {
         VStack(spacing: 0) {
             if entries.isEmpty {
-                EmptyBox(title: "まだ記録がありません")
+                EmptyBox(title: "まだ記録がありません",
+                         sub: "さっそくプレイしてハイスコアを目指そう！")
             } else {
                 ForEach(Array(entries.prefix(limit).enumerated()), id: \.offset) { i, r in
                     let me = highlight != nil && r == highlight
