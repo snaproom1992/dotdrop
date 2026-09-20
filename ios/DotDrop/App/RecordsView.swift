@@ -84,18 +84,18 @@ struct RecordsSections: View {
         VStack(spacing: 0) {
             if !GameCenter.shared.signedIn {
                 EmptyBox(title: "サインインしていません",
-                         sub: "Game Center に入ると、世界のスコアと並びます") {
+                         sub: "Game Center に入ると、世界のスコアを見ることができます") {
                     GameCenter.shared.signIn()
                 }
             } else {
                 switch GameCenter.shared.state {
                 case .loading, .idle: note("読み込んでいます")
-                case .failed: EmptyBox(title: "いまは読み込めません",
+                case .failed: EmptyBox(title: "ごめんなさい。読み込めません",
                                        sub: "電波の届くところで、もう一度ひらいてください")
                 case .ready:
                     if GameCenter.shared.entries.isEmpty {
-                        EmptyBox(title: "まだ誰も載っていません",
-                                 sub: "1ゲーム遊ぶと、あなたが1位です")
+                        EmptyBox(title: "まだ記録がありません",
+                                 sub: "今すぐプレイして一位を獲得しちゃおう！")
                     } else {
                         ForEach(GameCenter.shared.entries.prefix(limit)) { e in worldRow(e) }
                         // 上位に入っていなくても、自分の順位は見せる
@@ -144,7 +144,7 @@ struct RecordsSections: View {
     private var ranking: some View {
         VStack(spacing: 0) {
             if entries.isEmpty {
-                EmptyBox(title: "まだ記録がありません", sub: "1ゲーム遊ぶと、ここに残ります")
+                EmptyBox(title: "まだ記録がありません")
             } else {
                 ForEach(Array(entries.prefix(limit).enumerated()), id: \.offset) { i, r in
                     let me = highlight != nil && r == highlight
@@ -226,7 +226,8 @@ struct RecordsSections: View {
 /// 形は丸と四角と三角だけ、という決まりの中でできる
 struct EmptyBox: View {
     var title: LocalizedStringKey
-    var sub: LocalizedStringKey
+    /// 添える一行。要らないときは省く
+    var sub: LocalizedStringKey?
     /// 押せることがあるときだけボタンを出す（サインインなど）
     var action: (() -> Void)?
 
@@ -237,11 +238,13 @@ struct EmptyBox: View {
                 .font(DD.bold(15))
                 .foregroundStyle(DD.paper.opacity(0.85))
                 .padding(.top, 16)
-            Text(sub)
-                .font(DD.regular(12))
-                .foregroundStyle(DD.paper.opacity(0.5))
-                .multilineTextAlignment(.center)
-                .padding(.top, 5)
+            if let sub {
+                Text(sub)
+                    .font(DD.regular(12))
+                    .foregroundStyle(DD.paper.opacity(0.5))
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 5)
+            }
             if let action {
                 Button(action: action) {
                     Text("サインイン")

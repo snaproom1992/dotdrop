@@ -146,8 +146,8 @@ struct SettingsSheet: View {
     /// Game Center の状態。
     ///
     /// **サインアウトはここに置けない。**GameKit にその API が無く、アプリからは
-    /// サインアウトさせられない。iPhone の「設定 → Game Center」からだけなので、
-    /// そう書いておく（ボタンを置いて何も起きないほうが不親切）
+    /// サインアウトさせられない（iPhone の「設定 → Game Center」からだけ）。
+    /// そのことを書き添えるのもくどいので、名前だけ出す
     private var gameCenter: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("世界ランキング")
@@ -160,10 +160,6 @@ struct SettingsSheet: View {
                     .font(DD.bold(15))
                     .foregroundStyle(DD.paper)
                     .padding(.top, 6)
-                Text("サインアウトは、iPhone の「設定」→ Game Center から")
-                    .font(DD.regular(11))
-                    .foregroundStyle(DD.paper.opacity(0.5))
-                    .padding(.top, 4)
             } else {
                 Text("サインインしていません")
                     .font(DD.regular(14))
