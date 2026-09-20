@@ -42,7 +42,7 @@ enum ScreenshotMode {
             "gameScore": 6420, "peakMoney": 41, "stage": 11,
         ], forKey: "dotdrop-records")
         d.set(6420, forKey: "dotdrop-best-game")
-        d.set(["shoot", "mult3", "money", "square"], forKey: "dotdrop-tutorial")
+        d.set(["shot", "mult3", "gain", "square"], forKey: "dotdrop-tutorial")
     }
 
     /// 画面を作る。`RootView` から1回だけ呼ぶ
