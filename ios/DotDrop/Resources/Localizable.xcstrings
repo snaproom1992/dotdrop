@@ -279,6 +279,18 @@
         }
       }
     },
+    "あなた": {
+      "comment": "Ranking scope: this device's own records",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You"
+          }
+        }
+      }
+    },
     "いまのスコアはランキングに残りません": {
       "extractionState": "manual",
       "localizations": {
@@ -309,18 +321,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Records. Ranking and personal bests"
-          }
-        }
-      }
-    },
-    "この端末": {
-      "comment": "Ranking scope: records stored on this device",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "THIS PHONE"
           }
         }
       }
@@ -592,6 +592,18 @@
         }
       }
     },
+    "ランキングの範囲": {
+      "comment": "VoiceOver label for the segmented control",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranking scope"
+          }
+        }
+      }
+    },
     "リセット": {
       "comment": "HUD button and the reset sheet's button",
       "extractionState": "manual",
@@ -639,14 +651,14 @@
         }
       }
     },
-    "世界": {
+    "世界ランキング": {
       "comment": "Ranking scope: Game Center global leaderboard",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "WORLD"
+            "value": "World"
           }
         }
       }

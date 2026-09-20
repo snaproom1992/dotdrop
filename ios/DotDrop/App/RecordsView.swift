@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// ランキングと「これまでの記録」。結果画面とタイトルの「きろく」で同じものを使う。
 ///
@@ -18,60 +19,60 @@ struct RecordsSections: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            section("ランキング", trailing: { scopeSwitch }) {
+            section("ランキング") {
+                scopeSwitch
                 if scope == .local { ranking } else { worldRanking }
             }
             section("これまでの記録") { recordGrid }
         }
+        .onAppear { Self.styleSegments() }
     }
 
-    private func section<C: View, T: View>(
-        _ title: LocalizedStringKey,
-        @ViewBuilder trailing: () -> T = { EmptyView() },
-        @ViewBuilder content: () -> C
+    private func section<C: View>(
+        _ title: LocalizedStringKey, @ViewBuilder content: () -> C
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title)
-                    .font(DD.bold(12))
-                    .tracking(0.48)
-                    .foregroundStyle(DD.paper.opacity(0.6))
-                Spacer(minLength: 8)
-                trailing()
-            }
+            Text(title)
+                .font(DD.bold(12))
+                .tracking(0.48)
+                .foregroundStyle(DD.paper.opacity(0.6))
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 36)
     }
 
-    // MARK: - この端末 / 世界 の切り替え
+    // MARK: - あなた / 世界ランキング の切り替え
 
-    /// **枠をつける。**枠のない印はボタンだと気づかれない（リセットで一度やった）
+    /// iOS 標準の切り替え（`Picker` の segmented）。指で滑らせて動かせて、
+    /// 選んだところが滑らかに動く。**見出しの下に1行まるごと使う**
     private var scopeSwitch: some View {
-        HStack(spacing: 0) {
-            segment("この端末", .local)
-            segment("世界", .world)
+        Picker("ランキングの範囲", selection: $scope) {
+            Text("あなた").tag(Scope.local)
+            Text("世界ランキング").tag(Scope.world)
         }
-        .overlay(Capsule().stroke(DD.paper.opacity(0.35), lineWidth: 1))
-        .clipShape(Capsule())
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .padding(.top, 2)
+        .padding(.bottom, 8)
+        .onChange(of: scope) { _, value in
+            if value == .world { GameCenter.shared.load() }
+        }
     }
 
-    private func segment(_ title: LocalizedStringKey, _ value: Scope) -> some View {
-        let on = scope == value
-        return Button {
-            scope = value
-            if value == .world { GameCenter.shared.load() }
-        } label: {
-            Text(title)
-                .font(DD.bold(10))
-                .tracking(0.4)
-                .foregroundStyle(on ? DD.paper : DD.paper.opacity(0.55))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(on ? DD.red : .clear)
-        }
-        .buttonStyle(.plain)
+    /// 標準の切り替えは明るい灰色で、こげ茶の板の上では浮いてしまう。
+    /// 選んだところを赤、字をクリームにして、色の決まりに合わせる。
+    /// アプリの中にこれ1つしかないので、まとめて指定してよい
+    private static func styleSegments() {
+        let bar = UISegmentedControl.appearance()
+        bar.selectedSegmentTintColor = UIColor(DD.red)
+        bar.backgroundColor = UIColor(DD.paper.opacity(0.10))
+        let font = UIFont(name: "HelveticaNeue-Bold", size: 13)
+            ?? .systemFont(ofSize: 13, weight: .bold)
+        bar.setTitleTextAttributes(
+            [.foregroundColor: UIColor(DD.paper.opacity(0.6)), .font: font], for: .normal)
+        bar.setTitleTextAttributes(
+            [.foregroundColor: UIColor(DD.paper), .font: font], for: .selected)
     }
 
     // MARK: - 世界ランキング
