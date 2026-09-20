@@ -272,17 +272,7 @@ struct EmptyBox: View {
     }
 }
 
-/// 三角。SwiftUI に無いので自分で描く
-struct Triangle: Shape {
-    func path(in r: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: r.midX, y: r.minY))
-        p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
-        p.addLine(to: CGPoint(x: r.minX, y: r.maxY))
-        p.closeSubpath()
-        return p
-    }
-}
+// 三角は TitleView.swift の `Triangle` を使う（同じものを2つ作らない）
 
 /// タイトルから開く「きろく」。下から出る板。
 ///

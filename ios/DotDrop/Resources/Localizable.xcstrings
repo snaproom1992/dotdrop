@@ -335,6 +335,18 @@
         }
       }
     },
+    "きろく": {
+      "comment": "Records sheet heading when there is nothing yet",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RECORDS"
+          }
+        }
+      }
+    },
     "きろく。ランキングとこれまでの記録": {
       "comment": "VoiceOver: records button",
       "extractionState": "manual",
