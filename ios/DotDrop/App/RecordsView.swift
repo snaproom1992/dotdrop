@@ -100,12 +100,29 @@ struct RecordsSections: View {
                         ForEach(GameCenter.shared.entries.prefix(limit)) { e in worldRow(e) }
                         // 上位に入っていなくても、自分の順位は見せる
                         if let me = GameCenter.shared.myEntry, !GameCenter.shared.entries.prefix(limit).contains(me) {
+                            gapMark
                             worldRow(me)
                         }
                     }
                 }
             }
         }
+    }
+
+    /// 上位と自分のあいだが飛んでいることを示す。
+    ///
+    /// **余白だけでは足りない。**すぐ下に続くと、順位が飛んでいても「次の順位」に
+    /// 見えてしまう。抜けていることを形で言う。順位の列に縦へ並べて、
+    /// 番号がまだ続いていることが分かるようにする
+    private var gapMark: some View {
+        VStack(spacing: 3) {
+            ForEach(0..<3, id: \.self) { _ in
+                Circle().fill(DD.paper.opacity(0.3)).frame(width: 3, height: 3)
+            }
+        }
+        .frame(width: 28, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 9)
     }
 
     private func worldRow(_ e: GameCenter.Entry) -> some View {
