@@ -386,12 +386,12 @@ struct RecordsSheet: View {
             ScrollView {
                 VStack(spacing: 0) {
                     RecordsSections(
-                        scope: $scope,
-                        showsSwitch: false,
                         entries: entries,
                         records: records,
                         highlight: nil,
-                        limit: 5
+                        limit: 5,
+                        scope: $scope,
+                        showsSwitch: false
                     )
                     Button { if !moved { close() } } label: {
                         Text("とじる")

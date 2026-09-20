@@ -125,12 +125,12 @@ struct ResultOverlay: View {
                 .padding(.top, 14)
 
                 RecordsSections(
-                    scope: $rankScope,
                     entries: session.rankingTop,
                     records: session.records,
                     highlight: session.currentEntry,
                     newKeys: session.newRecordKeys,
-                    limit: 5
+                    limit: 5,
+                    scope: $rankScope
                 )
 
             }
